@@ -20,7 +20,7 @@ def PickUpBricks : Symm_Game_World ℕ ℕ where
   init_game_state := init_bricks
   win_states := (fun n => n = 0)
   transition := bricks_end_turn_from_ini_hist_act init_bricks
-  law := fun hist act => match (bricks_start_turn_from_ini_hist init_bricks hist) with
+  law := fun hist act => match M : (bricks_start_turn_from_ini_hist init_bricks hist) with
                              | 0 => act = 0
                              | 1 => act = 1
                              | _ => act = 1 ∨ act = 2
@@ -119,13 +119,9 @@ lemma loop_invariant
                              snd_lawful := s_law } ;
   ∀ turn, Game.turn_fst turn → (g.toGame.state_on_turn' turn) % 3 = 0 :=
   by
-  intro g t
-  apply @Nat.induct_2_step _ t
-  · intro no
-    rw [Game.turn_fst] at no
-    contradiction
-  · intro
-    dsimp [g]
+  intro g
+  apply Game.invariant_fst
+  · dsimp [g]
     dsimp [Symm_Game.toGame, Game.state_on_turn', Game.state_on_turn]
     rw [if_pos (by decide)]
     dsimp [Symm_Game_World.transition, PickUpBricks, Game.history_on_turn, bricks_end_turn_from_ini_hist_act, pub_win_strat, bricks_start_turn_from_ini_hist]
@@ -137,16 +133,66 @@ lemma loop_invariant
     · rw [Nat.sub_mod_eq_zero_of_mod_eq]
       rw [or_comm ,or_iff_not_imp_right] at win_hyp
       exact win_hyp c
-  · intro n ih0 ih1 tn
-    rw [← Game.turn_fst_step] at tn
-    specialize ih0 tn
+  · intro t tf th
+    rw [Game.turn_fst_step] at tf
     rw [Game.state_on_turn', Game.state_on_turn]
     split
     · contradiction
     · rename_i m hm
-      -- rw [if_neg _]
-      -- use ← Game.turn_snd_fst_step
-      sorry
+      rw [Nat.succ_eq_add_one] at hm
+      rw [if_pos _]
+      swap
+      · rw [← hm]
+        exact tf
+      · norm_num at hm
+        rw [← hm]
+        rw [Game.history_on_turn]
+        rw [if_neg _]
+        swap
+        · rw [← Game.turn_snd_fst_step]
+          rw [← Game.turn_fst_step] at tf
+          rw [Game.turn_not_snd_iff_fst]
+          exact tf
+        · dsimp [Game.strategy_legal] at s_law
+          specialize s_law (Game.history_on_turn (Symm_Game.toGame g).toGame_World (Symm_Game.toGame g).fst_strat (Symm_Game.toGame g).snd_strat t)
+          dsimp [PickUpBricks] at s_law
+          split at s_law
+          · rename_i _ NoBricks
+            rw [Game.fst_transition]
+            dsimp only [Game_World.fst_transition]
+            rw [s_law]
+          ·
+          ·
+
+
+
+
+  -- · intro no
+  --   rw [Game.turn_fst] at no
+  --   contradiction
+  -- · intro
+  --   dsimp [g]
+  --   dsimp [Symm_Game.toGame, Game.state_on_turn', Game.state_on_turn]
+  --   rw [if_pos (by decide)]
+  --   dsimp [Symm_Game_World.transition, PickUpBricks, Game.history_on_turn, bricks_end_turn_from_ini_hist_act, pub_win_strat, bricks_start_turn_from_ini_hist]
+  --   split_ifs with z c
+  --   · rw [z]
+  --     decide
+  --   · rw [Nat.sub_mod_eq_zero_of_mod_eq]
+  --     apply c
+  --   · rw [Nat.sub_mod_eq_zero_of_mod_eq]
+  --     rw [or_comm ,or_iff_not_imp_right] at win_hyp
+  --     exact win_hyp c
+  -- · intro n ih0 ih1 tn
+  --   rw [← Game.turn_fst_step] at tn
+  --   specialize ih0 tn
+  --   rw [Game.state_on_turn', Game.state_on_turn]
+  --   split
+  --   · contradiction
+  --   · rename_i m hm
+  --     -- rw [if_neg _]
+  --     -- use ← Game.turn_snd_fst_step
+  --     sorry
 
 
 
