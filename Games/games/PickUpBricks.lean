@@ -11,9 +11,25 @@ import Mathlib.Tactic
 
 variable (init_bricks : ℕ)
 
-def bricks_start_turn_from_ini_hist (ini : ℕ) (hist : List ℕ) := ini - hist.sum
+abbrev bricks_start_turn_from_ini_hist (ini : ℕ) (hist : List ℕ) := ini - hist.sum
 
-def bricks_end_turn_from_ini_hist_act (ini : ℕ) (hist : List ℕ) (act : ℕ) := ini - hist.sum - act
+abbrev bricks_end_turn_from_ini_hist_act (ini : ℕ) (hist : List ℕ) (act : ℕ) := ini - hist.sum - act
+
+lemma bricks_start_end (ini : ℕ) (hist : List ℕ) (act : ℕ) :
+  bricks_end_turn_from_ini_hist_act ini hist act = (bricks_start_turn_from_ini_hist ini hist) - act :=
+  by rfl
+
+lemma bricks_add_zero (ini : ℕ) (hist : List ℕ) :
+  bricks_end_turn_from_ini_hist_act ini hist 0 = bricks_start_turn_from_ini_hist ini hist :=
+  by
+  rfl
+
+lemma bricks_start_cons (ini : ℕ) (hist : List ℕ) (x : ℕ) :
+  bricks_start_turn_from_ini_hist ini (x :: hist) = bricks_start_turn_from_ini_hist ini hist - x :=
+  by
+  dsimp [bricks_start_turn_from_ini_hist]
+  rw [List.sum_cons]
+  rw [add_comm, Nat.sub_add_eq]
 
 
 def PickUpBricks : Symm_Game_World ℕ ℕ where
@@ -25,6 +41,36 @@ def PickUpBricks : Symm_Game_World ℕ ℕ where
                              | 1 => act = 1
                              | _ => act = 1 ∨ act = 2
 
+lemma PUB_state_bricks {g : Symm_Game ℕ ℕ} {n : ℕ} (h : g.toSymm_Game_World = PickUpBricks n) :
+  ∀ turn : ℕ, bricks_start_turn_from_ini_hist n (History_on_turn n g.fst_strat g.snd_strat turn) =
+  g.state_on_turn turn :=
+  by
+  intro t
+  induction' t with t _
+  · dsimp [bricks_start_turn_from_ini_hist, History_on_turn,  Symm_Game.state_on_turn]
+    rw [h]
+    rw [PickUpBricks]
+  · dsimp [bricks_start_turn_from_ini_hist, History_on_turn]
+    split_ifs with ct
+    all_goals rw [List.sum_cons]
+    all_goals dsimp [Symm_Game.state_on_turn]
+    · rw [if_pos ct]
+      rw [h]
+      dsimp [Symm_Game_World.transition, PickUpBricks]
+      rw [bricks_start_end]
+      rw [add_comm, Nat.sub_add_eq]
+      congr
+      all_goals rw [h]
+      all_goals rw [PickUpBricks]
+    · rw [if_neg ct]
+      rw [h]
+      dsimp [Symm_Game_World.transition, PickUpBricks]
+      rw [bricks_start_end]
+      rw [add_comm, Nat.sub_add_eq]
+      congr
+      all_goals rw [h]
+      all_goals rw [PickUpBricks]
+
 
 def pub_win_strat : List ℕ → ℕ  := -- for fst player ; (is strat ; remeber that init_bricks is section param)
   fun hist =>
@@ -34,8 +80,72 @@ def pub_win_strat : List ℕ → ℕ  := -- for fst player ; (is strat ; remeber
     then 0
     else if d = 1 then 1 else 2
 
+lemma pub_win_strat_one (h : List ℕ)
+  (H0 : bricks_start_turn_from_ini_hist init_bricks h ≠ 0)
+  (H1 : bricks_start_turn_from_ini_hist init_bricks h ≠ 1)
+  (hs : bricks_start_turn_from_ini_hist init_bricks h % 3 = 0)
+  : pub_win_strat init_bricks (1 :: h) = 2 :=
+  by
+  rw [pub_win_strat]
+  dsimp
+  have : bricks_start_turn_from_ini_hist init_bricks (1 :: h) ≠ 0 :=
+    by
+    intro con
+    rw [bricks_start_cons] at con
+    rw [Nat.sub_eq_zero_iff_le] at con
+    interval_cases (bricks_start_turn_from_ini_hist init_bricks h) <;> contradiction
+  rw [if_neg this]
+  rw [bricks_start_cons]
+  split_ifs with c
+  · rw [← Nat.add_mod_right] at c
+    rw [← Nat.sub_add_comm] at c
+    · rw [Nat.add_sub_assoc] at c
+      · rw [Nat.add_mod] at c
+        rw [hs] at c
+        contradiction
+      · decide
+    · rw [Nat.one_le_iff_ne_zero]
+      exact H0
+  · rfl
 
-lemma pub_win_strat_legal : Game.strategy_legal init_bricks (PickUpBricks init_bricks).law pub_win_strat:=
+lemma pub_win_strat_two (h : List ℕ)
+  (H0 : bricks_start_turn_from_ini_hist init_bricks h ≠ 0)
+  (H1 : bricks_start_turn_from_ini_hist init_bricks h ≠ 1)
+  (hs : bricks_start_turn_from_ini_hist init_bricks h % 3 = 0)
+  : pub_win_strat init_bricks (2 :: h) = 1 :=
+  by
+  rw [pub_win_strat]
+  dsimp
+  have : bricks_start_turn_from_ini_hist init_bricks (2 :: h) ≠ 0 :=
+    by
+    intro con
+    rw [bricks_start_cons] at con
+    rw [Nat.sub_eq_zero_iff_le] at con
+    interval_cases (bricks_start_turn_from_ini_hist init_bricks h) <;> contradiction
+  rw [if_neg this]
+  rw [bricks_start_cons]
+  split_ifs with c
+  · rfl
+  · rw [← Nat.add_mod_right] at c
+    rw [← Nat.sub_add_comm] at c
+    · rw [Nat.add_sub_assoc] at c
+      · rw [Nat.add_mod] at c
+        rw [hs] at c
+        contradiction
+      · decide
+    · rw [Nat.two_le_iff]
+      exact ⟨H0,H1⟩
+
+
+
+lemma pub_win_strat_legal (s_strat : Strategy ℕ ℕ):
+  Strategy_legal
+    init_bricks
+    (fun _ : ℕ => (PickUpBricks init_bricks).law)
+    pub_win_strat
+    s_strat
+    pub_win_strat
+    :=
   by
   dsimp [PickUpBricks, pub_win_strat]
   intro hist
@@ -57,7 +167,14 @@ lemma pub_win_strat_legal : Game.strategy_legal init_bricks (PickUpBricks init_b
 def toy_strat : List ℕ → ℕ  :=
   fun hist => if bricks_start_turn_from_ini_hist init_bricks hist = 0 then 0 else 1
 
-lemma toy_strat_legal : Game.strategy_legal init_bricks (PickUpBricks init_bricks).law toy_strat:=
+lemma toy_strat_legal (f_strat : Strategy ℕ ℕ):
+  Strategy_legal
+    init_bricks
+    (fun _ : ℕ => (PickUpBricks init_bricks).law)
+    f_strat
+    toy_strat
+    toy_strat
+    :=
   by
   dsimp [PickUpBricks, pub_win_strat]
   intro hist
@@ -81,20 +198,20 @@ def PickUpBricks_pubWin_vs_toy : Symm_Game ℕ ℕ :=
   {(PickUpBricks 32) with
    fst_strat := pub_win_strat
    snd_strat := toy_strat
-   fst_lawful := pub_win_strat_legal 32
-   snd_lawful := toy_strat_legal 32}
+   fst_lawful := pub_win_strat_legal 32 toy_strat
+   snd_lawful := toy_strat_legal 32 pub_win_strat
+   }
 
 
-#reduce Game.state_upto_turn' PickUpBricks_pubWin_vs_toy.toGame 30
+#reduce Symm_Game.state_upto_turn PickUpBricks_pubWin_vs_toy 30
 
-set_option maxRecDepth 1000000 in
-example : Game.state_on_turn' (PickUpBricks_pubWin_vs_toy.toGame) 21 = 0 := by decide
-  -- bad performmence, O(turn^2), since recursion in `List.map` and `Game.state_on_turn`
+set_option maxRecDepth 10000 in
+example : Symm_Game.state_on_turn (PickUpBricks_pubWin_vs_toy) 21 = 0 := by decide
 
 
-example : PickUpBricks_pubWin_vs_toy.toGame.fst_win :=
+example : PickUpBricks_pubWin_vs_toy.fst_win :=
   by
-  rw [Game.fst_win]
+  rw [Symm_Game.fst_win]
   use 21
   constructor
   · decide
@@ -102,29 +219,28 @@ example : PickUpBricks_pubWin_vs_toy.toGame.fst_win :=
     · simp [Symm_Game.toGame, PickUpBricks_pubWin_vs_toy, PickUpBricks]
       decide
     · intro t tdef
-      simp [Game.state_on_turn_neutral]
+      simp [Symm_Game.state_on_turn_neutral]
       interval_cases t
       all_goals {simp [Symm_Game.toGame, PickUpBricks_pubWin_vs_toy, PickUpBricks] ; decide}
 
-#check Nat
+
 
 lemma loop_invariant
   (win_hyp : init_bricks % 3 = 1 ∨ init_bricks % 3 = 2)
-  (s_strat : Game.strategy ℕ ℕ)
-  (s_law : Game.strategy_legal init_bricks (PickUpBricks init_bricks).law s_strat):
+  (s_strat : Strategy ℕ ℕ)
+  (s_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) pub_win_strat s_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := pub_win_strat
-                             fst_lawful := pub_win_strat_legal init_bricks
+                             fst_lawful := pub_win_strat_legal init_bricks s_strat
                              snd_strat := s_strat
                              snd_lawful := s_law } ;
-  ∀ turn, Game.turn_fst turn → (g.toGame.state_on_turn' turn) % 3 = 0 :=
+  ∀ turn, Turn_fst turn → (g.state_on_turn turn) % 3 = 0 :=
   by
   intro g
-  apply Game.invariant_fst
-  · dsimp [g]
-    dsimp [Symm_Game.toGame, Game.state_on_turn', Game.state_on_turn]
+  apply Invariant_fst
+  · dsimp [Symm_Game.state_on_turn]
     rw [if_pos (by decide)]
-    dsimp [Symm_Game_World.transition, PickUpBricks, Game.history_on_turn, bricks_end_turn_from_ini_hist_act, pub_win_strat, bricks_start_turn_from_ini_hist]
+    dsimp [Symm_Game_World.transition, PickUpBricks, Symm_Game.history_on_turn, bricks_end_turn_from_ini_hist_act, pub_win_strat, bricks_start_turn_from_ini_hist]
     split_ifs with z c
     · rw [z]
       decide
@@ -134,8 +250,8 @@ lemma loop_invariant
       rw [or_comm ,or_iff_not_imp_right] at win_hyp
       exact win_hyp c
   · intro t tf th
-    rw [Game.turn_fst_step] at tf
-    rw [Game.state_on_turn', Game.state_on_turn]
+    rw [Turn_fst_step] at tf
+    rw [Symm_Game.state_on_turn]
     split
     · contradiction
     · rename_i m hm
@@ -146,53 +262,66 @@ lemma loop_invariant
         exact tf
       · norm_num at hm
         rw [← hm]
-        rw [Game.history_on_turn]
+        rw [Symm_Game.history_on_turn, History_on_turn]
         rw [if_neg _]
         swap
-        · rw [← Game.turn_snd_fst_step]
-          rw [← Game.turn_fst_step] at tf
-          rw [Game.turn_not_snd_iff_fst]
+        · rw [← Turn_snd_fst_step]
+          rw [← Turn_fst_step] at tf
+          rw [Turn_not_snd_iff_fst]
           exact tf
-        · dsimp [Game.strategy_legal] at s_law
-          specialize s_law (Game.history_on_turn (Symm_Game.toGame g).toGame_World (Symm_Game.toGame g).fst_strat (Symm_Game.toGame g).snd_strat t)
+        · dsimp [Strategy_legal] at s_law
+          specialize s_law t
           dsimp [PickUpBricks] at s_law
+          dsimp [PickUpBricks]
+          rw [bricks_start_end]
           split at s_law
           · rename_i _ NoBricks
-            rw [Game.fst_transition]
-            dsimp only [Game_World.fst_transition]
             rw [s_law]
-          ·
-          ·
+            convert (Nat.zero_mod 3)
+            rw [bricks_start_turn_from_ini_hist, List.sum_cons, Nat.zero_add]
+            rw [bricks_start_turn_from_ini_hist] at NoBricks
+            rw [NoBricks]
+            apply Nat.zero_sub
+          · rename_i OneBrick
+            exfalso
+            have fact : g.toSymm_Game_World = PickUpBricks init_bricks := by rfl
+            have := PUB_state_bricks fact t
+            rw [← this] at th
+            rw [OneBrick] at th
+            contradiction
+          · rename_i noZero noOne
+            cases' s_law with one two
+            · rw [one]
+              rw [bricks_start_cons]
+              have fact : g.toSymm_Game_World = PickUpBricks init_bricks := by rfl
+              have := PUB_state_bricks fact t
+              rw [← this] at th
+              rw [pub_win_strat_one init_bricks (History_on_turn init_bricks pub_win_strat s_strat t) noZero noOne th]
+              rw [Nat.sub_sub]
+              rw [← Nat.mod_eq_sub_mod]
+              · exact th
+              · by_contra! k
+                interval_cases bricks_start_turn_from_ini_hist init_bricks (History_on_turn init_bricks pub_win_strat s_strat t)
+                · contradiction
+                · contradiction
+                · contradiction
+            · rw [two]
+              rw [bricks_start_cons]
+              have fact : g.toSymm_Game_World = PickUpBricks init_bricks := by rfl
+              have := PUB_state_bricks fact t
+              rw [← this] at th
+              rw [pub_win_strat_two init_bricks (History_on_turn init_bricks pub_win_strat s_strat t) noZero noOne th]
+              rw [Nat.sub_sub]
+              rw [← Nat.mod_eq_sub_mod]
+              · exact th
+              · by_contra! k
+                interval_cases bricks_start_turn_from_ini_hist init_bricks (History_on_turn init_bricks pub_win_strat s_strat t)
+                · contradiction
+                · contradiction
+                · contradiction
 
 
 
-
-  -- · intro no
-  --   rw [Game.turn_fst] at no
-  --   contradiction
-  -- · intro
-  --   dsimp [g]
-  --   dsimp [Symm_Game.toGame, Game.state_on_turn', Game.state_on_turn]
-  --   rw [if_pos (by decide)]
-  --   dsimp [Symm_Game_World.transition, PickUpBricks, Game.history_on_turn, bricks_end_turn_from_ini_hist_act, pub_win_strat, bricks_start_turn_from_ini_hist]
-  --   split_ifs with z c
-  --   · rw [z]
-  --     decide
-  --   · rw [Nat.sub_mod_eq_zero_of_mod_eq]
-  --     apply c
-  --   · rw [Nat.sub_mod_eq_zero_of_mod_eq]
-  --     rw [or_comm ,or_iff_not_imp_right] at win_hyp
-  --     exact win_hyp c
-  -- · intro n ih0 ih1 tn
-  --   rw [← Game.turn_fst_step] at tn
-  --   specialize ih0 tn
-  --   rw [Game.state_on_turn', Game.state_on_turn]
-  --   split
-  --   · contradiction
-  --   · rename_i m hm
-  --     -- rw [if_neg _]
-  --     -- use ← Game.turn_snd_fst_step
-  --     sorry
 
 
 

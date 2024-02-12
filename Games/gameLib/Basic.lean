@@ -147,16 +147,9 @@ structure Game (α β : Type u) extends Game_World α β where
 structure Symm_Game (α β : Type u) extends Symm_Game_World α β where
   fst_strat : Strategy α β
   snd_strat : Strategy α β
-  fst_lawful : ∀ turn : ℕ, Strategy_legal_at
-                            init_game_state
-                            (History_on_turn init_game_state fst_strat snd_strat turn)
-                            (fun _ => law)
-                            fst_strat
-  snd_lawful : ∀ turn : ℕ, Strategy_legal_at
-                            init_game_state
-                            (History_on_turn init_game_state fst_strat snd_strat turn)
-                            (fun _ => law)
-                            snd_strat
+  fst_lawful : Strategy_legal init_game_state (fun _ => law) fst_strat snd_strat fst_strat
+  snd_lawful : Strategy_legal init_game_state (fun _ => law) fst_strat snd_strat snd_strat
+
 
 
 def Symm_Game.toGame {α β : Type u} (g : Symm_Game α β) : Game α β :=
@@ -231,12 +224,20 @@ lemma Symm_Game.toGame_snd_start {α β : Type u} (g : Symm_Game α β) :
 instance {α β : Type u} : Coe (Symm_Game α β) (Game α β) where
   coe := Symm_Game.toGame
 
+
+@[simp]
+lemma Symm_Game.toSymm_Game_World_ini {α β : Type u} (g : Symm_Game α β) :
+  g.toSymm_Game_World.init_game_state = g.init_game_state :=
+  by
+  rfl
+
+-- TODO : more of ↑
+
 @[simp]
 lemma Symm_Game.toGame_toWorld {α β : Type u} (g : Symm_Game α β):
   g.toGame.toGame_World = g.toSymm_Game_World.toGame_World :=
   by
   dsimp [Symm_Game.toGame, Game.toGame_World, Symm_Game.toSymm_Game_World, Symm_Game_World.toGame_World]
-
 
 
 
@@ -595,6 +596,58 @@ lemma Symm_Game.state_on_turn_toGame {α β : Type u} (g : Symm_Game α β):
   by
   funext n
   dsimp [Game.state_on_turn, Symm_Game.state_on_turn]
+
+
+
+lemma Game.state_on_turn_fst_to_snd
+  {α β : Type u} (g : Game α β) (turn : ℕ):
+  let S := g.state_on_turn ;
+  let H := g.history_on_turn turn ;
+  Turn_fst (turn + 1) → S (turn + 1) = g.fst_transition H  (g.fst_strat g.init_game_state H) :=
+  by
+  intro S H t
+  dsimp [Game.state_on_turn]
+  rw [if_pos t]
+
+
+lemma Game.state_on_turn_snd_to_fst
+  {α β : Type u} (g : Game α β) (turn : ℕ):
+  let S := g.state_on_turn ;
+  let H := g.history_on_turn turn ;
+  Turn_snd (turn + 1) → S (turn + 1) = g.snd_transition H  (g.snd_strat g.init_game_state H) :=
+  by
+  intro S H t
+  dsimp [Game.state_on_turn]
+  rw [← Turn_not_fst_iff_snd] at t
+  rw [if_neg t]
+
+
+
+
+lemma Symm_Game.state_on_turn_fst_to_snd
+  {α β : Type u} (g : Symm_Game α β) (turn : ℕ):
+  let S := g.state_on_turn ;
+  let H := g.history_on_turn turn ;
+  Turn_fst (turn + 1) → S (turn + 1) = g.transition H  (g.fst_strat g.init_game_state H) :=
+  by
+  intro S H t
+  dsimp [Symm_Game.state_on_turn]
+  rw [if_pos t]
+
+
+lemma Symm_Game.state_on_turn_snd_to_fst
+  {α β : Type u} (g : Symm_Game α β) (turn : ℕ):
+  let S := g.state_on_turn ;
+  let H := g.history_on_turn turn ;
+  Turn_snd (turn + 1) → S (turn + 1) = g.transition H  (g.snd_strat g.init_game_state H) :=
+  by
+  intro S H t
+  dsimp [Symm_Game.state_on_turn]
+  rw [← Turn_not_fst_iff_snd] at t
+  rw [if_neg t]
+
+
+
 
 
 
