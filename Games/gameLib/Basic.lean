@@ -741,7 +741,7 @@ def Game_World.is_snd_win  {α β : Type u} (g : Game_World α β) : Prop :=
 
 
   -- a draw if all turns are neutral, and one one the players has no legal moves left
-def Game.is_draw {α β : Type u} (g : Game α β) : Prop :=
+def Game.draw {α β : Type u} (g : Game α β) : Prop :=
   ∃ turn : ℕ, (∀ t ≤ turn, g.state_on_turn_neutral t) ∧
     ((Turn_fst turn ∧ ∀ act : β, ¬ (g.fst_legal (g.history_on_turn turn) act))
      ∨
@@ -775,7 +775,7 @@ def Symm_Game_World.is_snd_win  {α β : Type u} (g : Symm_Game_World α β) : P
 
 
   -- a draw if all turns are neutral, and one one the players has no legal moves left
-def Symm_Game.is_draw {α β : Type u} (g : Symm_Game α β) : Prop :=
+def Symm_Game.draw {α β : Type u} (g : Symm_Game α β) : Prop :=
   ∃ turn : ℕ, (∀ t ≤ turn, g.state_on_turn_neutral t) ∧
     ((Turn_fst turn ∧ ∀ act : β, ¬ (g.law (g.history_on_turn turn) act))
      ∨
@@ -798,5 +798,24 @@ lemma Symm_Game_World.snd_win_toGame  {α β : Type u} (g : Symm_Game_World α �
   g.toGame_World.is_snd_win ↔ g.is_snd_win := by rfl
 
 @[simp]
-lemma Symm_Game.is_draw_toGame {α β : Type u} (g : Symm_Game α β) :
-  g.toGame.is_draw ↔ g.is_draw := by rfl
+lemma Symm_Game.draw_toGame {α β : Type u} (g : Symm_Game α β) :
+  g.toGame.draw ↔ g.draw := by rfl
+
+
+def Game.terminates {α β : Type u} (g : Game α β) : Prop :=
+  ∃ turn : ℕ,
+    ((Turn_fst turn ∧ ∀ act : β, ¬ (g.fst_legal (g.history_on_turn turn) act))
+     ∨
+     (Turn_snd turn ∧ ∀ act : β, ¬ (g.snd_legal (g.history_on_turn turn) act)))
+
+
+def Symm_Game.terminates {α β : Type u} (g : Symm_Game α β) : Prop :=
+  ∃ turn : ℕ,
+    ((Turn_fst turn ∧ ∀ act : β, ¬ (g.law (g.history_on_turn turn) act))
+     ∨
+     (Turn_snd turn ∧ ∀ act : β, ¬ (g.law (g.history_on_turn turn) act)))
+
+
+@[simp]
+lemma Symm_Game.terminates_toGame {α β : Type u} (g : Symm_Game α β) :
+  g.toGame.terminates ↔ g.terminates := by rfl
