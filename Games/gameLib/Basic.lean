@@ -737,7 +737,7 @@ def Game_World.is_snd_win  {α β : Type u} (g : Game_World α β) : Prop :=
   ∀ fst_s : Strategy α β,
   ∃ ws_leg : Strategy_legal g.init_game_state (fun _ => g.snd_legal) fst_s ws ws,
    (fst_leg : Strategy_legal g.init_game_state (fun _ => g.fst_legal) fst_s ws fst_s) →
-  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game α β).fst_win
+  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game α β).snd_win
 
 
   -- a draw if all turns are neutral, and one one the players has no legal moves left
@@ -771,7 +771,7 @@ def Symm_Game_World.is_snd_win  {α β : Type u} (g : Symm_Game_World α β) : P
   ∀ fst_s : Strategy α β,
   ∃ ws_leg : Strategy_legal g.init_game_state (fun _ => g.law) fst_s ws ws,
    (fst_leg : Strategy_legal g.init_game_state (fun _ => g.law) fst_s ws fst_s) →
-  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Symm_Game α β).fst_win
+  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Symm_Game α β).snd_win
 
 
   -- a draw if all turns are neutral, and one one the players has no legal moves left
@@ -819,3 +819,85 @@ def Symm_Game.terminates {α β : Type u} (g : Symm_Game α β) : Prop :=
 @[simp]
 lemma Symm_Game.terminates_toGame {α β : Type u} (g : Symm_Game α β) :
   g.toGame.terminates ↔ g.terminates := by rfl
+
+
+def Game_World.is_fst_draw {α β : Type u} (g : Game_World α β) : Prop :=
+  ∃ ds : Strategy α β,
+  ∀ snd_s : Strategy α β,
+  ∃ ds_leg : Strategy_legal g.init_game_state (fun _ => g.fst_legal) ds snd_s ds,
+   (snd_leg : Strategy_legal g.init_game_state (fun _ => g.snd_legal) ds snd_s snd_s) →
+  ({g with fst_strat := ds, fst_lawful := ds_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game α β).draw
+
+
+def Game_World.is_snd_draw  {α β : Type u} (g : Game_World α β) : Prop :=
+  ∃ ds : Strategy α β,
+  ∀ fst_s : Strategy α β,
+  ∃ ds_leg : Strategy_legal g.init_game_state (fun _ => g.snd_legal) fst_s ds ds,
+   (fst_leg : Strategy_legal g.init_game_state (fun _ => g.fst_legal) fst_s ds fst_s) →
+  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ds, snd_lawful := ds_leg} : Game α β).draw
+
+def Game_World.is_draw  {α β : Type u} (g : Game_World α β) : Prop :=
+  g.is_fst_draw ∨ g.is_snd_draw
+
+
+
+def Symm_Game_World.is_fst_draw {α β : Type u} (g : Symm_Game_World α β) : Prop :=
+  ∃ ds : Strategy α β,
+  ∀ snd_s : Strategy α β,
+  ∃ ds_leg : Strategy_legal g.init_game_state (fun _ => g.law) ds snd_s ds,
+   (snd_leg : Strategy_legal g.init_game_state (fun _ => g.law) ds snd_s snd_s) →
+  ({g with fst_strat := ds, fst_lawful := ds_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Symm_Game α β).draw
+
+
+def Symm_Game_World.is_snd_draw  {α β : Type u} (g : Symm_Game_World α β) : Prop :=
+  ∃ ds : Strategy α β,
+  ∀ fst_s : Strategy α β,
+  ∃ ds_leg : Strategy_legal g.init_game_state (fun _ => g.law) fst_s ds ds,
+   (fst_leg : Strategy_legal g.init_game_state (fun _ => g.law) fst_s ds fst_s) →
+  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ds, snd_lawful := ds_leg} : Symm_Game α β).draw
+
+def Symm_Game_World.is_draw  {α β : Type u} (g : Symm_Game_World α β) : Prop :=
+  g.is_fst_draw ∨ g.is_snd_draw
+
+
+def Game_World.must_terminate {α β : Type u} (g : Game_World α β) : Prop :=
+  ∀ f_strat s_strat : Strategy α β,
+  (f_law : Strategy_legal g.init_game_state (fun _ => g.fst_legal) f_strat s_strat f_strat) →
+  (s_law : Strategy_legal g.init_game_state (fun _ => g.snd_legal) f_strat s_strat s_strat) →
+  let G := ({g with fst_strat := f_strat, fst_lawful := f_law, snd_strat := s_strat, snd_lawful := s_law} : Game α β) ;
+  ∃ turn : ℕ,
+    ((Turn_fst turn ∧ ∀ act : β, ¬ (G.fst_legal (G.history_on_turn turn) act))
+     ∨
+     (Turn_snd turn ∧ ∀ act : β, ¬ (G.snd_legal (G.history_on_turn turn) act)))
+
+
+def Game_World.must_terminate_before {α β : Type u} (g : Game_World α β) (T : ℕ): Prop :=
+  ∀ f_strat s_strat : Strategy α β,
+  (f_law : Strategy_legal g.init_game_state (fun _ => g.fst_legal) f_strat s_strat f_strat) →
+  (s_law : Strategy_legal g.init_game_state (fun _ => g.snd_legal) f_strat s_strat s_strat) →
+  let G := ({g with fst_strat := f_strat, fst_lawful := f_law, snd_strat := s_strat, snd_lawful := s_law} : Game α β) ;
+  ∃ turn ≤ T,
+    ((Turn_fst turn ∧ ∀ act : β, ¬ (G.fst_legal (G.history_on_turn turn) act))
+     ∨
+     (Turn_snd turn ∧ ∀ act : β, ¬ (G.snd_legal (G.history_on_turn turn) act)))
+
+def Symm_Game_World.must_terminate {α β : Type u} (g : Symm_Game_World α β) : Prop :=
+  ∀ f_strat s_strat : Strategy α β,
+  (f_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat f_strat) →
+  (s_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat s_strat) →
+  let G := ({g with fst_strat := f_strat, fst_lawful := f_law, snd_strat := s_strat, snd_lawful := s_law} : Symm_Game α β) ;
+  ∃ turn : ℕ,
+    ((Turn_fst turn ∧ ∀ act : β, ¬ (G.law (G.history_on_turn turn) act))
+     ∨
+     (Turn_snd turn ∧ ∀ act : β, ¬ (G.law (G.history_on_turn turn) act)))
+
+
+def Symm_Game_World.must_terminate_before {α β : Type u} (g : Symm_Game_World α β) (T : ℕ): Prop :=
+  ∀ f_strat s_strat : Strategy α β,
+  (f_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat f_strat) →
+  (s_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat s_strat) →
+  let G := ({g with fst_strat := f_strat, fst_lawful := f_law, snd_strat := s_strat, snd_lawful := s_law} : Symm_Game α β) ;
+  ∃ turn ≤ T,
+    ((Turn_fst turn ∧ ∀ act : β, ¬ (G.law (G.history_on_turn turn) act))
+     ∨
+     (Turn_snd turn ∧ ∀ act : β, ¬ (G.law (G.history_on_turn turn) act)))

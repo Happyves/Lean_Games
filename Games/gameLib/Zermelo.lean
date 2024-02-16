@@ -65,3 +65,71 @@ lemma Game.terminates_is_win_loose_draw {α β : Type u} (g : Game α β)
           by_contra k
           specialize nnt_min t (show _ from by intro ; exact k)
           exact nnt_min t_lt
+
+inductive Symm_Game.is_win_loose_draw {α β : Type u} (g : Symm_Game α β) : Prop
+| win_f : g.fst_win → g.is_win_loose_draw
+| win_s : g.snd_win → g.is_win_loose_draw
+| draw : g.draw → g.is_win_loose_draw
+
+@[simp]
+lemma Symm_Game.is_win_loose_draw_toGame {α β : Type u} (g : Symm_Game α β) :
+  g.toGame.is_win_loose_draw ↔ g.is_win_loose_draw :=
+  by
+  constructor
+  · intro G
+    cases G with
+    | win_f f => apply Symm_Game.is_win_loose_draw.win_f ; exact f
+    | win_s s => apply Symm_Game.is_win_loose_draw.win_s ; exact s
+    | draw f => apply Symm_Game.is_win_loose_draw.draw ; exact f
+  · intro G
+    cases G with
+    | win_f f => apply Game.is_win_loose_draw.win_f ; exact f
+    | win_s s => apply Game.is_win_loose_draw.win_s ; exact s
+    | draw f => apply Game.is_win_loose_draw.draw ; exact f
+
+
+lemma Symm_Game.terminates_is_win_loose_draw {α β : Type u} (g : Symm_Game α β)
+  (hg : g.terminates) : g.is_win_loose_draw :=
+  by
+  rw [← Symm_Game.terminates_toGame] at hg
+  rw [← Symm_Game.is_win_loose_draw_toGame]
+  exact Game.terminates_is_win_loose_draw (toGame g) hg
+
+
+inductive Game_World.has_win_loose_draw_strat {α β : Type u} (g : Game_World α β) : Prop
+| win_f : g.is_fst_win → g.has_win_loose_draw_strat
+| win_s : g.is_snd_win → g.has_win_loose_draw_strat
+| draw : g.is_draw → g.has_win_loose_draw_strat
+
+
+def Game_World.playable_fst {α β : Type u} (g : Game_World α β) : Prop :=
+  (∃ e : Strategy α β, ∀ s : Strategy α β, Strategy_legal g.init_game_state (fun _ => g.fst_legal) e s e)
+
+def Game_World.playable_snd {α β : Type u} (g : Game_World α β) : Prop :=
+  (∃ e : Strategy α β, ∀ s : Strategy α β, Strategy_legal g.init_game_state (fun _ => g.snd_legal) s e e)
+
+def Game_World.playable {α β : Type u} (g : Game_World α β) : Prop :=
+  g.playable_fst ∧ g.playable_snd
+
+
+
+theorem Game.Zermelo {α β : Type u} (g : Game_World α β)
+            (hp : g.playable)
+            {T : ℕ} (hg : g.must_terminate_before T) :
+            g.has_win_loose_draw_strat :=
+  by
+  induction' T with max_turn ih
+  · obtain ⟨⟨f, f_prop ⟩,⟨s, s_prop ⟩⟩ := hp
+    dsimp [Game_World.must_terminate_before] at hg
+    specialize hg f s (f_prop s) (s_prop f)
+    obtain ⟨z,zz, z_prop⟩ := hg
+    rw [Nat.le_zero] at zz
+    rw [zz] at z_prop
+    cases' z_prop with l r
+    · rw [Turn_fst] at l ; obtain ⟨ahh, b⟩ := l ; contradiction
+    · specialize s_prop f
+      rw [Strategy_legal] at s_prop
+      specialize s_prop 0
+      exfalso
+      exact (r.2 (s g.init_game_state (History_on_turn g.init_game_state f s 0))) s_prop
+  ·
