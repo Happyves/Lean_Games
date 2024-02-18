@@ -112,14 +112,34 @@ def Game_World.playable {α β : Type u} (g : Game_World α β) : Prop :=
   g.playable_fst ∧ g.playable_snd
 
 
+def Game_World.world_after_fst {α β : Type u} (g : Game_World α β)
+  (fst_act : β) : Game_World α β := -- act not required to be legal
+  {g with init_game_state := g.fst_transition [] fst_act }
 
-theorem Game.Zermelo {α β : Type u} (g : Game_World α β)
+lemma Game_World.world_after_fst_init {α β : Type u} (g : Game_World α β)
+  (fst_act : β) : (g.world_after_fst fst_act).init_game_state = g.fst_transition [] fst_act :=
+  by rfl
+
+lemma Game_World.conditioning {α β : Type u}
+  (g : Game_World α β) (hp : g.playable)
+  {P : Game_World α β → Prop}
+  (ch : ∀ (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act), P (g.world_after_fst fst_act)) :
+  P g :=
+  by
+  sorry
+
+
+#exit
+
+theorem Game_World.Zermelo {α β : Type u} (g : Game_World α β)
             (hp : g.playable)
             {T : ℕ} (hg : g.must_terminate_before T) :
             g.has_win_loose_draw_strat :=
   by
+  revert g
   induction' T with max_turn ih
-  · obtain ⟨⟨f, f_prop ⟩,⟨s, s_prop ⟩⟩ := hp
+  · intro g hp hg
+    obtain ⟨⟨f, f_prop ⟩,⟨s, s_prop ⟩⟩ := hp
     dsimp [Game_World.must_terminate_before] at hg
     specialize hg f s (f_prop s) (s_prop f)
     obtain ⟨z,zz, z_prop⟩ := hg
@@ -132,4 +152,4 @@ theorem Game.Zermelo {α β : Type u} (g : Game_World α β)
       specialize s_prop 0
       exfalso
       exact (r.2 (s g.init_game_state (History_on_turn g.init_game_state f s 0))) s_prop
-  ·
+  · intro g hp hg

@@ -305,8 +305,6 @@ lemma History_on_turn_symm_toWorld (g : Symm_Game α β):
   dsimp [Symm_Game.history_on_turn, Symm_Game_World.history_on_turn, Symm_Game.toSymm_Game_World]
 
 
-
-
 -- # Turns
 
 
@@ -901,3 +899,108 @@ def Symm_Game_World.must_terminate_before {α β : Type u} (g : Symm_Game_World 
     ((Turn_fst turn ∧ ∀ act : β, ¬ (G.law (G.history_on_turn turn) act))
      ∨
      (Turn_snd turn ∧ ∀ act : β, ¬ (G.law (G.history_on_turn turn) act)))
+
+
+
+lemma Symm_Game_World.mem_History_on_turn {α β : Type u} (g : Symm_Game_World α β)
+    {turn : ℕ}
+    (ini : α) (f_strat s_strat: Strategy α β)
+    (f_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat f_strat)
+    (s_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat s_strat)
+    (x : β) :
+    let H := History_on_turn ini f_strat s_strat ;
+    x ∈ H (turn) ↔ (∃ t < turn, ((Turn_fst (t+1) ∧ x = f_strat ini (H t)) ∨ (Turn_snd (t+1) ∧ x = s_strat ini (H t)))) :=
+    -- for ↑, recall that `f_strat ini (H t)` is the action of turn `t+1`
+    by
+    intro H
+    dsimp [Strategy_legal] at f_law s_law
+    apply @Nat.strong_induction_on (fun turn => x ∈ H (turn) ↔ (∃ t < turn, (Turn_fst (t+1) ∧ x = f_strat ini (H t)) ∨ (Turn_snd (t+1) ∧ x = s_strat ini (H t)))) turn
+    intro n ih
+    cases' n with z s
+    · dsimp [H, History_on_turn]
+      simp only [List.not_mem_nil, not_lt_zero', false_and, exists_const]
+    · dsimp [H, History_on_turn]
+      split_ifs
+      · constructor
+        · intro c
+          rw [List.mem_cons] at c
+          cases' c with f hi
+          · use z
+            use (by exact Nat.le.refl)
+            left
+            rename_i l
+            exact ⟨l,f⟩
+          · specialize ih z (by exact Nat.le.refl)
+            obtain ⟨t, tl, tp⟩ := ih.mp hi
+            use t
+            use (by apply lt_trans tl ; exact Nat.lt.base z)
+        · rintro ⟨t,⟨tl,tp⟩⟩
+          rw [List.mem_cons]
+          cases' tp with f s
+          · specialize ih z (by exact Nat.le.refl)
+            by_cases q : t < z
+            · right
+              rw [ih]
+              use t
+              use q
+              left
+              exact f
+            · have : t = z := by exact Nat.eq_of_lt_succ_of_not_lt tl q
+              rw [this] at f
+              left
+              exact f.2
+          · specialize ih z (by exact Nat.le.refl)
+            by_cases q : t < z
+            · right
+              rw [ih]
+              use t
+              use q
+              right
+              exact s
+            · have : t = z := by exact Nat.eq_of_lt_succ_of_not_lt tl q
+              rw [this] at s
+              rename_i no
+              rw [← Turn_not_snd_iff_fst] at no
+              exfalso
+              exact no s.1
+      · constructor
+        · intro c
+          rw [List.mem_cons] at c
+          cases' c with f hi
+          · use z
+            use (by exact Nat.le.refl)
+            right
+            rename_i l
+            exact ⟨l,f⟩
+          · specialize ih z (by exact Nat.le.refl)
+            obtain ⟨t, tl, tp⟩ := ih.mp hi
+            use t
+            use (by apply lt_trans tl ; exact Nat.lt.base z)
+        · rintro ⟨t,⟨tl,tp⟩⟩
+          rw [List.mem_cons]
+          cases' tp with f s
+          · specialize ih z (by exact Nat.le.refl)
+            by_cases q : t < z
+            · right
+              rw [ih]
+              use t
+              use q
+              left
+              exact f
+            · have : t = z := by exact Nat.eq_of_lt_succ_of_not_lt tl q
+              rw [this] at f
+              rename_i no
+              exfalso
+              exact no f.1
+          · specialize ih z (by exact Nat.le.refl)
+            by_cases q : t < z
+            · right
+              rw [ih]
+              use t
+              use q
+              right
+              exact s
+            · have : t = z := by exact Nat.eq_of_lt_succ_of_not_lt tl q
+              rw [this] at s
+              left
+              exact s.2
