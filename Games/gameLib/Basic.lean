@@ -901,9 +901,31 @@ def Symm_Game_World.must_terminate_before {α β : Type u} (g : Symm_Game_World 
      (Turn_snd turn ∧ ∀ act : β, ¬ (G.law (G.history_on_turn turn) act)))
 
 
+def Game_World.must_terminate_after {α β : Type u} (g : Game_World α β) (T : ℕ): Prop :=
+  ∀ f_strat s_strat : Strategy α β,
+  (f_law : Strategy_legal g.init_game_state (fun _ => g.fst_legal) f_strat s_strat f_strat) →
+  (s_law : Strategy_legal g.init_game_state (fun _ => g.snd_legal) f_strat s_strat s_strat) →
+  let G := ({g with fst_strat := f_strat, fst_lawful := f_law, snd_strat := s_strat, snd_lawful := s_law} : Game α β) ;
+  ∃ turn ≥ T,
+    ((Turn_fst turn ∧ ∀ act : β, ¬ (G.fst_legal (G.history_on_turn turn) act))
+     ∨
+     (Turn_snd turn ∧ ∀ act : β, ¬ (G.snd_legal (G.history_on_turn turn) act)))
+
+
+def Symm_Game_World.must_terminate_after {α β : Type u} (g : Symm_Game_World α β) (T : ℕ): Prop :=
+  ∀ f_strat s_strat : Strategy α β,
+  (f_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat f_strat) →
+  (s_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat s_strat) →
+  let G := ({g with fst_strat := f_strat, fst_lawful := f_law, snd_strat := s_strat, snd_lawful := s_law} : Symm_Game α β) ;
+  ∃ turn ≥ T,
+    ((Turn_fst turn ∧ ∀ act : β, ¬ (G.law (G.history_on_turn turn) act))
+     ∨
+     (Turn_snd turn ∧ ∀ act : β, ¬ (G.law (G.history_on_turn turn) act)))
+
+
 
 lemma Symm_Game_World.mem_History_on_turn {α β : Type u} (g : Symm_Game_World α β)
-    {turn : ℕ}
+    (turn : ℕ)
     (ini : α) (f_strat s_strat: Strategy α β)
     (f_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat f_strat)
     (s_law : Strategy_legal g.init_game_state (fun _ => g.law) f_strat s_strat s_strat)

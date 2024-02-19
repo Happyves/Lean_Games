@@ -120,13 +120,92 @@ lemma Game_World.world_after_fst_init {α β : Type u} (g : Game_World α β)
   (fst_act : β) : (g.world_after_fst fst_act).init_game_state = g.fst_transition [] fst_act :=
   by rfl
 
-lemma Game_World.conditioning {α β : Type u}
-  (g : Game_World α β) (hp : g.playable)
-  {P : Game_World α β → Prop}
-  (ch : ∀ (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act), P (g.world_after_fst fst_act)) :
-  P g :=
+
+/-
+In chess, imaging a board with pieces at random, and consider two situations.
+In the first, the first player makes a move and then the second one does.
+In the second situation, the board is that of the first situation, but we ask the
+second player to move first. Will the second players moves be the same in both
+situations ?
+They don't have to. After all, in the first scenario, the second player gains
+some knowledge about how the first plays...
+We'll call strategies that play the same in both situations "careless".
+-/
+
+def Strategy.careless (strat : Strategy α β) (g : Game_World α β): Prop :=
+  ∀ f_act : β, strat (g.fst_transition [] f_act) [] = strat g.init_game_state [f_act]
+
+
+lemma Game_World.world_after_fst_History {α β : Type u} (g : Game_World α β)
+  (f_strat s_strat : Strategy α β) (turn : ℕ)
+  (hs : s_strat.careless g) :
+  (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn)
+  ++ [(f_strat g.init_game_state [])] = History_on_turn g.init_game_state f_strat s_strat (turn+1) :=
+  by
+  rw [History_on_turn]
+  induction' turn with t ih
+  · dsimp [History_on_turn]
+    rw [if_pos (by decide)]
+  · dsimp [History_on_turn]
+    by_cases q : Turn_fst (t+1)
+    · rw [if_pos q] at *
+      rw [Turn_fst_not_step] at q
+      rw [if_neg q]
+      rw [← Turn_fst_not_step] at q
+      rw [if_pos q]
+      rw [Game_World.world_after_fst_init] at *
+      rw [List.cons_append, ih]
+      congr 1
+      -- api for carless or diretly use
+
+-- TODO: write API for history and legality
+
+#exit
+
+lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_World α β)
+  (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
+  g.must_terminate_after (T + 1) → (g.world_after_fst fst_act).must_terminate_before (T) :=
   by
   sorry
+
+lemma Game_World.world_after_fst_init_must_playable {α β : Type u} (g : Game_World α β)
+  (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
+  g.playable → (g.world_after_fst fst_act).playable :=
+  by
+  sorry
+  -- first strat would be second init strat with fst move the reaction to init fst strat
+
+#exit
+
+lemma Game_World.conditioning {α β : Type u}
+  (g : Game_World α β) (hp : g.playable)
+  {T : ℕ} (hg : g.must_terminate_before T)
+  {P : Game_World α β → Prop}
+  (ch : ∀ (g' : Game_World α β), (∀ (fst_act : β) (fst_act_legal : g'.fst_legal [] fst_act), P (g'.world_after_fst fst_act)) → P g')
+:
+  P g :=
+  by
+  revert g
+  induction' T with T ih
+  · intro g hp hg
+    obtain ⟨⟨f, f_prop ⟩,⟨s, s_prop ⟩⟩ := hp
+    dsimp [Game_World.must_terminate_before] at hg
+    specialize hg f s (f_prop s) (s_prop f)
+    obtain ⟨z,zz, z_prop⟩ := hg
+    rw [Nat.le_zero] at zz
+    rw [zz] at z_prop
+    cases' z_prop with l r
+    · rw [Turn_fst] at l ; obtain ⟨ahh, b⟩ := l ; contradiction
+    · specialize s_prop f
+      rw [Strategy_legal] at s_prop
+      specialize s_prop 0
+      exfalso
+      exact (r.2 (s g.init_game_state (History_on_turn g.init_game_state f s 0))) s_prop
+  · intro g hp hg
+    apply ch
+    intro fst_act fst_act_legal
+    apply ih
+
 
 
 #exit
@@ -153,3 +232,7 @@ theorem Game_World.Zermelo {α β : Type u} (g : Game_World α β)
       exfalso
       exact (r.2 (s g.init_game_state (History_on_turn g.init_game_state f s 0))) s_prop
   · intro g hp hg
+
+-- show that g.world_after_fst are playable
+-- show that g.world_after_fst must terminate bofre max_t
+-- show that if g.world_after_fst is wld, the so is g

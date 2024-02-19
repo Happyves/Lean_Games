@@ -27,8 +27,7 @@ instance : DecidableRel nondomi :=
   exact Not.decidable
 
 
-variable {height length : ℕ}
-
+variable (height length : ℕ) -- implicit def opens a world of pain
 
 
 instance (l : List (ℕ × ℕ)) : DecidablePred (fun p => ∀ q ∈ l, nondomi q p) :=
@@ -57,24 +56,64 @@ def Chomp : Symm_Game_World (List (ℕ × ℕ)) (ℕ × ℕ) where
   law := @Chomp_law height length
 
 
+def some_strat : Strategy (List (ℕ × ℕ)) (ℕ × ℕ) :=
+  fun _ hist =>
+      let s := pp_Chomp_state height length hist ;
+                  if h1 : s ≠ [(0,0)]
+                  then (if h2 : s.contains (1,0)
+                        then (1,0)
+                        else (if h3 : s.contains (0,1)
+                              then (0,1)
+                              else (length, height)))
+                  else (length, height)
+
+
+lemma some_strat_strat_legal_fst
+  (s_strat : Strategy (List (ℕ × ℕ)) (ℕ × ℕ)) :
+  Strategy_legal
+    (pp_Chomp_state 3 3 [])
+    (fun _ : (List (ℕ × ℕ)) => (Chomp 3 3).law)
+    (some_strat 3 3)
+    s_strat
+    (some_strat 3 3)
+    :=
+    by
+    dsimp [Strategy_legal, Chomp, some_strat, History_on_turn]
+    intro t
+    constructor
+    · split_ifs <;> decide
+    · split_ifs <;> decide
+    · intro nz q qdef
+      split_ifs
+      · rename_i a b
+        contradiction
+      · rename_i a b c
+        contradiction
+      · rename_i a b c
+        contradiction
+      · rename_i a b
+        rw [nondomi,domi]
+        dsimp
+        sorry
+      · sorry
+      · sorry
+    · split_ifs <;> decide
+
+
+
+
+
+#exit
 
 def Chomp_measure (hist : List (ℕ × ℕ)) : ℕ :=
   (List.length (@pp_Chomp_state height length hist))
 
 
+lemma warum : (@Chomp height length).init_game_state = (@pp_Chomp_state height length) [] := by rfl
 
-lemma Chomp_measure_decrease
-  (f_strat s_strat : Strategy (List (ℕ × ℕ)) (ℕ × ℕ))
-  (f_law : Strategy_legal (@Chomp height length).init_game_state (fun _ => (@Chomp height length).law) f_strat s_strat f_strat)
-  (s_law : Strategy_legal (@Chomp height length).init_game_state (fun _ => (@Chomp height length).law) f_strat s_strat s_strat) :
-  let H := History_on_turn (@Chomp height length).init_game_state f_strat s_strat
-  ∀ turn : ℕ, ((@Chomp_measure height length) (H (turn + 1)) < (@Chomp_measure height length) (H (turn))) ∨ ((@Chomp_measure height length) (H (turn +1)) = 0) :=
-  by
-  sorry
 
 
 lemma Chomp_measure_lb
-  (hg : 1 ≤ height ∨ 1 ≤ length)
   (f_strat s_strat : Strategy (List (ℕ × ℕ)) (ℕ × ℕ))
   (f_law : Strategy_legal (@Chomp height length).init_game_state (fun _ => (@Chomp height length).law) f_strat s_strat f_strat)
   (s_law : Strategy_legal (@Chomp height length).init_game_state (fun _ => (@Chomp height length).law) f_strat s_strat s_strat)
@@ -83,9 +122,6 @@ lemma Chomp_measure_lb
   1 ≤ (@Chomp_measure height length) (H turn) :=
   by
   intro H
-  dsimp [Strategy_legal, Chomp] at *
-  specialize f_law turn
-  specialize s_law turn
   rw [Nat.one_le_iff_ne_zero]
   intro con
   rw [Chomp_measure, List.length_eq_zero, pp_Chomp_state, List.filter_eq_nil] at con
@@ -100,9 +136,49 @@ lemma Chomp_measure_lb
   rw [Nat.le_zero] at fz
   by_contra! sz
   rw [Nat.le_zero] at sz
-  -- do a cases on turn ; the zero case is absurd with qH
-  -- use Symm_Game_World.mem_History_on_turn at qH
-  -- then derive a contradiction with Chomp_law.nz for each case
+  have hmmm := (Chomp height length).mem_History_on_turn turn (pp_Chomp_state height length [])  f_strat s_strat f_law s_law q
+  dsimp [H] at hmmm qH
+  rw [warum] at qH
+  rw [hmmm] at qH
+  clear hmmm
+  obtain ⟨t,_,no⟩ := qH
+  dsimp [Strategy_legal, Chomp] at *
+  specialize f_law t
+  specialize s_law t
+  replace f_law := f_law.nz
+  replace s_law := s_law.nz
+  cases' no with nof nos
+  · apply f_law
+    rw [← nof.right]
+    rw [Prod.eq_iff_fst_eq_snd_eq]
+    dsimp
+    exact ⟨fz,sz⟩
+  · apply s_law
+    rw [← nos.right]
+    rw [Prod.eq_iff_fst_eq_snd_eq]
+    dsimp
+    exact ⟨fz,sz⟩
+
+
+
+lemma Chomp_measure_decrease
+  (f_strat s_strat : Strategy (List (ℕ × ℕ)) (ℕ × ℕ))
+  (f_law : Strategy_legal (Chomp height length).init_game_state (fun _ => (@Chomp height length).law) f_strat s_strat f_strat)
+  (s_law : Strategy_legal (Chomp height length).init_game_state (fun _ => (@Chomp height length).law) f_strat s_strat s_strat) :
+  let H := History_on_turn (Chomp height length).init_game_state f_strat s_strat
+  ∀ turn : ℕ, ((Chomp_measure height length) (H (turn + 1)) < (Chomp_measure height length) (H (turn))) ∨ ((@Chomp_measure height length) (H (turn +1)) ≤ 1) :=
+  by
+  intro H t
+  rw [Chomp_measure, Chomp_measure]
+  rw [or_iff_not_imp_right]
+  intro non_base
+  by_cases q : Turn_fst (t + 1)
+  · dsimp [pp_Chomp_state, History_on_turn]
+    rw [if_pos q]
+    sorry
+  · sorry
+
+
 
 
 #exit
@@ -115,12 +191,28 @@ lemma Chomp_termination_pre
   let H := History_on_turn (@Chomp height length).init_game_state f_strat s_strat
   ∃ turn : ℕ, (@Chomp_measure height length) (H turn) = 1 :=
   by
-  intro h
-  apply Nat.well_ordered
-  have := Chomp_measure_decrease f_strat s_strat f_law s_law
-  dsimp at *
-  apply this
+  intro H
+  have : ∃ turn : ℕ, (@Chomp_measure height length) (H turn) - 1 = 0 :=
+    by
+    apply Nat.well_ordered
+    intro n
+    simp only [tsub_eq_zero_iff_le]
+    rw [tsub_lt_tsub_iff_right]
+    apply Chomp_measure_decrease height length f_strat s_strat f_law s_law
+    apply Chomp_measure_lb height length f_strat s_strat f_law s_law (n+1)
+  convert this using 2
+  rename_i t
+  rw [tsub_eq_zero_iff_le]
+  have that := Chomp_measure_lb height length f_strat s_strat f_law s_law t
+  rw [Nat.eq_iff_le_and_ge]
+  constructor
+  · intro a
+    exact a.1
+  · intro b
+    exact ⟨b, that⟩
 
+
+#exit
 lemma Chomp_measure_lowest_iff
   (hg : 1 ≤ height ∨ 1 ≤ length)
   (f_strat s_strat : Strategy (List (ℕ × ℕ)) (ℕ × ℕ))
