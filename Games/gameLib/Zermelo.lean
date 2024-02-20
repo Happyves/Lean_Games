@@ -111,13 +111,36 @@ def Game_World.playable_snd {α β : Type u} (g : Game_World α β) : Prop :=
 def Game_World.playable {α β : Type u} (g : Game_World α β) : Prop :=
   g.playable_fst ∧ g.playable_snd
 
+-- non-playable worlds are for example those with law `fun _ _ _ => False`
 
 def Game_World.world_after_fst {α β : Type u} (g : Game_World α β)
   (fst_act : β) : Game_World α β := -- act not required to be legal
   {g with init_game_state := g.fst_transition [] fst_act }
+  -- maybe swap fst and snd notions ? Cause we expect snd player to go fst now
 
+@[simp]
 lemma Game_World.world_after_fst_init {α β : Type u} (g : Game_World α β)
   (fst_act : β) : (g.world_after_fst fst_act).init_game_state = g.fst_transition [] fst_act :=
+  by rfl
+
+@[simp]
+lemma Game_World.world_after_fst_fst_trans {α β : Type u} (g : Game_World α β)
+  (fst_act : β) : (g.world_after_fst fst_act).fst_transition = g.fst_transition :=
+  by rfl
+
+@[simp]
+lemma Game_World.world_after_fst_snd_trans {α β : Type u} (g : Game_World α β)
+  (fst_act : β) : (g.world_after_fst fst_act).snd_transition = g.snd_transition :=
+  by rfl
+
+@[simp]
+lemma Game_World.world_after_fst_fst_legal {α β : Type u} (g : Game_World α β)
+  (fst_act : β) : (g.world_after_fst fst_act).fst_legal = g.fst_legal :=
+  by rfl
+
+@[simp]
+lemma Game_World.world_after_fst_snd_legal {α β : Type u} (g : Game_World α β)
+  (fst_act : β) : (g.world_after_fst fst_act).snd_legal = g.snd_legal :=
   by rfl
 
 
@@ -132,13 +155,25 @@ some knowledge about how the first plays...
 We'll call strategies that play the same in both situations "careless".
 -/
 
-def Strategy.careless (strat : Strategy α β) (g : Game_World α β): Prop :=
-  ∀ f_act : β, strat (g.fst_transition [] f_act) [] = strat g.init_game_state [f_act]
+def Game_World.Strategy_careless (strat : Strategy α β) (g : Game_World α β): Prop :=
+  ∀ f_act : β, ∀ hist : List β, strat (g.fst_transition [] f_act) hist = strat g.init_game_state (hist ++ [f_act])
+
+/-
+In ↑, we can't just have hist = [] and deduce the ↑ from this case : the moves
+for these two scenarios may be the same at that stage, but they could begin
+to differ at future stages
+
+Example for PUB in `Careless_Example`
+-/
+
+def Symm_Game_World.Strategy_careless (strat : Strategy α β) (g : Symm_Game_World α β): Prop :=
+  ∀ f_act : β, ∀ hist : List β, strat (g.transition [] f_act) hist = strat g.init_game_state (hist ++ [f_act])
 
 
-lemma Game_World.world_after_fst_History {α β : Type u} (g : Game_World α β)
+
+lemma Game_World.world_after_fst_History (g : Game_World α β)
   (f_strat s_strat : Strategy α β) (turn : ℕ)
-  (hs : s_strat.careless g) :
+  (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat) :
   (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn)
   ++ [(f_strat g.init_game_state [])] = History_on_turn g.init_game_state f_strat s_strat (turn+1) :=
   by
@@ -156,9 +191,52 @@ lemma Game_World.world_after_fst_History {α β : Type u} (g : Game_World α β)
       rw [Game_World.world_after_fst_init] at *
       rw [List.cons_append, ih]
       congr 1
-      -- api for carless or diretly use
+      rw [hs, ih]
+    · rw [if_neg q] at *
+      rw [Turn_fst_not_step, not_not] at q
+      rw [if_pos q]
+      rw [← @not_not (Turn_fst (t + 1 + 1)), ← Turn_fst_not_step] at q
+      rw [if_neg q]
+      rw [Game_World.world_after_fst_init] at *
+      rw [List.cons_append, ih]
+      congr 1
+      rw [hf, ih]
 
--- TODO: write API for history and legality
+
+
+lemma Game_World.Strategy_careless_act_on_turn_snd (g : Game_World α β) (f_strat s_strat: Strategy α β)
+  (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat) (turn : ℕ) :
+  s_strat (g.world_after_fst (f_strat g.init_game_state [])).init_game_state
+    (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) =
+  s_strat g.init_game_state (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) :=
+  by
+  rw [Game_World.world_after_fst_init, hs]
+  congr
+  apply Game_World.world_after_fst_History g f_strat s_strat turn hs hf
+
+
+lemma Game_World.Strategy_careless_act_on_turn_fst (g : Game_World α β) (f_strat s_strat: Strategy α β)
+  (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat) (turn : ℕ) :
+  f_strat (g.world_after_fst (f_strat g.init_game_state [])).init_game_state
+    (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) =
+  f_strat g.init_game_state (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) :=
+  by
+  rw [Game_World.world_after_fst_init, hf]
+  congr
+  apply Game_World.world_after_fst_History g f_strat s_strat turn hs hf
+
+
+lemma Game_World.world_after_fst_legal (g : Game_World α β)
+   (f_strat s_strat: Strategy α β) (h : Strategy_legal g.init_game_state (fun x => g.fst_legal) f_strat s_strat f_strat)
+   (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat) :
+   Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => (g.world_after_fst (f_strat g.init_game_state [])).fst_legal) s_strat f_strat f_strat :=
+   by
+   dsimp [Strategy_legal] at *
+   intro t
+   have := g.Strategy_careless_act_on_turn_fst f_strat s_strat hs hf t
+   rw [Game_World.world_after_fst_init] at this
+   rw [this]
+
 
 #exit
 
@@ -172,7 +250,9 @@ lemma Game_World.world_after_fst_init_must_playable {α β : Type u} (g : Game_W
   (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
   g.playable → (g.world_after_fst fst_act).playable :=
   by
-  sorry
+  intro hp
+  obtain ⟨⟨f, f_prop ⟩,⟨s, s_prop ⟩⟩ := hp
+
   -- first strat would be second init strat with fst move the reaction to init fst strat
 
 #exit
