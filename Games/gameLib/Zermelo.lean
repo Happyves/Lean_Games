@@ -225,15 +225,26 @@ lemma Game_World.Strategy_careless_act_on_turn_fst (g : Game_World α β) (f_str
   congr
   apply Game_World.world_after_fst_History g f_strat s_strat turn hs hf
 
+/--
+The action is legal on turn t in the game with initial state being the state after f's first move,
+where s plays first and f second, iff it it legal on turn t+1 of the original game.
+-/
+def Game_World.law_blind_fst (g : Game_World α β) (f_strat s_strat: Strategy α β) : Prop :=
+  ∀ turn : ℕ, ∀ act : β, g.fst_legal (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) act
+    ↔ g.fst_legal (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) act
 
-def Game_World.law_coherent (g : Game_World α β) : Prop :=
-  ∀ f_act : β, ∀ hist : List β, g.fst_legal
+def Game_World.law_blind_snd (g : Game_World α β) (f_strat s_strat: Strategy α β) : Prop :=
+  ∀ turn : ℕ, ∀ act : β, g.snd_legal (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) act
+    ↔ g.snd_legal (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) act
 
---#exit
+def Game_World.law_blind (g : Game_World α β) (f_strat s_strat: Strategy α β) : Prop :=
+  g.law_blind_fst f_strat s_strat ∧ g.law_blind_snd f_strat s_strat
+
 
 lemma Game_World.world_after_fst_legal (g : Game_World α β)
    (f_strat s_strat: Strategy α β) (h : Strategy_legal g.init_game_state (fun x => g.fst_legal) f_strat s_strat f_strat)
-   (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat) :
+   (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
+   (hg : g.law_blind f_strat s_strat):
    Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => (g.world_after_fst (f_strat g.init_game_state [])).fst_legal) s_strat f_strat f_strat :=
    by
    dsimp [Strategy_legal] at *
@@ -241,9 +252,32 @@ lemma Game_World.world_after_fst_legal (g : Game_World α β)
    have := g.Strategy_careless_act_on_turn_fst f_strat s_strat hs hf t
    rw [Game_World.world_after_fst_init] at this
    rw [this]
+   clear this
+   obtain ⟨bf, bs⟩ := hg
+   specialize h (t+1)
+   specialize bf t (f_strat g.init_game_state (History_on_turn g.init_game_state f_strat s_strat (t + 1)))
+   rw [← Game_World.world_after_fst_init, bf]
+   exact h
 
 
---#exit
+lemma Game_World.world_after_snd_legal (g : Game_World α β)
+   (f_strat s_strat: Strategy α β) (h : Strategy_legal g.init_game_state (fun x => g.snd_legal) f_strat s_strat s_strat)
+   (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
+   (hg : g.law_blind f_strat s_strat):
+   Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => (g.world_after_fst (f_strat g.init_game_state [])).snd_legal) s_strat f_strat s_strat :=
+   by
+   dsimp [Strategy_legal] at *
+   intro t
+   have := g.Strategy_careless_act_on_turn_snd f_strat s_strat hs hf t
+   rw [Game_World.world_after_fst_init] at this
+   rw [this]
+   clear this
+   obtain ⟨bf, bs⟩ := hg
+   specialize h (t+1)
+   specialize bs t (s_strat g.init_game_state (History_on_turn g.init_game_state f_strat s_strat (t + 1)))
+   rw [← Game_World.world_after_fst_init, bs]
+   exact h
+
 
 lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_World α β)
   (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
