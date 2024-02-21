@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Yves Jäckle.
 -/
 
-import Games.gameLib.Basic
+import Games.gameLib.Positional
 
 
 variable (D n : ℕ)
@@ -58,3 +58,16 @@ def TTT : Game_World ((Fin D → Fin n) → Fin 3) (Fin D → Fin n) where
   snd_win_states := fun s => has_o_line D n s
   snd_transition := TTT_snd_trans D n
   snd_legal := TTT_legal D n
+
+
+-- # the "I don't want to show decidability" version
+
+def is_line (F : Finset (Fin D → Fin n)) :=
+  ∃ seq : Fin n → (Fin D → Fin n), seq_is_line D n seq ∧  F = Finset.image seq Finset.univ
+
+
+open Classical
+
+noncomputable
+def TTT2 : Game_World ((Fin D → Fin n) → Fin 3) (Fin D → Fin n) :=
+  Positional_Game_World (Finset.filter (is_line D n) Finset.univ)
