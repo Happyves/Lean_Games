@@ -226,6 +226,11 @@ lemma Game_World.Strategy_careless_act_on_turn_fst (g : Game_World α β) (f_str
   apply Game_World.world_after_fst_History g f_strat s_strat turn hs hf
 
 
+def Game_World.law_coherent (g : Game_World α β) : Prop :=
+  ∀ f_act : β, ∀ hist : List β, g.fst_legal
+
+--#exit
+
 lemma Game_World.world_after_fst_legal (g : Game_World α β)
    (f_strat s_strat: Strategy α β) (h : Strategy_legal g.init_game_state (fun x => g.fst_legal) f_strat s_strat f_strat)
    (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat) :
@@ -238,7 +243,7 @@ lemma Game_World.world_after_fst_legal (g : Game_World α β)
    rw [this]
 
 
-#exit
+--#exit
 
 lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_World α β)
   (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
@@ -252,6 +257,7 @@ lemma Game_World.world_after_fst_init_must_playable {α β : Type u} (g : Game_W
   by
   intro hp
   obtain ⟨⟨f, f_prop ⟩,⟨s, s_prop ⟩⟩ := hp
+  constructor
 
   -- first strat would be second init strat with fst move the reaction to init fst strat
 

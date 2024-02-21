@@ -9,10 +9,17 @@ import Games.gameLib.Basic
 import Mathlib.Tactic
 
 
-variable (init_bricks : ℕ)
+variable (init_bricks : ℕ) -- the initial number of bricks as a variable
 
+/--
+Given an initial number of bricks and a history of bricks taken, return the current number of bricks.
+-/
 abbrev bricks_start_turn_from_ini_hist (ini : ℕ) (hist : List ℕ) := ini - hist.sum
 
+/--
+Given an initial number of bricks, a history of bricks taken and the current number of bricks
+being taken, return the current number of bricks.
+-/
 abbrev bricks_end_turn_from_ini_hist_act (ini : ℕ) (hist : List ℕ) (act : ℕ) := ini - hist.sum - act
 
 lemma bricks_start_end (ini : ℕ) (hist : List ℕ) (act : ℕ) :
@@ -34,12 +41,13 @@ lemma bricks_start_cons (ini : ℕ) (hist : List ℕ) (x : ℕ) :
 
 def PickUpBricks : Symm_Game_World ℕ ℕ where
   init_game_state := init_bricks
-  win_states := (fun n => n = 0)
+  win_states := (fun n => n = 0) -- won once no bricks left
   transition := bricks_end_turn_from_ini_hist_act init_bricks
   law := fun hist act => match M : (bricks_start_turn_from_ini_hist init_bricks hist) with
-                             | 0 => act = 0
-                             | 1 => act = 1
-                             | _ => act = 1 ∨ act = 2
+                             | 0 => act = 0 -- if no bricks there, then take none
+                             | 1 => act = 1 -- if only one brick there, then take it
+                             | _ => act = 1 ∨ act = 2 -- else, take one or two bricks
+
 
 lemma PUB_state_bricks {g : Symm_Game ℕ ℕ} {n : ℕ} (h : g.toSymm_Game_World = PickUpBricks n) :
   ∀ turn : ℕ, bricks_start_turn_from_ini_hist n (History_on_turn n g.fst_strat g.snd_strat turn) =
@@ -137,7 +145,10 @@ lemma pub_win_strat_two (h : List ℕ)
       exact ⟨H0,H1⟩
 
 
-
+/--
+Given any other strategy, the (to be) winning stategy is  legal
+wrt. PickUpBricks and this strategy as second stargegy
+-/
 lemma pub_win_strat_legal (s_strat : Strategy ℕ ℕ):
   Strategy_legal
     init_bricks
@@ -164,7 +175,7 @@ lemma pub_win_strat_legal (s_strat : Strategy ℕ ℕ):
     · apply h1
 
 
-def toy_strat : List ℕ → ℕ  :=
+def toy_strat : List ℕ → ℕ  := -- for demonstration purposes
   fun hist => if bricks_start_turn_from_ini_hist init_bricks hist = 0 then 0 else 1
 
 lemma toy_strat_legal (f_strat : Strategy ℕ ℕ):
@@ -193,7 +204,10 @@ lemma toy_strat_legal (f_strat : Strategy ℕ ℕ):
     · decide
     · apply h1
 
-
+/--
+Pick up bricks played with 32 initial bricks, with the winning strat as
+first strat and the toy strat as second strat
+-/
 def PickUpBricks_pubWin_vs_toy : Symm_Game ℕ ℕ :=
   {(PickUpBricks 32) with
    fst_strat := pub_win_strat
@@ -202,13 +216,13 @@ def PickUpBricks_pubWin_vs_toy : Symm_Game ℕ ℕ :=
    snd_lawful := toy_strat_legal 32 pub_win_strat
    }
 
-
+-- The number of bricks at each turn of the game
 #reduce Symm_Game.state_upto_turn PickUpBricks_pubWin_vs_toy 30
 
 set_option maxRecDepth 10000 in
 example : Symm_Game.state_on_turn (PickUpBricks_pubWin_vs_toy) 21 = 0 := by decide
 
-
+-- The first player wins this game
 example : PickUpBricks_pubWin_vs_toy.fst_win :=
   by
   rw [Symm_Game.fst_win]
@@ -224,7 +238,11 @@ example : PickUpBricks_pubWin_vs_toy.fst_win :=
       all_goals {simp [Symm_Game.toGame, PickUpBricks_pubWin_vs_toy, PickUpBricks] ; decide}
 
 
-
+/--
+If there are 1 or 2 initial bricks mod 3, then for the game played with
+the winning startegy against any other one, the number of bricks after
+the first players turns are always 0 mod 3.
+-/
 lemma loop_invariant
   (win_hyp : init_bricks % 3 = 1 ∨ init_bricks % 3 = 2)
   (s_strat : Strategy ℕ ℕ)
@@ -319,8 +337,6 @@ lemma loop_invariant
                 · contradiction
                 · contradiction
                 · contradiction
-
-
 
 lemma acts_le_bricks
   (f_strat s_strat : Strategy ℕ ℕ)
@@ -519,7 +535,10 @@ lemma termination_pre
       exact this.2
 
 
-
+/--
+For legal strategies, the game of pick up bricks played with them will
+reach a turn where there are no bricks left.
+-/
 lemma termination
   (fst_strat snd_strat : Strategy ℕ ℕ )
   (f_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat f_strat)
@@ -538,7 +557,10 @@ lemma termination
 
 
 
-
+/--
+If there are 1 or 2 initial bricks mod 3, then pick up bricks
+allows for a winning strategy for the first player.
+-/
 theorem Main_Thm
   (win_hyp : init_bricks % 3 = 1 ∨ init_bricks % 3 = 2) :
   (PickUpBricks init_bricks).is_fst_win :=
