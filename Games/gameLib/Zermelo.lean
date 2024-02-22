@@ -113,6 +113,14 @@ def Game_World.playable {α β : Type u} (g : Game_World α β) : Prop :=
 
 -- non-playable worlds are for example those with law `fun _ _ _ => False`
 
+
+def Game_World.playable' {α β : Type u} (g : Game_World α β) : Prop :=
+  ∃ f : Strategy α β, ∃ s : Strategy α β,
+    (Strategy_legal g.init_game_state (fun _ => g.fst_legal) f s f)
+    ∧ (Strategy_legal g.init_game_state (fun _ => g.snd_legal) f s s)
+
+
+
 def Game_World.world_after_fst {α β : Type u} (g : Game_World α β)
   (fst_act : β) : Game_World α β := -- act not required to be legal
   {g with init_game_state := g.fst_transition [] fst_act }
@@ -215,6 +223,7 @@ lemma Game_World.Strategy_careless_act_on_turn_snd (g : Game_World α β) (f_str
   apply Game_World.world_after_fst_History g f_strat s_strat turn hs hf
 
 
+
 lemma Game_World.Strategy_careless_act_on_turn_fst (g : Game_World α β) (f_strat s_strat: Strategy α β)
   (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat) (turn : ℕ) :
   f_strat (g.world_after_fst (f_strat g.init_game_state [])).init_game_state
@@ -230,11 +239,11 @@ The action is legal on turn t in the game with initial state being the state aft
 where s plays first and f second, iff it it legal on turn t+1 of the original game.
 -/
 def Game_World.law_blind_fst (g : Game_World α β) (f_strat s_strat: Strategy α β) : Prop :=
-  ∀ turn : ℕ, ∀ act : β, g.fst_legal (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) act
+  ∀ turn : ℕ, ∀ act : β, g.snd_legal (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) act
     ↔ g.fst_legal (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) act
 
 def Game_World.law_blind_snd (g : Game_World α β) (f_strat s_strat: Strategy α β) : Prop :=
-  ∀ turn : ℕ, ∀ act : β, g.snd_legal (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) act
+  ∀ turn : ℕ, ∀ act : β, g.fst_legal (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) act
     ↔ g.snd_legal (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) act
 
 def Game_World.law_blind (g : Game_World α β) (f_strat s_strat: Strategy α β) : Prop :=
@@ -245,7 +254,7 @@ lemma Game_World.world_after_fst_legal (g : Game_World α β)
    (f_strat s_strat: Strategy α β) (h : Strategy_legal g.init_game_state (fun x => g.fst_legal) f_strat s_strat f_strat)
    (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
    (hg : g.law_blind f_strat s_strat):
-   Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => (g.world_after_fst (f_strat g.init_game_state [])).fst_legal) s_strat f_strat f_strat :=
+   Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => (g.world_after_fst (f_strat g.init_game_state [])).snd_legal) s_strat f_strat f_strat :=
    by
    dsimp [Strategy_legal] at *
    intro t
@@ -264,7 +273,7 @@ lemma Game_World.world_after_snd_legal (g : Game_World α β)
    (f_strat s_strat: Strategy α β) (h : Strategy_legal g.init_game_state (fun x => g.snd_legal) f_strat s_strat s_strat)
    (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
    (hg : g.law_blind f_strat s_strat):
-   Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => (g.world_after_fst (f_strat g.init_game_state [])).snd_legal) s_strat f_strat s_strat :=
+   Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => (g.world_after_fst (f_strat g.init_game_state [])).fst_legal) s_strat f_strat s_strat :=
    by
    dsimp [Strategy_legal] at *
    intro t
@@ -279,56 +288,72 @@ lemma Game_World.world_after_snd_legal (g : Game_World α β)
    exact h
 
 
+
+
 lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_World α β)
   (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
-  g.must_terminate_after (T + 1) → (g.world_after_fst fst_act).must_terminate_before (T) :=
+  g.must_terminate_before (T + 1) → (g.world_after_fst fst_act).must_terminate_before (T) :=
   by
   sorry
 
-lemma Game_World.world_after_fst_init_must_playable {α β : Type u} (g : Game_World α β)
-  (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
-  g.playable → (g.world_after_fst fst_act).playable :=
-  by
-  intro hp
-  obtain ⟨⟨f, f_prop ⟩,⟨s, s_prop ⟩⟩ := hp
-  constructor
+-- lemma Game_World.world_after_fst_init_must_playable {α β : Type u} (g : Game_World α β)
+--   (f_strat : Strategy α β) :
+--   g.playable_snd → (g.world_after_fst (f_strat g.init_game_state [])).playable_fst :=
+--   by
+--   intro hp
+--   obtain ⟨s, s_prop ⟩ := hp
+--   use s
+--   use f_strat
+--   constructor
+--   · apply Game_World.world_after_snd_legal
+
 
   -- first strat would be second init strat with fst move the reaction to init fst strat
 
-#exit
+--#exit
 
 lemma Game_World.conditioning {α β : Type u}
-  (g : Game_World α β) (hp : g.playable)
+  (g : Game_World α β)
+  --(hp : g.playable') (hpU : ∀ f_act, (g.world_after_fst f_act).playable') -- can we weaken this ?
+  -- probably not ? One can think of an f_act that causes the second player to have no legal moves
+  -- on the second round already. The game would still be playble, but the first player
+  -- has to avoid f_act.
   {T : ℕ} (hg : g.must_terminate_before T)
   {P : Game_World α β → Prop}
-  (ch : ∀ (g' : Game_World α β), (∀ (fst_act : β) (fst_act_legal : g'.fst_legal [] fst_act), P (g'.world_after_fst fst_act)) → P g')
-:
+  (step : ∀ (g' : Game_World α β), (∀ (f_act : β), P (g'.world_after_fst f_act)) → P g')
+  (base : ∀ (g' : Game_World α β), g'.must_terminate_before 0 → P g')
+  :
   P g :=
   by
   revert g
   induction' T with T ih
-  · intro g hp hg
-    obtain ⟨⟨f, f_prop ⟩,⟨s, s_prop ⟩⟩ := hp
-    dsimp [Game_World.must_terminate_before] at hg
-    specialize hg f s (f_prop s) (s_prop f)
-    obtain ⟨z,zz, z_prop⟩ := hg
-    rw [Nat.le_zero] at zz
-    rw [zz] at z_prop
-    cases' z_prop with l r
-    · rw [Turn_fst] at l ; obtain ⟨ahh, b⟩ := l ; contradiction
-    · specialize s_prop f
-      rw [Strategy_legal] at s_prop
-      specialize s_prop 0
-      exfalso
-      exact (r.2 (s g.init_game_state (History_on_turn g.init_game_state f s 0))) s_prop
-  · intro g hp hg
-    apply ch
-    intro fst_act fst_act_legal
+  · apply base
+  · intro g gt
+    apply step
+    intro f_act
     apply ih
+  -- · intro g hp hpU hg
+  --   obtain ⟨f, s, f_prop, s_prop ⟩ := hp
+  --   dsimp [Game_World.must_terminate_before] at hg
+  --   specialize hg f s (f_prop) (s_prop)
+  --   obtain ⟨z,zz, z_prop⟩ := hg
+  --   rw [Nat.le_zero] at zz
+  --   rw [zz] at z_prop
+  --   cases' z_prop with l r
+  --   · rw [Turn_fst] at l ; obtain ⟨ahh, b⟩ := l ; contradiction
+  --   · specialize s_prop
+  --     rw [Strategy_legal] at s_prop
+  --     specialize s_prop 0
+  --     exfalso
+  --     exact (r.2 (s g.init_game_state (History_on_turn g.init_game_state f s 0))) s_prop
+  -- · intro g hp hpU hg
+  --   apply ch
+  --   intro f_act
+  --   apply ih
 
 
 
-#exit
+--#exit
 
 theorem Game_World.Zermelo {α β : Type u} (g : Game_World α β)
             (hp : g.playable)
@@ -352,6 +377,8 @@ theorem Game_World.Zermelo {α β : Type u} (g : Game_World α β)
       exfalso
       exact (r.2 (s g.init_game_state (History_on_turn g.init_game_state f s 0))) s_prop
   · intro g hp hg
+
+-- do a by cases
 
 -- show that g.world_after_fst are playable
 -- show that g.world_after_fst must terminate bofre max_t
