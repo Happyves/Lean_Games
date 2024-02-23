@@ -331,7 +331,6 @@ lemma Game_World.world_after_snd_legal' (g : Game_World α β)
     rw [← hs]
     apply h
 
-#exit
 
 -- needed for `Game_World.world_after_fst_init_must_terminate`
 instance (l : List α): Decidable (l = []) :=
@@ -340,6 +339,34 @@ instance (l : List α): Decidable (l = []) :=
   | [] => apply isTrue ; rfl
   | x :: L => apply isFalse ; exact List.cons_ne_nil x L
 
+
+lemma bgrbgwrj
+  (g: Game_World α β)
+  (fst_act: β)
+  (fst_act_legal: g.fst_legal [] fst_act)
+  {T: ℕ}
+  (f_strats_strat: Strategy α β)
+  (f_leg : Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).fst_legal) f_strat s_strat f_strat)
+  (s_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).snd_legal) f_strat s_strat s_strat) :
+  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  Strategy_legal g.init_game_state (fun x => g.fst_legal) fst_strat snd_strat fst_strat :=
+  by
+  intro fst_strat t
+  cases' t with t
+  · dsimp [History_on_turn]
+    rw [if_pos (by rfl)]
+    exact fst_act_legal
+  · dsimp [fst_strat]
+    rw [if_neg _]
+    swap
+    · dsimp [History_on_turn]
+      split_ifs <;> decide
+    · rw [Game_World.world_after_fst_snd_legal] at s_leg
+      have := g.world_after_snd_legal f_strat s_strat s_leg (t+1)
+
+
+
+#exit
 
 lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_World α β)
   (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
