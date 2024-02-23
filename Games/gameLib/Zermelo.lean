@@ -288,13 +288,72 @@ lemma Game_World.world_after_snd_legal (g : Game_World α β)
    exact h
 
 
+lemma Game_World.world_after_fst_legal' (g : Game_World α β)
+  (f_strat s_strat: Strategy α β)
+  (h : Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => g.snd_legal) s_strat f_strat f_strat)
+  (hi : fst_legal g [] (f_strat g.init_game_state []))
+  -- ↑ may not necessarily be ommitted. `f_strat g.init_game_state []` may not be legal, although
+  -- `f_strat` is legal if we take the latters transition as initial turn ...
+  (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
+  (hg : g.law_blind f_strat s_strat) :
+  Strategy_legal g.init_game_state (fun x => g.fst_legal) f_strat s_strat f_strat :=
+  by
+  dsimp [Strategy_legal] at *
+  intro t
+  cases' t with t
+  · dsimp [History_on_turn]
+    exact hi
+  · rw [← (hg.1 t), Game_World.world_after_fst_init]
+    rw [← Game_World.world_after_fst_History _ _ _ _ hs hf]
+    specialize h t
+    rw [← hf]
+    apply h
+
+
+lemma Game_World.world_after_snd_legal' (g : Game_World α β)
+  (f_strat s_strat: Strategy α β)
+  (h : Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => g.fst_legal) s_strat f_strat s_strat)
+  (hi : snd_legal g [] (s_strat g.init_game_state []))
+  -- ↑ never takes efect in practice, as second player doesn't have first turn,
+  -- so this case has to be handled in the non-partial defintiion of the second strat...
+  (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
+  (hg : g.law_blind f_strat s_strat) :
+  Strategy_legal g.init_game_state (fun x => g.snd_legal) f_strat s_strat s_strat :=
+  by
+  dsimp [Strategy_legal] at *
+  intro t
+  cases' t with t
+  · dsimp [History_on_turn]
+    exact hi
+  · rw [← (hg.2 t), Game_World.world_after_fst_init]
+    rw [← Game_World.world_after_fst_History _ _ _ _ hs hf]
+    specialize h t
+    rw [← hs]
+    apply h
+
+#exit
+
+-- needed for `Game_World.world_after_fst_init_must_terminate`
+instance (l : List α): Decidable (l = []) :=
+  by
+  match l with
+  | [] => apply isTrue ; rfl
+  | x :: L => apply isFalse ; exact List.cons_ne_nil x L
 
 
 lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_World α β)
   (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
   g.must_terminate_before (T + 1) → (g.world_after_fst fst_act).must_terminate_before (T) :=
   by
+  intro g_bnd
+  intro f_strat s_strat f_leg s_leg G
+  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast))
+  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast))
+  specialize g_bnd fst_strat snd_strat
   sorry
+
+
+#exit
 
 -- lemma Game_World.world_after_fst_init_must_playable {α β : Type u} (g : Game_World α β)
 --   (f_strat : Strategy α β) :
@@ -320,7 +379,7 @@ lemma Game_World.conditioning {α β : Type u}
   -- has to avoid f_act.
   {T : ℕ} (hg : g.must_terminate_before T)
   {P : Game_World α β → Prop}
-  (step : ∀ (g' : Game_World α β), (∀ (f_act : β), P (g'.world_after_fst f_act)) → P g')
+  (step : ∀ (g' : Game_World α β), (∀ (f_strat : Strategy α β), P (g'.world_after_fst (f_strat g'.init_game_state []))) → P g')
   (base : ∀ (g' : Game_World α β), g'.must_terminate_before 0 → P g')
   :
   P g :=
