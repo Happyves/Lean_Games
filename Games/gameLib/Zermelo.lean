@@ -340,19 +340,112 @@ instance (l : List α): Decidable (l = []) :=
   | x :: L => apply isFalse ; exact List.cons_ne_nil x L
 
 
-lemma bgrbgwrj
+-- lemma name_1 (g : Game_World α β)
+--   (fst_act: β)
+--   (fst_act_legal: g.fst_legal [] fst_act)
+--   (s_strat : Strategy α β) (turn : ℕ)
+--   (hs : g.Strategy_careless s_strat) :
+--   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+--   fst_strat g.init_game_state (History_on_turn g.init_game_state fst_strat s_strat (turn+1)) =
+--   s_strat (g.world_after_fst fst_act).init_game_state (History_on_turn (g.world_after_fst (fst_act)).init_game_state s_strat fst_strat turn) :=
+--   by
+--   intro fst_strat
+--   dsimp
+--   rw [if_neg _]
+--   swap
+--   · dsimp [History_on_turn]
+--     split_ifs <;> decide
+--   · rw [← Game_World.world_after_fst_History]
+--     · rw [if_pos (by rfl)]
+--       rw [List.dropLast_concat]
+--       rfl
+--     · exact hs
+--     · intro a h
+--       cases' h with x l
+--       · dsimp
+--         specialize hs fst_act []
+--         dsimp at hs
+--         sorry -- add as hypo ?
+
+-- lemma name_2 (g : Game_World α β)
+--   (fst_act: β)
+--   (fst_act_legal: g.fst_legal [] fst_act)
+--   (s_strat : Strategy α β)
+--   (hs : g.Strategy_careless s_strat) :
+--   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+--   g.Strategy_careless fst_strat :=
+--   by
+--   intro fst_strat f_act hist
+--   cases' hist with head tail
+--   · dsimp
+--     rw [if_pos (by rfl)]
+--     rw [if_neg (by exact List.cons_ne_nil f_act [])]
+--     sorry
+--   · dsimp
+--     rw [if_neg (by exact List.cons_ne_nil head tail)]
+--     rw [if_neg (by exact List.cons_ne_nil head (tail ++ [f_act]))]
+
+
+--#exit
+
+
+-- lemma bgrbgwrj
+--   (g: Game_World α β)
+--   (fst_act: β)
+--   (fst_act_legal: g.fst_legal [] fst_act)
+--   --(hmm : g.law_blind_fst)
+--   (s_strat : Strategy α β)
+--   (s_leg: ∀ f_start : Strategy α β , Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).snd_legal) f_strat s_strat s_strat)
+--   -- maybe name this property ? = legal for all strategies ?
+--   :
+--   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+--   Strategy_legal g.init_game_state (fun x => g.fst_legal) fst_strat s_strat fst_strat :=
+--   by
+--   intro fst_strat t
+--   induction' t with t ih
+--   · dsimp [History_on_turn]
+--     rw [if_pos (by rfl)]
+--     exact fst_act_legal
+--   · dsimp [fst_strat]
+--     rw [if_neg _]
+--     swap
+--     · dsimp [History_on_turn]
+--       split_ifs <;> decide
+--     · rw [Game_World.world_after_fst_snd_legal] at s_leg
+--       sorry
+
+
+lemma rofuernir
   (g: Game_World α β)
   (fst_act: β)
   (fst_act_legal: g.fst_legal [] fst_act)
-  {T: ℕ}
-  (f_strats_strat: Strategy α β)
-  (f_leg : Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).fst_legal) f_strat s_strat f_strat)
-  (s_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).snd_legal) f_strat s_strat s_strat) :
+  (f_strat s_strat : Strategy α β)
+  (f_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).fst_legal) f_strat s_strat f_strat)
+  (s_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).snd_legal) f_strat s_strat s_strat)
+  (turn : ℕ):
   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  History_on_turn g.init_game_state fst_strat snd_strat (turn + 1) =
+  History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat turn :=
+  by
+
+#exit
+
+lemma rofuernir
+  (g: Game_World α β)
+  (fst_act: β)
+  (fst_act_legal: g.fst_legal [] fst_act)
+  (f_strat s_strat : Strategy α β)
+  (f_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).fst_legal) f_strat s_strat f_strat)
+  (s_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).snd_legal) f_strat s_strat s_strat)
+  (hb : ∀ f s : Strategy α β, g.law_blind f s) -- name this ?
+  :
+  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
   Strategy_legal g.init_game_state (fun x => g.fst_legal) fst_strat snd_strat fst_strat :=
   by
-  intro fst_strat t
-  cases' t with t
+  intro fst_strat snd_strat t
+  induction' t with t ih
   · dsimp [History_on_turn]
     rw [if_pos (by rfl)]
     exact fst_act_legal
@@ -362,11 +455,26 @@ lemma bgrbgwrj
     · dsimp [History_on_turn]
       split_ifs <;> decide
     · rw [Game_World.world_after_fst_snd_legal] at s_leg
-      have := g.world_after_snd_legal f_strat s_strat s_leg (t+1)
+      obtain ⟨test, more ⟩ := hb fst_strat snd_strat
+      dsimp [Game_World.law_blind_fst] at test
+      rw [← test]
+      rw [if_pos (by rfl)]
+      rw [← Game_World.world_after_fst_History]
+      rw [List.dropLast_concat]
+      rw [if_pos (by rfl)]
+      specialize s_leg t
+      dsimp only [fst_strat, snd_strat] at ih
+      dsimp [Game_World.law_blind_snd] at more
+      specialize more t
+      rw [if_pos (by rfl)] at more
+      specialize more (fst_strat g.init_game_state (History_on_turn g.init_game_state fst_strat snd_strat t))
+      dsimp only [fst_strat, snd_strat] at more
+      rw [more] at ih
+      sorry
 
 
 
-#exit
+--#exit
 
 lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_World α β)
   (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
@@ -380,7 +488,7 @@ lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_
   sorry
 
 
-#exit
+--#exit
 
 -- lemma Game_World.world_after_fst_init_must_playable {α β : Type u} (g : Game_World α β)
 --   (f_strat : Strategy α β) :
@@ -396,7 +504,7 @@ lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_
 
   -- first strat would be second init strat with fst move the reaction to init fst strat
 
---#exit
+#exit
 
 lemma Game_World.conditioning {α β : Type u}
   (g : Game_World α β)
