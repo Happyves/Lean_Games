@@ -1133,3 +1133,17 @@ lemma Symm_Game_World.mem_History_on_turn {α β : Type u} (g : Symm_Game_World 
               rw [this] at s
               left
               exact s.2
+
+
+lemma History_on_turn_nonempty_of_succ
+  (ini : α) (f_strat s_strat: Strategy α β) {t : ℕ} :
+  History_on_turn ini f_strat s_strat (t+1) ≠ [] :=
+  by
+  dsimp [History_on_turn]
+  split_ifs <;> decide
+
+
+lemma History_on_turn_zero
+  (ini : α) (f_strat s_strat: Strategy α β) :
+  History_on_turn ini f_strat s_strat 0 = [] :=
+  by rfl

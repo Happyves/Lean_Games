@@ -415,30 +415,117 @@ instance (l : List α): Decidable (l = []) :=
 --       sorry
 
 
-lemma rofuernir
+lemma Game_World.History_of_preconditioned
   (g: Game_World α β)
   (fst_act: β)
-  (fst_act_legal: g.fst_legal [] fst_act)
   (f_strat s_strat : Strategy α β)
-  (f_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).fst_legal) f_strat s_strat f_strat)
-  (s_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).snd_legal) f_strat s_strat s_strat)
   (turn : ℕ):
   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
   let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
   History_on_turn g.init_game_state fst_strat snd_strat (turn + 1) =
-  History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat turn :=
+  (History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat turn) ++ [fst_act] :=
   by
+  intro fst_strat snd_strat
+  induction' turn with t ih
+  · dsimp [History_on_turn, Turn_fst]
+    rw [if_pos (by decide), if_pos (by rfl)]
+  · dsimp only [History_on_turn] at *
+    by_cases q : Turn_fst (t+1)
+    · rw [Turn_fst_not_step] at q
+      rw [if_neg q] at *
+      rw [← Turn_fst_not_step] at q
+      rw [if_pos q, if_pos q] at *
+      rw [List.cons_append, ← ih]
+      congr
+      dsimp at ih
+      rw [← Game_World.world_after_fst_init] at ih
+      rw [ih]
+      rw [List.dropLast_concat]
+    · rw [if_neg q, if_neg q] at *
+      rw [Turn_fst_not_step, not_not] at q
+      rw [if_pos q] at *
+      rw [if_neg (by apply List.cons_ne_nil)]
+      rw [List.cons_append, ← ih]
+      congr
+      dsimp at ih
+      rw [← Game_World.world_after_fst_init] at ih
+      rw [ih]
+      rw [List.dropLast_concat]
 
-#exit
 
-lemma rofuernir
+lemma Game_World.fst_of_preconditioned
+  (g: Game_World α β)
+  (fst_act: β)
+  (f_strat s_strat : Strategy α β)
+  (turn : ℕ):
+  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  fst_strat g.init_game_state (History_on_turn g.init_game_state fst_strat snd_strat (turn + 1)) =
+  s_strat (g.world_after_fst fst_act).init_game_state (History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat turn) :=
+  by
+  intro fst_strat snd_strat
+  dsimp [fst_strat]
+  rw [if_neg (by apply History_on_turn_nonempty_of_succ)]
+  have := g.History_of_preconditioned fst_act f_strat s_strat turn
+  dsimp at this
+  rw [this]
+  rw [List.dropLast_concat]
+
+
+
+lemma Game_World.snd_of_preconditioned
+  (g: Game_World α β)
+  (fst_act: β)
+  (f_strat s_strat : Strategy α β)
+  (turn : ℕ):
+  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  snd_strat g.init_game_state (History_on_turn g.init_game_state fst_strat snd_strat (turn + 1)) =
+  f_strat (g.world_after_fst fst_act).init_game_state (History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat turn) :=
+  by
+  intro fst_strat snd_strat
+  dsimp [fst_strat]
+  have := g.History_of_preconditioned fst_act f_strat s_strat turn
+  dsimp at this
+  rw [this]
+  rw [List.dropLast_concat]
+
+
+#check Game_World.world_after_fst_History
+
+-- lemma Game_World.fst_preconditioned_careless
+--   (g: Game_World α β)
+--   (fst_act: β)
+--   (f_strat s_strat : Strategy α β)
+--   (hs : (g.world_after_fst fst_act).Strategy_careless s_strat) (hf : (g.world_after_fst fst_act).Strategy_careless f_strat)
+--   (turn : ℕ):
+--   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+--   let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+--   g.Strategy_careless fst_strat :=
+--   by
+--   intro fst_strat snd_strat act hist
+--   dsimp
+--   by_cases q : hist = []
+--   · rw [if_pos q, if_neg (by apply List.append_ne_nil_of_ne_nil_right ; exact List.cons_ne_nil act [])]
+--     rw [List.dropLast_concat, q]
+--     specialize hs act []
+--     -- maybe just false ?
+
+
+--#exit
+
+lemma Game_World.fst_legal_preconditioned
   (g: Game_World α β)
   (fst_act: β)
   (fst_act_legal: g.fst_legal [] fst_act)
   (f_strat s_strat : Strategy α β)
-  (f_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).fst_legal) f_strat s_strat f_strat)
+  (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
   (s_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).snd_legal) f_strat s_strat s_strat)
-  (hb : ∀ f s : Strategy α β, g.law_blind f s) -- name this ?
+  (partiallity_hack : s_strat g.init_game_state [] = fst_act)
+  -- should never be reqiested of s_strat, as its meant to be played on (g.world_after_fst fst_act)
+  -- TODO: show that one can assume this wlog on actual games
+  (b : g.law_blind_fst s_strat f_strat)
+  -- maybe can be derived from g.law_blind_fst fst_strat snd_strat ?
   :
   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
   let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
@@ -454,24 +541,57 @@ lemma rofuernir
     swap
     · dsimp [History_on_turn]
       split_ifs <;> decide
-    · rw [Game_World.world_after_fst_snd_legal] at s_leg
-      obtain ⟨test, more ⟩ := hb fst_strat snd_strat
-      dsimp [Game_World.law_blind_fst] at test
-      rw [← test]
-      rw [if_pos (by rfl)]
-      rw [← Game_World.world_after_fst_History]
+    · have := g.History_of_preconditioned fst_act f_strat s_strat t
+      dsimp at this
+      rw [this]
       rw [List.dropLast_concat]
-      rw [if_pos (by rfl)]
-      specialize s_leg t
-      dsimp only [fst_strat, snd_strat] at ih
-      dsimp [Game_World.law_blind_snd] at more
-      specialize more t
-      rw [if_pos (by rfl)] at more
-      specialize more (fst_strat g.init_game_state (History_on_turn g.init_game_state fst_strat snd_strat t))
-      dsimp only [fst_strat, snd_strat] at more
-      rw [more] at ih
-      sorry
+      rw [← Game_World.world_after_fst_init]
+      rw [← partiallity_hack]
+      rw [Game_World.world_after_fst_History]
+      · rw [← b]
+        rw [partiallity_hack]
+        apply s_leg
+      · exact hf
+      · exact hs
 
+
+lemma Game_World.snd_legal_preconditioned
+  (g: Game_World α β)
+  (fst_act: β)
+  (fst_act_legal: g.fst_legal [] fst_act)
+  (f_strat s_strat : Strategy α β)
+  (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
+  (f_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).fst_legal) f_strat s_strat f_strat)
+  (partiallity_hack : s_strat g.init_game_state [] = fst_act)
+  -- should never be reqiested of s_strat, as its meant to be played on (g.world_after_fst fst_act)
+  -- TODO: show that one can assume this wlog on actual games
+  (b : g.law_blind_snd s_strat f_strat)
+  -- maybe can be derived from g.law_blind_snd fst_strat snd_strat ?
+  :
+  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  Strategy_legal g.init_game_state (fun x => g.snd_legal) fst_strat snd_strat snd_strat :=
+  by
+  intro fst_strat snd_strat t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    rw [hf]
+    dsimp
+    have := g.world_after_fst_History s_strat f_strat 0 hf hs
+    rw [partiallity_hack] at this
+  · dsimp
+    have := g.History_of_preconditioned fst_act f_strat s_strat t
+    dsimp at this
+    rw [this]
+    rw [List.dropLast_concat]
+    rw [← Game_World.world_after_fst_init]
+    rw [← partiallity_hack]
+    rw [Game_World.world_after_fst_History]
+    · rw [← b]
+      rw [partiallity_hack]
+      apply f_leg
+    · exact hf
+    · exact hs
 
 
 --#exit
