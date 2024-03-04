@@ -51,6 +51,7 @@ def Game_World.pairing_pairs
   Set γ :=
   {pts : γ | ∃ s : (γ → Fin 3), ∃ hw : g.fst_win_states s,  pts = (p s hw).1 ∨ pts = (p s hw).2}
 
+
 open Classical
 
 noncomputable
@@ -58,7 +59,7 @@ def Game_World.snd_pairing_strat
   [Inhabited γ]
   (g : Game_World (γ → Fin 3) γ)
   (p : (s : (γ → Fin 3)) → (hw : g.fst_win_states s) → (γ × γ))
-  (hp : g.pairing_fst p) : Strategy (γ → Fin 3) γ :=
+  : Strategy (γ → Fin 3) γ :=
   fun ini hist =>
     match hist with
     | [] => default
@@ -92,6 +93,44 @@ def Game_World.snd_pairing_strat
 #print Game_World.snd_pairing_strat
 
 
+theorem Game.has_pairing_invariant
+  [Inhabited γ]
+  (g : Game (γ → Fin 3) γ)
+  (hp : g.has_pairing_fst)
+  {T : ℕ} (ht : g.must_terminate_before T)
+  (hlf : g.fst_legal = fun hist act => act ∉ hist) -- add pos game transition too ?
+  (hls : g.snd_legal = fun hist act => act ∉ hist)
+  (p : (s : (γ → Fin 3)) → (hw : g.fst_win_states s) → (γ × γ))
+  (hp : g.pairing_fst p)
+  (hss : g.snd_strat = g.snd_pairing_strat p)
+  (nontrivial : ¬ g.fst_win_states (g.fst_transition [] (g.fst_strat g.init_game_state []) )):
+  ∀ turn : ℕ, g.snd_win_states (g.state_on_turn turn) ∨ g.state_on_turn_neutral turn :=
+  by
+  intro t
+  apply @Nat.induct_2_step (fun t => Game_World.snd_win_states g.toGame_World (state_on_turn g t) ∨ state_on_turn_neutral g t)
+  · dsimp [state_on_turn, state_on_turn_neutral]
+    rw [if_neg (by decide)]
+    apply Classical.em
+  · dsimp [state_on_turn, state_on_turn_neutral]
+    rw [if_pos (by decide), if_pos (by decide), history_on_turn, History_on_turn]
+    right
+    exact nontrivial
+  · intro n c1 c2
+    rw [or_iff_not_imp_left]
+    intro c3
+    dsimp [state_on_turn_neutral]
+    split_ifs with tn
+    · intro con
+      specialize hp (state_on_turn g (n + 2)) con
+      obtain ⟨⟨h_d, h_ff, h_sf ⟩, h_diff⟩ := hp
+      -- unfold snd_strat to pairing strat to derive contra...
+    · exact c3
+
+#check Nat.induct_2_step
+
+#exit
+
+
 theorem Game_World.has_pairing_is_snd_draw
   (g : Game_World (γ → Fin 3) γ)
   (hp : g.has_pairing_fst)
@@ -102,6 +141,11 @@ theorem Game_World.has_pairing_is_snd_draw
   by
   sorry
 
+
+
+#exit
+
+-- Positional version:
 
 structure pairing_prop_aux
   (win_sets : Finset (Finset α))

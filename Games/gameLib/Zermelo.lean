@@ -558,13 +558,14 @@ lemma Game_World.fst_legal_preconditioned
 lemma Game_World.snd_legal_preconditioned
   (g: Game_World α β)
   (fst_act: β)
-  (fst_act_legal: g.fst_legal [] fst_act)
   (f_strat s_strat : Strategy α β)
   (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
   (f_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).fst_legal) f_strat s_strat f_strat)
   (partiallity_hack : s_strat g.init_game_state [] = fst_act)
   -- should never be reqiested of s_strat, as its meant to be played on (g.world_after_fst fst_act)
   -- TODO: show that one can assume this wlog on actual games
+  (partiallity_hack' : snd_legal g [] (f_strat (world_after_fst g fst_act).init_game_state []))
+  -- again, should be assumed wlog, since this should be the first turn, so the snd law will never be asked to apply
   (b : g.law_blind_snd s_strat f_strat)
   -- maybe can be derived from g.law_blind_snd fst_strat snd_strat ?
   :
@@ -575,10 +576,8 @@ lemma Game_World.snd_legal_preconditioned
   intro fst_strat snd_strat t
   induction' t with t ih
   · dsimp [History_on_turn]
-    rw [hf]
-    dsimp
-    have := g.world_after_fst_History s_strat f_strat 0 hf hs
-    rw [partiallity_hack] at this
+    rw [← Game_World.world_after_fst_init]
+    exact partiallity_hack'
   · dsimp
     have := g.History_of_preconditioned fst_act f_strat s_strat t
     dsimp at this
@@ -587,21 +586,37 @@ lemma Game_World.snd_legal_preconditioned
     rw [← Game_World.world_after_fst_init]
     rw [← partiallity_hack]
     rw [Game_World.world_after_fst_History]
-    · rw [← b]
+    · dsimp [law_blind_snd] at b
+      rw [← b]
       rw [partiallity_hack]
       apply f_leg
     · exact hf
     · exact hs
 
 
+
+def Game_World.must_terminate_before_wCarelessBlind {α β : Type u} (g : Game_World α β) (T : ℕ): Prop :=
+  ∀ f_strat s_strat : Strategy α β,
+  (f_law : Strategy_legal g.init_game_state (fun _ => g.fst_legal) f_strat s_strat f_strat) →
+  (s_law : Strategy_legal g.init_game_state (fun _ => g.snd_legal) f_strat s_strat s_strat) →
+  (hf : g.Strategy_careless f_strat) →
+  (hs : g.Strategy_careless s_strat) →
+  (hg : g.law_blind f_strat s_strat) →
+  let G := ({g with fst_strat := f_strat, fst_lawful := f_law, snd_strat := s_strat, snd_lawful := s_law} : Game α β) ;
+  ∃ turn ≤ T,
+    ((Turn_fst turn ∧ ∀ act : β, ¬ (G.fst_legal (G.history_on_turn turn) act))
+     ∨
+     (Turn_snd turn ∧ ∀ act : β, ¬ (G.snd_legal (G.history_on_turn turn) act)))
+
+
 --#exit
 
 lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_World α β)
   (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
-  g.must_terminate_before (T + 1) → (g.world_after_fst fst_act).must_terminate_before (T) :=
+  g.must_terminate_before_wCarelessBlind (T + 1) → (g.world_after_fst fst_act).must_terminate_before_wCarelessBlind (T) :=
   by
   intro g_bnd
-  intro f_strat s_strat f_leg s_leg G
+  intro f_strat s_strat f_leg s_leg hf hs hg G
   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast))
   let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast))
   specialize g_bnd fst_strat snd_strat
