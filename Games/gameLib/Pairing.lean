@@ -92,6 +92,34 @@ def Game_World.snd_pairing_strat
 
 #print Game_World.snd_pairing_strat
 
+theorem Game.has_pairing_invariant_part1
+  [Inhabited γ]
+  (g : Game (γ → Fin 3) γ)
+  (hp : g.has_pairing_fst)
+  {T : ℕ} (ht : g.must_terminate_before T)
+  (hlf : g.fst_legal = fun hist act => act ∉ hist) -- add pos game transition too ?
+  (hls : g.snd_legal = fun hist act => act ∉ hist)
+  (p : (s : (γ → Fin 3)) → (hw : g.fst_win_states s) → (γ × γ))
+  (hp : g.pairing_fst p)
+  (hss : g.snd_strat = g.snd_pairing_strat p)
+  (special : ¬ (g.fst_win_states g.init_game_state))
+  :
+  ∀ turn : ℕ, (w : g.fst_win_states (g.state_on_turn turn)) →
+  (g.state_on_turn turn) (p (g.state_on_turn turn) w).1 = 1 →
+  (g.state_on_turn (turn + 1)) (p (g.state_on_turn (turn)) w).2 = 2 :=
+  by
+  intro t
+  induction' t with t ih
+  · dsimp [state_on_turn, history_on_turn, History_on_turn]
+    rw [if_pos (by decide)]
+    intro w fst_tile
+    exfalso
+    exact special w
+  · sorry
+
+
+
+#exit
 
 theorem Game.has_pairing_invariant
   [Inhabited γ]

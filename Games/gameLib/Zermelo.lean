@@ -493,23 +493,27 @@ lemma Game_World.snd_of_preconditioned
 
 #check Game_World.world_after_fst_History
 
--- lemma Game_World.fst_preconditioned_careless
---   (g: Game_World α β)
---   (fst_act: β)
---   (f_strat s_strat : Strategy α β)
---   (hs : (g.world_after_fst fst_act).Strategy_careless s_strat) (hf : (g.world_after_fst fst_act).Strategy_careless f_strat)
---   (turn : ℕ):
---   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
---   let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
---   g.Strategy_careless fst_strat :=
---   by
---   intro fst_strat snd_strat act hist
---   dsimp
---   by_cases q : hist = []
---   · rw [if_pos q, if_neg (by apply List.append_ne_nil_of_ne_nil_right ; exact List.cons_ne_nil act [])]
---     rw [List.dropLast_concat, q]
---     specialize hs act []
---     -- maybe just false ?
+lemma Game_World.fst_preconditioned_careless
+  (g: Game_World α β)
+  (fst_act: β)
+  (f_strat s_strat : Strategy α β)
+  (hs : (g.world_after_fst fst_act).Strategy_careless s_strat) (hf : (g.world_after_fst fst_act).Strategy_careless f_strat)
+  (partiallity_hack : fst_act = s_strat (g.world_after_fst fst_act).init_game_state [])
+  -- shouldn't be a problem, as we may s_strat isn't used on empty history
+  (turn : ℕ):
+  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+  g.Strategy_careless fst_strat :=
+  by
+  intro fst_strat act hist
+  dsimp
+  by_cases q : hist = []
+  · rw [if_pos q, if_neg (by apply List.append_ne_nil_of_ne_nil_right ; exact List.cons_ne_nil act [])]
+    rw [List.dropLast_concat, q]
+    exact partiallity_hack
+  · dsimp [Strategy_careless] at hs
+    rw [if_neg q, if_neg (by exact List.append_ne_nil_of_left_ne_nil hist [act] q), List.dropLast_concat]
+    rw [hs]
+    -- maybe just false ?
 
 
 --#exit
@@ -612,13 +616,15 @@ def Game_World.must_terminate_before_wCarelessBlind {α β : Type u} (g : Game_W
 --#exit
 
 lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_World α β)
-  (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act) {T : ℕ} :
+  (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act)
+  {T : ℕ} :
   g.must_terminate_before_wCarelessBlind (T + 1) → (g.world_after_fst fst_act).must_terminate_before_wCarelessBlind (T) :=
   by
   intro g_bnd
   intro f_strat s_strat f_leg s_leg hf hs hg G
   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast))
   let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast))
+  by_contra! con
   specialize g_bnd fst_strat snd_strat
   sorry
 
@@ -638,6 +644,25 @@ lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_
 
 
   -- first strat would be second init strat with fst move the reaction to init fst strat
+
+
+-- # New approach here
+
+
+lemma Game_World.world_after_fst_init_must_terminate' {α β : Type u} (g : Game_World α β)
+  (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act)
+  {T : ℕ} :
+  g.must_terminate_before (T + 1) → (g.world_after_fst fst_act).must_terminate_before (T) :=
+  by
+  intro g_bnd
+  intro f_strat s_strat G
+  let H := History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat
+  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (H (hist.length - 1)))
+  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (H (hist.length - 1)))
+  by_contra! con
+  specialize g_bnd fst_strat snd_strat
+  sorry
+
 
 #exit
 
@@ -659,7 +684,7 @@ lemma Game_World.conditioning {α β : Type u}
   · apply base
   · intro g gt
     apply step
-    intro f_act
+    intro f_strat
     apply ih
   -- · intro g hp hpU hg
   --   obtain ⟨f, s, f_prop, s_prop ⟩ := hp
@@ -682,7 +707,7 @@ lemma Game_World.conditioning {α β : Type u}
 
 
 
---#exit
+#exit
 
 theorem Game_World.Zermelo {α β : Type u} (g : Game_World α β)
             (hp : g.playable)
