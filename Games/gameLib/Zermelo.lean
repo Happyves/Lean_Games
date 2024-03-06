@@ -493,26 +493,26 @@ lemma Game_World.snd_of_preconditioned
 
 #check Game_World.world_after_fst_History
 
-lemma Game_World.fst_preconditioned_careless
-  (g: Game_World α β)
-  (fst_act: β)
-  (f_strat s_strat : Strategy α β)
-  (hs : (g.world_after_fst fst_act).Strategy_careless s_strat) (hf : (g.world_after_fst fst_act).Strategy_careless f_strat)
-  (partiallity_hack : fst_act = s_strat (g.world_after_fst fst_act).init_game_state [])
-  -- shouldn't be a problem, as we may s_strat isn't used on empty history
-  (turn : ℕ):
-  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
-  g.Strategy_careless fst_strat :=
-  by
-  intro fst_strat act hist
-  dsimp
-  by_cases q : hist = []
-  · rw [if_pos q, if_neg (by apply List.append_ne_nil_of_ne_nil_right ; exact List.cons_ne_nil act [])]
-    rw [List.dropLast_concat, q]
-    exact partiallity_hack
-  · dsimp [Strategy_careless] at hs
-    rw [if_neg q, if_neg (by exact List.append_ne_nil_of_left_ne_nil hist [act] q), List.dropLast_concat]
-    rw [hs]
+-- lemma Game_World.fst_preconditioned_careless
+--   (g: Game_World α β)
+--   (fst_act: β)
+--   (f_strat s_strat : Strategy α β)
+--   (hs : (g.world_after_fst fst_act).Strategy_careless s_strat) (hf : (g.world_after_fst fst_act).Strategy_careless f_strat)
+--   (partiallity_hack : fst_act = s_strat (g.world_after_fst fst_act).init_game_state [])
+--   -- shouldn't be a problem, as we may s_strat isn't used on empty history
+--   (turn : ℕ):
+--   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
+--   g.Strategy_careless fst_strat :=
+--   by
+--   intro fst_strat act hist
+--   dsimp
+--   by_cases q : hist = []
+--   · rw [if_pos q, if_neg (by apply List.append_ne_nil_of_ne_nil_right ; exact List.cons_ne_nil act [])]
+--     rw [List.dropLast_concat, q]
+--     exact partiallity_hack
+--   · dsimp [Strategy_careless] at hs
+--     rw [if_neg q, if_neg (by exact List.append_ne_nil_of_left_ne_nil hist [act] q), List.dropLast_concat]
+--     rw [hs]
     -- maybe just false ?
 
 
@@ -648,6 +648,31 @@ lemma Game_World.world_after_fst_init_must_terminate {α β : Type u} (g : Game_
 
 -- # New approach here
 
+def Strategy_legal_in_pair {α β : Type u}
+  (ini : α) (f_law s_law : α → List β → (β → Prop)) (f_strat s_strat : Strategy α β): Prop :=
+  ∀ turn : ℕ, (f_law ini (History_on_turn ini f_strat s_strat turn) (f_strat ini (History_on_turn ini f_strat s_strat turn)))
+    ∧ (s_law ini (History_on_turn ini f_strat s_strat turn) (s_strat ini (History_on_turn ini f_strat s_strat turn)))
+
+lemma Game_World.legal_copy {α β : Type u} (g : Game_World α β)
+  (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act)
+  (f_strat s_strat : Strategy α β)
+  (f_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).fst_legal) f_strat s_strat f_strat)
+  (s_leg: Strategy_legal (g.world_after_fst fst_act).init_game_state (fun x => (g.world_after_fst fst_act).snd_legal) f_strat s_strat s_strat)
+  (hg : g.law_blind f_strat s_strat) :
+  let H := History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat
+  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (H (hist.length - 1)))
+  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (H (hist.length - 1)))
+  Strategy_legal_in_pair g.init_game_state (fun _ => g.fst_legal) (fun _ => g.snd_legal) fst_strat snd_strat :=
+  by
+  intro H fst_strat snd_strat t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    rw [if_pos (by rfl)]
+    exact fst_act_legal
+  · dsimp [fst_strat]
+    rw [if_neg (by apply History_on_turn_nonempty_of_succ)]
+
+
 
 lemma Game_World.world_after_fst_init_must_terminate' {α β : Type u} (g : Game_World α β)
   (fst_act : β) (fst_act_legal : g.fst_legal [] fst_act)
@@ -655,7 +680,7 @@ lemma Game_World.world_after_fst_init_must_terminate' {α β : Type u} (g : Game
   g.must_terminate_before (T + 1) → (g.world_after_fst fst_act).must_terminate_before (T) :=
   by
   intro g_bnd
-  intro f_strat s_strat G
+  intro f_strat s_strat f_law s_law G
   let H := History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat
   let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (H (hist.length - 1)))
   let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (H (hist.length - 1)))
