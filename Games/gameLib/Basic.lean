@@ -930,6 +930,21 @@ def Game.snd_win  {α β : Type u} (g : Game α β) : Prop :=
   ∃ turn : ℕ, Turn_snd turn  ∧ g.snd_win_states (g.state_on_turn turn) ∧
     (∀ t < turn, g.state_on_turn_neutral t)
 
+
+def Game_wDraw.fst_draw {α β : Type u} (g : Game_wDraw α β) : Prop :=
+  ∃ turn : ℕ, Turn_fst turn  ∧ g.draw_states (g.state_on_turn turn) ∧
+    (∀ t < turn, g.state_on_turn_neutral t)
+
+
+def Game_wDraw.snd_draw {α β : Type u} (g : Game_wDraw α β) : Prop :=
+  ∃ turn : ℕ, Turn_snd turn  ∧ g.draw_states (g.state_on_turn turn) ∧
+    (∀ t < turn, g.state_on_turn_neutral t)
+
+
+def Game_wDraw.draw {α β : Type u} (g : Game_wDraw α β) : Prop :=
+  g.fst_draw ∨ g.snd_draw
+
+
 /--
 A game world allows for a winning stategy for the first player, if there exists
 a stategy for which, for any other stategy, such that both are legal wrt. the
@@ -1025,6 +1040,24 @@ def Game_World_wDraw.is_snd_win  {α β : Type u} (g : Game_World_wDraw α β) :
   ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game α β).snd_win
 
 
+def Game_World_wDraw.is_fst_draw  {α β : Type u} (g : Game_World_wDraw α β) : Prop :=
+  ∃ ws : Strategy α β,
+  ∀ snd_s : Strategy α β,
+  ∃ ws_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) ws snd_s,
+   (snd_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) ws snd_s) →
+  ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game_wDraw α β).fst_draw
+
+
+def Game_World_wDraw.is_snd_draw  {α β : Type u} (g : Game_World_wDraw α β) : Prop :=
+  ∃ ws : Strategy α β,
+  ∀ fst_s : Strategy α β,
+  ∃ ws_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) fst_s ws,
+   (fst_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) fst_s ws) →
+  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game_wDraw α β).snd_draw
+
+def Game_World_wDraw.is_draw {α β : Type u} (g : Game_World_wDraw α β) : Prop :=
+  g.is_fst_draw ∨ g.is_snd_draw
+
 
 @[simp]
 lemma Symm_Game.fst_win_toGame  {α β : Type u} (g : Symm_Game α β) :
@@ -1042,6 +1075,11 @@ lemma Symm_Game_World.is_fst_win_toGame  {α β : Type u} (g : Symm_Game_World �
 lemma Symm_Game_World.snd_win_toGame  {α β : Type u} (g : Symm_Game_World α β) :
   g.toGame_World.is_snd_win ↔ g.is_snd_win := by rfl
 
+
+
+
+
+-- # More
 
 lemma Symm_Game_World.mem_History_on_turn {α β : Type u} (g : Symm_Game_World α β)
     (turn : ℕ)

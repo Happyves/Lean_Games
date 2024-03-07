@@ -8,6 +8,118 @@ import Games.gameLib.Basic
 import Mathlib.Tactic
 
 
+
+/-
+Note to self:
+
+Use conditionning as follows: we have the property of game that termintae
+at turn 0 and we know that for all games and teruns t, if the property is
+true for games that terminta before t, then it is also true for games that
+terminate before t+1. Then by basic induction on t we know that it's true
+for all game worlds that terminate before some t.
+
+For zermelo, given a game world that terminates before t+1, look at all
+those, indexed by the first move, hence indexed over β, where the first
+move yields the initial state. Show that these game worlds must terminate
+before t.
+-/
+
+inductive Game_World_wDraw.has_WLD (g : Game_World_wDraw α β) : Prop where
+| wf : g.is_fst_win → g.has_WLD
+| ws : g.is_snd_win → g.has_WLD
+| d : g.is_draw → g.has_WLD
+
+
+lemma Game_World_wDraw.induction
+  (g : Game_World_wDraw α β)
+  {T : ℕ} (hg : g.isWLD_wBound T)
+  {P : Game_World_wDraw α β → Prop}
+  --(step : ∀ g' : Game_World_wDraw α β, ∀ t : ℕ, ((∀ n < t, g'.isWLD_wBound n → P g') → g'.isWLD_wBound t → P g'))
+  (base : ∀ g' : Game_World_wDraw α β, g'.isWLD_wBound 0 → P g')
+  (step : ∀ t : ℕ, ((∀ g' : Game_World_wDraw α β, g'.isWLD_wBound t → P g') → (g'' : Game_World_wDraw α β) → g''.isWLD_wBound (t+1) → P g''))
+  : P g :=
+  by
+  sorry
+  -- revert hg
+  -- apply @Nat.strong_induction_on (fun x => isWLD_wBound g x → P g) T
+  -- intro n ih wld
+  -- apply step g n ih wld
+
+
+
+def Game_World_wDraw.world_after_fst {α β : Type u} (g : Game_World_wDraw α β)
+  (fst_act : β) : Game_World_wDraw α β := -- act not required to be legal
+  {g with init_game_state := g.fst_transition [] fst_act }
+  -- maybe swap fst and snd notions ? Cause we expect snd player to go fst now
+
+
+lemma hmmmm
+  (g : Game_World_wDraw α β)
+  {T : ℕ} (hg : g.isWLD_wBound (T + 1))
+  (fst_act : β) (leg : g.fst_legal [] fst_act) :
+  (g.world_after_fst fst_act).isWLD_wBound T :=
+  by
+  sorry
+
+/-
+have game t+1,
+apply Game_World_wDraw.conditioning_bounds
+to show h : apply hmm, then the induction hypothesis
+
+-/
+
+#exit
+
+
+lemma Game_World_wDraw.Zermelo_conditioning
+  (g : Game_World_wDraw α β)
+  (h : ∀ fst_act : β, g.fst_legal [] fst_act → (g.world_after_fst fst_act).has_WLD) :
+  -- drop legal ??
+  g.has_WLD :=
+  by
+  sorry
+
+lemma Game_World_wDraw.conditioning_bounds
+  (g : Game_World_wDraw α β)
+  (h : ∀ fst_act : β, g.fst_legal [] fst_act → (g.world_after_fst fst_act).has_WLD) :
+  g.has_WLD :=
+  by
+  sorry
+
+--#exit
+
+lemma Game_World_wDraw.Zermelo_step
+  (g : Game_World_wDraw α β)
+  {T : ℕ} (hg : g.isWLD_wBound T)
+  (ih : ∀ g' : Game_World_wDraw α β, ∀ t < T, g'.isWLD_wBound t → g'.has_WLD) :
+  g.has_WLD :=
+  by
+  sorry
+
+
+lemma Game_World_wDraw.Zermelo
+  (g : Game_World_wDraw α β)
+  {T : ℕ} (hg : g.isWLD_wBound T)
+  : g.has_WLD :=
+  by
+  apply Game_World_wDraw.induction
+  · exact hg
+  · intro g' t ih wld
+    apply Game_World_wDraw.Zermelo_step g' wld
+
+
+theorem Game_World_Finite.Zermelo (g : Game_World_Finite α β) :
+  g.has_WLD :=
+  by
+  exact @Game_World_wDraw.Zermelo α β g.toGame_World_wDraw g.bound g.termination
+
+
+
+#exit
+
+
+-- # Initial stuff
+
 inductive Game.is_win_loose_draw {α β : Type u} (g : Game α β) : Prop
 | win_f : g.fst_win → g.is_win_loose_draw
 | win_s : g.snd_win → g.is_win_loose_draw
