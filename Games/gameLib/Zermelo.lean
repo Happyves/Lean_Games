@@ -30,22 +30,6 @@ inductive Game_World_wDraw.has_WLD (g : Game_World_wDraw α β) : Prop where
 | d : g.is_draw → g.has_WLD
 
 
-lemma Game_World_wDraw.induction
-  (g : Game_World_wDraw α β)
-  {T : ℕ} (hg : g.isWLD_wBound T)
-  {P : Game_World_wDraw α β → Prop}
-  --(step : ∀ g' : Game_World_wDraw α β, ∀ t : ℕ, ((∀ n < t, g'.isWLD_wBound n → P g') → g'.isWLD_wBound t → P g'))
-  (base : ∀ g' : Game_World_wDraw α β, g'.isWLD_wBound 0 → P g')
-  (step : ∀ t : ℕ, ((∀ g' : Game_World_wDraw α β, g'.isWLD_wBound t → P g') → (g'' : Game_World_wDraw α β) → g''.isWLD_wBound (t+1) → P g''))
-  : P g :=
-  by
-  sorry
-  -- revert hg
-  -- apply @Nat.strong_induction_on (fun x => isWLD_wBound g x → P g) T
-  -- intro n ih wld
-  -- apply step g n ih wld
-
-
 
 def Game_World_wDraw.world_after_fst {α β : Type u} (g : Game_World_wDraw α β)
   (fst_act : β) : Game_World_wDraw α β := -- act not required to be legal
@@ -53,7 +37,7 @@ def Game_World_wDraw.world_after_fst {α β : Type u} (g : Game_World_wDraw α �
   -- maybe swap fst and snd notions ? Cause we expect snd player to go fst now
 
 
-lemma hmmmm
+lemma Game_World_wDraw.conditioning_bound
   (g : Game_World_wDraw α β)
   {T : ℕ} (hg : g.isWLD_wBound (T + 1))
   (fst_act : β) (leg : g.fst_legal [] fst_act) :
@@ -61,57 +45,99 @@ lemma hmmmm
   by
   sorry
 
-/-
-have game t+1,
-apply Game_World_wDraw.conditioning_bounds
-to show h : apply hmm, then the induction hypothesis
-
--/
-
-#exit
 
 
-lemma Game_World_wDraw.Zermelo_conditioning
-  (g : Game_World_wDraw α β)
-  (h : ∀ fst_act : β, g.fst_legal [] fst_act → (g.world_after_fst fst_act).has_WLD) :
-  -- drop legal ??
-  g.has_WLD :=
-  by
-  sorry
-
-lemma Game_World_wDraw.conditioning_bounds
+lemma Game_World_wDraw.conditioning_WLD
   (g : Game_World_wDraw α β)
   (h : ∀ fst_act : β, g.fst_legal [] fst_act → (g.world_after_fst fst_act).has_WLD) :
   g.has_WLD :=
   by
   sorry
+
+inductive Game_World_wDraw.State_is_ws_d (g : Game_World_wDraw α β) (s : α) : Prop where
+| ws : g.snd_win_states s → g.State_is_ws_d s
+| d : g.draw_states s → g.State_is_ws_d s
+
+lemma Game_World_wDraw.init_wld_of_turn_zero_wld
+  (g : Game_World_wDraw α β)
+  (f_strat s_strat : Strategy α β):
+  g.Turn_isWLD f_strat s_strat 0 → g.State_is_ws_d g.init_game_state :=
+  by
+  intro t0
+  cases' t0 with wf ws d
+  · contradiction
+  · rename_i h
+    dsimp [state_on_turn] at h
+    apply Game_World_wDraw.State_is_ws_d.ws
+    exact h
+  · rename_i h
+    dsimp [state_on_turn] at h
+    apply Game_World_wDraw.State_is_ws_d.d
+    exact h
 
 --#exit
 
-lemma Game_World_wDraw.Zermelo_step
-  (g : Game_World_wDraw α β)
-  {T : ℕ} (hg : g.isWLD_wBound T)
-  (ih : ∀ g' : Game_World_wDraw α β, ∀ t < T, g'.isWLD_wBound t → g'.has_WLD) :
-  g.has_WLD :=
-  by
-  sorry
+def Game_World_wDraw.playable (g : Game_World_wDraw α β) : Prop :=
+  ∃ f_strat s_strat : Strategy α β,
+  (Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) f_strat s_strat) ∧
+  (Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) f_strat s_strat)
 
+
+
+
+
+--#exit
 
 lemma Game_World_wDraw.Zermelo
+  [Inhabited β]
   (g : Game_World_wDraw α β)
   {T : ℕ} (hg : g.isWLD_wBound T)
+  (hp : g.playable)
   : g.has_WLD :=
   by
-  apply Game_World_wDraw.induction
-  · exact hg
-  · intro g' t ih wld
-    apply Game_World_wDraw.Zermelo_step g' wld
+  revert g
+  induction' T with t ih
+  · intro g t0 hp
+    dsimp [isWLD_wBound] at t0
+    obtain ⟨f_strat, s_strat, f_leg, s_leg⟩ := hp
+    obtain ⟨t, tl0, t_end⟩ := t0 f_strat s_strat f_leg s_leg
+    rw [Nat.le_zero] at tl0
+    rw [tl0] at t_end
+    replace t_end := g.init_wld_of_turn_zero_wld f_strat s_strat t_end
+    cases' t_end
+    · apply Game_World_wDraw.has_WLD.ws
+      use (fun _ _ => default)
+      intro f_strat' leg f_leg'
+      use 0
+      constructor
+      · decide
+      · constructor
+        · dsimp [Game.state_on_turn]
+          rename_i h ; exact h
+        · intro t ahhh ; contradiction
+    · apply Game_World_wDraw.has_WLD.d
+      right
+      use (fun _ _ => default)
+      intro f_strat' leg f_leg'
+      use 0
+      constructor
+      · decide
+      · constructor
+        · dsimp [Game.state_on_turn]
+          rename_i h ; exact h
+        · intro t ahhh ; contradiction
+  · intro g bd hp
+    apply Game_World_wDraw.conditioning_WLD
+    intro f_act f_leg
+    apply ih
+    · exact Game_World_wDraw.conditioning_bound g bd f_act f_leg
+    · sorry
 
 
-theorem Game_World_Finite.Zermelo (g : Game_World_Finite α β) :
+theorem Game_World_Finite.Zermelo [Inhabited β] (g : Game_World_Finite α β) (hp : g.playable) :
   g.has_WLD :=
   by
-  exact @Game_World_wDraw.Zermelo α β g.toGame_World_wDraw g.bound g.termination
+  exact @Game_World_wDraw.Zermelo β α _ g.toGame_World_wDraw g.bound g.termination hp
 
 
 
