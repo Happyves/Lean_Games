@@ -770,6 +770,27 @@ lemma Symm_Game.state_on_turn_snd_to_fst
   rw [if_neg t]
 
 
+lemma Game_wDraw.state_on_turn_fst_to_snd
+  {α β : Type u} (g : Game_wDraw α β) (turn : ℕ):
+  let S := g.state_on_turn ;
+  let H := g.history_on_turn turn ;
+  Turn_fst (turn + 1) → S (turn + 1) = g.fst_transition H  (g.fst_strat g.init_game_state H) :=
+  by
+  intro S H t
+  dsimp [Game_wDraw.state_on_turn]
+  rw [if_pos t]
+
+
+lemma Game_wDraw.state_on_turn_snd_to_fst
+  {α β : Type u} (g : Game_wDraw α β) (turn : ℕ):
+  let S := g.state_on_turn ;
+  let H := g.history_on_turn turn ;
+  Turn_snd (turn + 1) → S (turn + 1) = g.snd_transition H  (g.snd_strat g.init_game_state H) :=
+  by
+  intro S H t
+  dsimp [Game_wDraw.state_on_turn]
+  rw [← Turn_not_fst_iff_snd] at t
+  rw [if_neg t]
 
 
 
