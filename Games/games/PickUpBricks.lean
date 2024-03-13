@@ -409,12 +409,11 @@ lemma acts_le_bricks
 
 
 
-#exit
 
 lemma acts_pos_condition
   (f_strat s_strat : Strategy ℕ ℕ)
-  (f_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat f_strat)
-  (s_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat s_strat) :
+  (f_law : Strategy_legal_fst init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat)
+  (s_law : Strategy_legal_snd init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              fst_lawful := f_law
@@ -423,10 +422,10 @@ lemma acts_pos_condition
    ∀ turn : ℕ,
   let S := g.state_on_turn ;
   let H := History_on_turn init_bricks f_strat s_strat turn ;
-  S (turn + 1) ≠ 0 → (f_strat init_bricks H ≠ 0 ∧ s_strat init_bricks H ≠ 0) :=
+  S (turn + 1) ≠ 0 → (Turn_fst (turn + 1) → f_strat init_bricks H ≠ 0) ∧ ((Turn_snd (turn + 1) → s_strat init_bricks H ≠ 0)) :=
   by
   intro g t S H Snz
-  rw [Strategy_legal, PickUpBricks] at f_law s_law
+  rw [PickUpBricks] at f_law s_law
   specialize f_law t
   specialize s_law t
   dsimp at f_law s_law
@@ -444,16 +443,20 @@ lemma acts_pos_condition
   · rename_i one
     rw [one] at s_law
     dsimp at s_law
-    rw [f_law,s_law]
-    decide
+    constructor
+    · intro tf
+      rw [f_law tf]
+      decide
+    · intro tf
+      rw [s_law tf]
+      decide
   · rename_i noZ noO
     constructor
-    · cases' f_law with c c <;> {rw [c] ; decide}
+    · intro tf ; cases' f_law tf with c c <;> {rw [c] ; decide}
     · split at s_law
       · rename_i no ; exfalso ; exact noZ no
       · rename_i no ; exfalso ; exact noO no
-      · cases' s_law with c c <;> {rw [c] ; decide}
-
+      · intro ts ; cases' s_law ts with c c <;> {rw [c] ; decide}
 
 
 lemma loop_invariant'
@@ -512,7 +515,7 @@ lemma loop_invariant'
   rw [if_neg gnz] at step
   split_ifs at step <;> contradiction
 
-
+#exit
 
 
 lemma termination_pre
