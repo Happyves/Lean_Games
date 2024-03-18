@@ -71,6 +71,8 @@ lemma Game_World_wDraw.world_after_fst_draw_states {α β : Type u} (g : Game_Wo
 
 
 /-
+DIDN'T NEED THIS ?
+
 In chess, imaging a board with pieces at random, and consider two situations.
 In the first, the first player makes a move and then the second one does.
 In the second situation, the board is that of the first situation, but we ask the
@@ -334,6 +336,16 @@ lemma Game_World_wDraw.init_wld_of_turn_zero_wld
 def Game_World_wDraw.nontrivial (g : Game_World_wDraw α β) : Prop :=
   ∀ f_strat s_strat : Strategy α β, ¬ (g.Turn_isWLD f_strat s_strat 0)
 
+structure Game_World_wDraw.coherent_end_aux
+  (g : Game_World_wDraw α β) (f_strat s_strat : Strategy α β) (t : ℕ) : Prop where
+  f : g.fst_win_states (g.state_on_turn f_strat s_strat t) → g.fst_win_states (g.state_on_turn f_strat s_strat (t+1))
+  s : g.snd_win_states (g.state_on_turn f_strat s_strat t) → g.snd_win_states (g.state_on_turn f_strat s_strat (t+1))
+  d : g.draw_states (g.state_on_turn f_strat s_strat t) → g.draw_states (g.state_on_turn f_strat s_strat (t+1))
+
+def Game_World_wDraw.coherent_end (g : Game_World_wDraw α β) : Prop :=
+  ∀ f_strat s_strat : Strategy α β, ∀ t : ℕ, g.coherent_end_aux f_strat s_strat t
+
+
 
 def Game_World_wDraw.win_state_eq (g : Game_World_wDraw α β) : Prop :=
   ∀ a : α, g.fst_win_states a ↔ g.snd_win_states a
@@ -343,7 +355,7 @@ lemma Game_World_wDraw.conditioning_bound
   (g : Game_World_wDraw α β)
   {T : ℕ} (hg : g.isWLD_wBound (T + 1))
   (fst_act : β) (leg : g.fst_legal [] fst_act)
-  (b : g.law_blind') (nt : g.nontrivial) (tb : g.transition_blind) (wb : g.win_state_eq):
+  (b : g.law_blind') (nt : g.coherent_end) (tb : g.transition_blind) (wb : g.win_state_eq):
   (g.world_after_fst fst_act).isWLD_wBound T :=
   by
   intro f_strat s_strat f_leg s_leg
@@ -354,8 +366,30 @@ lemma Game_World_wDraw.conditioning_bound
   · apply g.snd_legal_preconditioned' fst_act leg  f_strat s_strat f_leg b.2
   · obtain ⟨t, t_bd, t_prop⟩ := hg
     cases' t with t
-    · exfalso
-      exact (nt fst_strat snd_strat) t_prop
+    · use 0
+      constructor
+      · exact Nat.zero_le T
+      · cases' t_prop
+        · rename_i no pe ; contradiction
+        · rename_i c
+          apply Turn_isWLD.ws
+          · decide
+          · dsimp [state_on_turn]
+            have := (nt fst_strat snd_strat 0).s c
+            dsimp [state_on_turn] at this
+            rw [if_pos (by decide)] at this
+            dsimp [history_on_turn, History_on_turn] at this
+            rw [if_pos (by rfl)] at this
+            exact this
+        · rename_i c
+          apply Turn_isWLD.d
+          dsimp [state_on_turn]
+          have := (nt fst_strat snd_strat 0).d c
+          dsimp [state_on_turn] at this
+          rw [if_pos (by decide)] at this
+          dsimp [history_on_turn, History_on_turn] at this
+          rw [if_pos (by rfl)] at this
+          exact this
     · rw [Nat.succ_le_succ_iff] at t_bd
       use t
       constructor
@@ -397,10 +431,20 @@ def Game_World_wDraw.playable (g : Game_World_wDraw α β) : Prop :=
 structure Game_World_wDraw.assumptions (g : Game_World_wDraw α β) : Prop where
  pl : g.playable
  bl : g.law_blind'
- nt : g.nontrivial
+ nt : g.coherent_end
  tb : g.transition_blind
  wb : g.win_state_eq
- extensible : 2+2=4
+
+lemma Game_World_wDraw.assumptions_invar (g : Game_World_wDraw α β)
+  (fst_act : β) (leg : g.fst_legal [] fst_act) :
+  g.assumptions → (g.world_after_fst fst_act).assumptions :=
+  by
+  intro hg
+  constructor
+  · obtain ⟨fst_strat, snd_strat, fst_leg, snd_leg⟩ := hg.pl
+    let f_strat : Strategy α β := fun _ hist => snd_strat g.init_game_state (History_on_turn fst_strat snd_strat )
+
+#exit
 
 lemma Game_World_wDraw.conditioning_WLD_helper
   (g : Game_World_wDraw α β)
@@ -443,6 +487,7 @@ lemma Game_World_wDraw.conditioning_WLD
       use ws
       intro f_strat ws_leg f_leg
       let f_act := f_strat g.init_game_state []
+      sorry
 
 
 
