@@ -1215,3 +1215,21 @@ lemma History_on_turn_zero
   (ini : α) (f_strat s_strat: Strategy α β) :
   History_on_turn ini f_strat s_strat 0 = [] :=
   by rfl
+
+lemma History_on_turn_getLast_fst_act (ini : α) (f_strat s_strat: Strategy α β) :
+  ∀ t : ℕ, (History_on_turn ini f_strat s_strat (t+1)).getLast (by apply History_on_turn_nonempty_of_succ)
+    = f_strat ini [] :=
+  by
+  intro t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    simp_rw [if_pos (show Turn_fst (0 + 1) from (by decide))]
+    dsimp [List.getLast]
+  · dsimp [History_on_turn] at *
+    by_cases  q : Turn_fst (Nat.succ t + 1)
+    · simp_rw [if_pos q]
+      rw [List.getLast_cons]
+      · exact ih
+    · simp_rw [if_neg q]
+      rw [List.getLast_cons]
+      · exact ih
