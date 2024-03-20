@@ -471,8 +471,11 @@ lemma Game_World_wDraw.assumptions_invar (g : Game_World_wDraw α β)
     constructor
     · rw [Game_World_wDraw.world_after_fst_init, Game_World_wDraw.world_after_fst_fst_legal]
       intro t tf
+      sorry
       -- cases' t with t
       -- · dsimp [History_on_turn]
+    sorry
+
 
 --#exit
 
@@ -536,44 +539,21 @@ lemma Game_World_wDraw.conditioning_WLD
         by
         dsimp [f_act]
         sorry
-      dsimp [ws] at WS_def
-      rw [if_pos (show History_on_turn g.init_game_state f_strat
-          (fun ini hist =>
-            if hh : hist = [] then default
-            else
-              if H :
-                  Game_World.fst_legal g.toGame_World [] (List.getLast hist hh) ∧
-                    assumptions (world_after_fst g (List.getLast hist hh)) then
-                choose (_ : is_snd_win (world_after_fst g (List.getLast hist hh))) ini hist
-              else default)
-          (0 + 1) ≠
-        [] from (by apply uno))] at WS_def
-      -- let ws_prop : α → List β → Prop := fun (ini : α) hist  =>
-      --                           if hh : hist = [] -- shouldn't happen, as snd strat
-      --                           then True -- dummy
-      --                           else let f_act := List.getLast hist hh
-      --                                if H : g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions -- should be the cases ?!?
-      --                                then (Classical.choose_spec ((g.world_after_fst f_act).conditioning_WLD_helper
-      --                                                         (h f_act H.1 H.2)
-      --                                                         (qwf f_act H.1 H.2)
-      --                                                         (qd f_act H.1 H.2)))
-      --                                else True
-      -- have cinque :
-      --   ∀ (fst_s : Strategy α β)
-      --   (ws_leg :
-      --     Strategy_legal_snd (world_after_fst g f_act).toGame_World.init_game_state
-      --       (fun x => (world_after_fst g f_act).toGame_World.snd_legal) fst_s
-      --       (choose (_ : is_snd_win (world_after_fst g f_act))))
-      --   (fst_leg :
-      --     Strategy_legal_fst (world_after_fst g f_act).toGame_World.init_game_state
-      --       (fun x => (world_after_fst g f_act).toGame_World.fst_legal) fst_s
-      --       (choose (_ : is_snd_win (world_after_fst g f_act)))),
-      --   Game.snd_win
-      --     ({ toGame_World := (world_after_fst g f_act).toGame_World, fst_strat := fst_s, snd_strat := choose (_ : is_snd_win (world_after_fst g f_act)), fst_lawful := fst_leg, snd_lawful := ws_leg } : Game α β) :=
+      -- apriori useless
+      -- have unpack : WS = choose (_ : is_snd_win (world_after_fst g f_act)) g.init_game_state (History_on_turn g.init_game_state f_strat ws (0 + 1))
+      --     :=
       --     by
-      --     sorry
+      --     dsimp [ws]
+      --     rw [dif_neg (by apply uno)]
+      --     rw [dif_pos ⟨(by apply tres), (by apply quatro)⟩]
+      have da_prop := choose_spec ((g.world_after_fst f_act).conditioning_WLD_helper
+                                      (h f_act (by rw [← (dos 0)] ; apply tres) (quatro))
+                                      (qwf f_act (by rw [← (dos 0)] ; apply tres) quatro)
+                                      (qd f_act (by rw [← (dos 0)] ; apply tres) quatro))
+      specialize da_prop (fun _ hist => f_strat g.init_game_state (hist ++ [f_act]))
       sorry
 
+-- work on Game_World_wDraw.History_of_reconditioned and legality in its context next
 
 #exit
 
