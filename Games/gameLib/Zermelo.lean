@@ -434,6 +434,13 @@ structure Game_World_wDraw.assumptions (g : Game_World_wDraw α β) : Prop where
  tb : g.transition_blind
  wb : g.win_state_eq
 
+lemma Game_World_wDraw.win_state_eq_world_after_fst
+  (g : Game_World_wDraw α β) (fst_act: β) :
+  g.win_state_eq ↔ (g.world_after_fst fst_act).win_state_eq :=
+  by
+  dsimp [Game_World_wDraw.win_state_eq]
+  rfl
+
 
 lemma Game_World_wDraw.History_of_reconditioned
   (g: Game_World_wDraw α β)
@@ -482,27 +489,60 @@ lemma Game_World_wDraw.assumptions_invar (g : Game_World_wDraw α β)
 lemma Game_World_wDraw.conditioning_WLD_helper
   (g : Game_World_wDraw α β)
   (hwld : g.has_WLD)
-  (hnfw : ¬ g.is_fst_win)
+  (hnfw : ¬ g.is_snd_win)
   (hnd : ¬ g.is_draw) :
-  g.is_snd_win :=
+  g.is_fst_win :=
   by
-  cases' hwld -- <;> { contradiction <|> assumption } --fails...
-  · contradiction
+  cases' hwld
   · assumption
+  · contradiction
   · contradiction
 
 
 open Classical
 
+lemma History_zig_zag
+  [Inhabited β]
+  (g : Game_World_wDraw α β)
+  (f_strat_wb f_strat_wa : Strategy α β)
+  (h : ∀ fst_act : β, g.fst_legal [] fst_act → (g.world_after_fst fst_act).assumptions → (g.world_after_fst fst_act).has_WLD)
+  (qws: ∀ (f_act : β), Game_World.fst_legal g.toGame_World [] f_act → (g.world_after_fst f_act).assumptions → ¬ (g.world_after_fst f_act).is_snd_win)
+  (qd: ∀ (f_act : β), Game_World.fst_legal g.toGame_World [] f_act → (g.world_after_fst f_act).assumptions → ¬ (g.world_after_fst f_act).is_draw)
+  :
+  let s_strat_wa := fun ini hist => f_strat_wb g.init_game_state (hist ++  [f_strat_wb g.init_game_state []])
+  let s_strat_wb := fun (ini : α) hist  =>
+                                if hh : hist = [] -- shouldn't happen, as snd strat
+                                then default -- dummy
+                                else let f_act := List.getLast hist hh
+                                     if H : g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions -- should be the cases ?!?
+                                     then (Classical.choose ((g.world_after_fst f_act).conditioning_WLD_helper
+                                                              (h f_act H.1 H.2)
+                                                              (qws f_act H.1 H.2)
+                                                              (qd f_act H.1 H.2)))
+                                           ini hist.dropLast -- is it ? since ref to history in current game
+                                     else default
+  ∀ turn : ℕ,
+  (History_on_turn (g.world_after_fst (f_strat_wb g.init_game_state [])).init_game_state f_strat_wa s_strat_wa turn) ++ [f_strat_wb g.init_game_state []]
+  = History_on_turn g.init_game_state f_strat_wb s_strat_wb (turn +1) :=
+  by
+  sorry
+
+-- State on turn next
+
+
+--#exit
+
+
 lemma Game_World_wDraw.conditioning_WLD
   [Inhabited β]
   (g : Game_World_wDraw α β)
-  (h : ∀ fst_act : β, g.fst_legal [] fst_act → (g.world_after_fst fst_act).assumptions → (g.world_after_fst fst_act).has_WLD) :
+  (h : ∀ fst_act : β, g.fst_legal [] fst_act → (g.world_after_fst fst_act).assumptions → (g.world_after_fst fst_act).has_WLD)
+  :
   g.has_WLD :=
   by
-  by_cases qwf : ∃ f_act : β, g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions ∧ (g.world_after_fst f_act).is_fst_win
-  · sorry
-  · push_neg at qwf
+  by_cases qws : ∃ f_act : β, g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions ∧ (g.world_after_fst f_act).is_snd_win
+  · sorry -- remeber, fst becomes snd after fst move
+  · push_neg at qws
     by_cases qd : ∃ f_act : β, g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions ∧ (g.world_after_fst f_act).is_draw
     · sorry
     · push_neg at qd
@@ -514,9 +554,9 @@ lemma Game_World_wDraw.conditioning_WLD
                                      if H : g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions -- should be the cases ?!?
                                      then (Classical.choose ((g.world_after_fst f_act).conditioning_WLD_helper
                                                               (h f_act H.1 H.2)
-                                                              (qwf f_act H.1 H.2)
+                                                              (qws f_act H.1 H.2)
                                                               (qd f_act H.1 H.2)))
-                                           ini hist -- is it ?
+                                           ini hist.dropLast -- is it ? since ref to history in current game
                                      else default
       use ws
       intro f_strat ws_leg f_leg
@@ -539,6 +579,8 @@ lemma Game_World_wDraw.conditioning_WLD
         by
         dsimp [f_act]
         sorry
+        -- use : Game_World_wDraw.win_state_eq_world_after_fst
+
       -- apriori useless
       -- have unpack : WS = choose (_ : is_snd_win (world_after_fst g f_act)) g.init_game_state (History_on_turn g.init_game_state f_strat ws (0 + 1))
       --     :=
@@ -548,10 +590,27 @@ lemma Game_World_wDraw.conditioning_WLD
       --     rw [dif_pos ⟨(by apply tres), (by apply quatro)⟩]
       have da_prop := choose_spec ((g.world_after_fst f_act).conditioning_WLD_helper
                                       (h f_act (by rw [← (dos 0)] ; apply tres) (quatro))
-                                      (qwf f_act (by rw [← (dos 0)] ; apply tres) quatro)
+                                      (qws f_act (by rw [← (dos 0)] ; apply tres) quatro)
                                       (qd f_act (by rw [← (dos 0)] ; apply tres) quatro))
       specialize da_prop (fun _ hist => f_strat g.init_game_state (hist ++ [f_act]))
-      sorry
+      specialize da_prop (by sorry) (by sorry)
+
+      clear WS WS_def
+
+
+
+      obtain ⟨t_w , t_f, t_wf, t_bn⟩ := da_prop
+      use (t_w + 1)
+      constructor
+      · rw [← Turn_fst_snd_step] ; exact t_f
+      · constructor
+        · have := (g.win_state_eq_world_after_fst f_act).mpr quatro.wb
+          rw [← this]
+          -- use t_wf
+          sorry
+        · sorry
+
+#check Game.state_on_turn_neutral
 
 -- work on Game_World_wDraw.History_of_reconditioned and legality in its context next
 
