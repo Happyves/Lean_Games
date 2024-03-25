@@ -53,7 +53,7 @@ LEAN_EXPORT lean_object* l_Game__World__wDraw_state__on__turn___rarg(lean_object
 LEAN_EXPORT lean_object* l_Symm__Game_toGame___elambda__2(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_state__on__turn___rarg(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Turn__from__hist(lean_object*);
-LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World___elambda__1___rarg(lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World___elambda__1___rarg(lean_object*, lean_object*, lean_object*, lean_object*);
 lean_object* l_List_lengthTRAux___rarg(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World__wDraw_history__on__turn(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World(lean_object*, lean_object*);
@@ -97,22 +97,22 @@ LEAN_EXPORT lean_object* l_List_mapTR_loop___at_Game_state__upto__turn___spec__1
 LEAN_EXPORT lean_object* l_Game__World_state__upto__turn___rarg(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_List_mapTR_loop___at_Symm__Game_state__upto__turn___spec__1(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_state__on__turn___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World___elambda__1___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
+LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World___elambda__1___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4) {
 _start:
 {
-lean_object* x_4; lean_object* x_5; 
-x_4 = lean_ctor_get(x_1, 1);
-lean_inc(x_4);
+lean_object* x_5; lean_object* x_6; 
+x_5 = lean_ctor_get(x_1, 1);
+lean_inc(x_5);
 lean_dec(x_1);
-x_5 = lean_apply_2(x_4, x_2, x_3);
-return x_5;
+x_6 = lean_apply_3(x_5, x_2, x_3, x_4);
+return x_6;
 }
 }
 LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World___elambda__1(lean_object* x_1, lean_object* x_2) {
 _start:
 {
 lean_object* x_3; 
-x_3 = lean_alloc_closure((void*)(l_Symm__Game__World_toGame__World___elambda__1___rarg), 3, 0);
+x_3 = lean_alloc_closure((void*)(l_Symm__Game__World_toGame__World___elambda__1___rarg), 4, 0);
 return x_3;
 }
 }
@@ -122,7 +122,7 @@ _start:
 lean_object* x_2; lean_object* x_3; lean_object* x_4; 
 x_2 = lean_ctor_get(x_1, 0);
 lean_inc(x_2);
-x_3 = lean_alloc_closure((void*)(l_Symm__Game__World_toGame__World___elambda__1___rarg), 3, 1);
+x_3 = lean_alloc_closure((void*)(l_Symm__Game__World_toGame__World___elambda__1___rarg), 4, 1);
 lean_closure_set(x_3, 0, x_1);
 lean_inc(x_3);
 x_4 = lean_alloc_ctor(0, 3, 0);
@@ -605,8 +605,9 @@ x_13 = lean_ctor_get(x_1, 0);
 lean_inc(x_13);
 lean_dec(x_1);
 lean_inc(x_9);
+lean_inc(x_13);
 x_14 = lean_apply_2(x_3, x_13, x_9);
-x_15 = lean_apply_2(x_12, x_9, x_14);
+x_15 = lean_apply_3(x_12, x_13, x_9, x_14);
 return x_15;
 }
 else
@@ -619,8 +620,9 @@ x_17 = lean_ctor_get(x_1, 0);
 lean_inc(x_17);
 lean_dec(x_1);
 lean_inc(x_9);
+lean_inc(x_17);
 x_18 = lean_apply_2(x_2, x_17, x_9);
-x_19 = lean_apply_2(x_16, x_9, x_18);
+x_19 = lean_apply_3(x_16, x_17, x_9, x_18);
 return x_19;
 }
 }
@@ -677,15 +679,16 @@ x_10 = lean_ctor_get(x_1, 0);
 lean_inc(x_10);
 x_11 = lean_ctor_get(x_10, 2);
 lean_inc(x_11);
-x_12 = lean_ctor_get(x_1, 2);
+x_12 = lean_ctor_get(x_10, 0);
 lean_inc(x_12);
-lean_dec(x_1);
-x_13 = lean_ctor_get(x_10, 0);
-lean_inc(x_13);
 lean_dec(x_10);
+x_13 = lean_ctor_get(x_1, 2);
+lean_inc(x_13);
+lean_dec(x_1);
 lean_inc(x_7);
-x_14 = lean_apply_2(x_12, x_13, x_7);
-x_15 = lean_apply_2(x_11, x_7, x_14);
+lean_inc(x_12);
+x_14 = lean_apply_2(x_13, x_12, x_7);
+x_15 = lean_apply_3(x_11, x_12, x_7, x_14);
 return x_15;
 }
 else
@@ -695,15 +698,16 @@ x_16 = lean_ctor_get(x_1, 0);
 lean_inc(x_16);
 x_17 = lean_ctor_get(x_16, 1);
 lean_inc(x_17);
-x_18 = lean_ctor_get(x_1, 1);
+x_18 = lean_ctor_get(x_16, 0);
 lean_inc(x_18);
-lean_dec(x_1);
-x_19 = lean_ctor_get(x_16, 0);
-lean_inc(x_19);
 lean_dec(x_16);
+x_19 = lean_ctor_get(x_1, 1);
+lean_inc(x_19);
+lean_dec(x_1);
 lean_inc(x_7);
-x_20 = lean_apply_2(x_18, x_19, x_7);
-x_21 = lean_apply_2(x_17, x_7, x_20);
+lean_inc(x_18);
+x_20 = lean_apply_2(x_19, x_18, x_7);
+x_21 = lean_apply_3(x_17, x_18, x_7, x_20);
 return x_21;
 }
 }
@@ -766,8 +770,9 @@ x_13 = lean_ctor_get(x_1, 0);
 lean_inc(x_13);
 lean_dec(x_1);
 lean_inc(x_9);
+lean_inc(x_13);
 x_14 = lean_apply_2(x_3, x_13, x_9);
-x_15 = lean_apply_2(x_12, x_9, x_14);
+x_15 = lean_apply_3(x_12, x_13, x_9, x_14);
 return x_15;
 }
 else
@@ -780,8 +785,9 @@ x_17 = lean_ctor_get(x_1, 0);
 lean_inc(x_17);
 lean_dec(x_1);
 lean_inc(x_9);
+lean_inc(x_17);
 x_18 = lean_apply_2(x_2, x_17, x_9);
-x_19 = lean_apply_2(x_16, x_9, x_18);
+x_19 = lean_apply_3(x_16, x_17, x_9, x_18);
 return x_19;
 }
 }
@@ -838,15 +844,16 @@ x_10 = lean_ctor_get(x_1, 0);
 lean_inc(x_10);
 x_11 = lean_ctor_get(x_10, 1);
 lean_inc(x_11);
-x_12 = lean_ctor_get(x_1, 2);
+x_12 = lean_ctor_get(x_10, 0);
 lean_inc(x_12);
-lean_dec(x_1);
-x_13 = lean_ctor_get(x_10, 0);
-lean_inc(x_13);
 lean_dec(x_10);
+x_13 = lean_ctor_get(x_1, 2);
+lean_inc(x_13);
+lean_dec(x_1);
 lean_inc(x_7);
-x_14 = lean_apply_2(x_12, x_13, x_7);
-x_15 = lean_apply_2(x_11, x_7, x_14);
+lean_inc(x_12);
+x_14 = lean_apply_2(x_13, x_12, x_7);
+x_15 = lean_apply_3(x_11, x_12, x_7, x_14);
 return x_15;
 }
 else
@@ -856,15 +863,16 @@ x_16 = lean_ctor_get(x_1, 0);
 lean_inc(x_16);
 x_17 = lean_ctor_get(x_16, 1);
 lean_inc(x_17);
-x_18 = lean_ctor_get(x_1, 1);
+x_18 = lean_ctor_get(x_16, 0);
 lean_inc(x_18);
-lean_dec(x_1);
-x_19 = lean_ctor_get(x_16, 0);
-lean_inc(x_19);
 lean_dec(x_16);
+x_19 = lean_ctor_get(x_1, 1);
+lean_inc(x_19);
+lean_dec(x_1);
 lean_inc(x_7);
-x_20 = lean_apply_2(x_18, x_19, x_7);
-x_21 = lean_apply_2(x_17, x_7, x_20);
+lean_inc(x_18);
+x_20 = lean_apply_2(x_19, x_18, x_7);
+x_21 = lean_apply_3(x_17, x_18, x_7, x_20);
 return x_21;
 }
 }
@@ -927,8 +935,9 @@ x_13 = lean_ctor_get(x_1, 0);
 lean_inc(x_13);
 lean_dec(x_1);
 lean_inc(x_9);
+lean_inc(x_13);
 x_14 = lean_apply_2(x_3, x_13, x_9);
-x_15 = lean_apply_2(x_12, x_9, x_14);
+x_15 = lean_apply_3(x_12, x_13, x_9, x_14);
 return x_15;
 }
 else
@@ -941,8 +950,9 @@ x_17 = lean_ctor_get(x_1, 0);
 lean_inc(x_17);
 lean_dec(x_1);
 lean_inc(x_9);
+lean_inc(x_17);
 x_18 = lean_apply_2(x_2, x_17, x_9);
-x_19 = lean_apply_2(x_16, x_9, x_18);
+x_19 = lean_apply_3(x_16, x_17, x_9, x_18);
 return x_19;
 }
 }
@@ -999,15 +1009,16 @@ x_10 = lean_ctor_get(x_1, 0);
 lean_inc(x_10);
 x_11 = lean_ctor_get(x_10, 2);
 lean_inc(x_11);
-x_12 = lean_ctor_get(x_1, 2);
+x_12 = lean_ctor_get(x_10, 0);
 lean_inc(x_12);
-lean_dec(x_1);
-x_13 = lean_ctor_get(x_10, 0);
-lean_inc(x_13);
 lean_dec(x_10);
+x_13 = lean_ctor_get(x_1, 2);
+lean_inc(x_13);
+lean_dec(x_1);
 lean_inc(x_7);
-x_14 = lean_apply_2(x_12, x_13, x_7);
-x_15 = lean_apply_2(x_11, x_7, x_14);
+lean_inc(x_12);
+x_14 = lean_apply_2(x_13, x_12, x_7);
+x_15 = lean_apply_3(x_11, x_12, x_7, x_14);
 return x_15;
 }
 else
@@ -1017,15 +1028,16 @@ x_16 = lean_ctor_get(x_1, 0);
 lean_inc(x_16);
 x_17 = lean_ctor_get(x_16, 1);
 lean_inc(x_17);
-x_18 = lean_ctor_get(x_1, 1);
+x_18 = lean_ctor_get(x_16, 0);
 lean_inc(x_18);
-lean_dec(x_1);
-x_19 = lean_ctor_get(x_16, 0);
-lean_inc(x_19);
 lean_dec(x_16);
+x_19 = lean_ctor_get(x_1, 1);
+lean_inc(x_19);
+lean_dec(x_1);
 lean_inc(x_7);
-x_20 = lean_apply_2(x_18, x_19, x_7);
-x_21 = lean_apply_2(x_17, x_7, x_20);
+lean_inc(x_18);
+x_20 = lean_apply_2(x_19, x_18, x_7);
+x_21 = lean_apply_3(x_17, x_18, x_7, x_20);
 return x_21;
 }
 }

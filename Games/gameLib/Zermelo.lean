@@ -5,6 +5,7 @@ Author: Yves Jäckle.
 -/
 
 import Games.gameLib.Basic
+import Games.gameLib.Termination
 import Mathlib.Tactic
 
 
@@ -24,10 +25,7 @@ move yields the initial state. Show that these game worlds must terminate
 before t.
 -/
 
-inductive Game_World_wDraw.has_WLD (g : Game_World_wDraw α β) : Prop where
-| wf : g.is_fst_win → g.has_WLD
-| ws : g.is_snd_win → g.has_WLD
-| d : g.is_draw → g.has_WLD
+
 
 
 
@@ -336,15 +334,6 @@ lemma Game_World_wDraw.init_wld_of_turn_zero_wld
 def Game_World_wDraw.nontrivial (g : Game_World_wDraw α β) : Prop :=
   ∀ f_strat s_strat : Strategy α β, ¬ (g.Turn_isWLD f_strat s_strat 0)
 
-structure Game_World_wDraw.coherent_end_aux
-  (g : Game_World_wDraw α β) (f_strat s_strat : Strategy α β) (t : ℕ) : Prop where
-  f : g.fst_win_states (g.state_on_turn f_strat s_strat t) → g.fst_win_states (g.state_on_turn f_strat s_strat (t+1))
-  s : g.snd_win_states (g.state_on_turn f_strat s_strat t) → g.snd_win_states (g.state_on_turn f_strat s_strat (t+1))
-  d : g.draw_states (g.state_on_turn f_strat s_strat t) → g.draw_states (g.state_on_turn f_strat s_strat (t+1))
-
-def Game_World_wDraw.coherent_end (g : Game_World_wDraw α β) : Prop :=
-  ∀ f_strat s_strat : Strategy α β, ∀ t : ℕ, g.coherent_end_aux f_strat s_strat t
-
 
 
 def Game_World_wDraw.win_state_eq (g : Game_World_wDraw α β) : Prop :=
@@ -428,7 +417,7 @@ def Game_World_wDraw.playable (g : Game_World_wDraw α β) : Prop :=
 
 
 structure Game_World_wDraw.assumptions (g : Game_World_wDraw α β) : Prop where
- pl : g.playable
+ pl : g.playable -- note to self, get rid of this for coherent end
  bl : g.law_blind'
  nt : g.coherent_end
  tb : g.transition_blind
@@ -614,7 +603,7 @@ lemma Game_World_wDraw.conditioning_WLD
 
 -- work on Game_World_wDraw.History_of_reconditioned and legality in its context next
 
-#exit
+--#exit
 
 lemma Game_World_wDraw.Zermelo
   [Inhabited β]

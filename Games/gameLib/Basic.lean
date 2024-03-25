@@ -8,8 +8,12 @@ Author: Yves Jäckle.
 import Mathlib.Tactic
 import Games.exLib.Nat
 
+-- should contain game structures, turn manipulations, history and state lemmas
+
 
 -- # Environments
+
+
 
 /--
 The game world for state type α and action type β.
@@ -19,20 +23,23 @@ structure Game_World (α β : Type u) where
   init_game_state : α
   /-- A predicate that decides in which states the game is won for the first player-/
   fst_win_states : α → Prop
-  /-- Given the history, and an action of the frist player, return next state-/
-  fst_transition : List β → β → α
-  /-- Given the history, return a predicate
-  that determines the legal actions for the first player-/
-  fst_legal : List β → (β → Prop)
   /-- A predicate that decides in which states the game is won for the second player-/
   snd_win_states : α → Prop
-  /-- Given the history, and an action of the second player, return next state-/
-  snd_transition : List β → β → α
-  /-- Given the history, return a predicate
+  /-- Given the initial state and the history, return a predicate
+  that determines the legal actions for the first player-/
+  fst_legal : α → List β → (β → Prop)
+  /-- Given the initial state and the history, return a predicate
   that determines the legal actions for the second player-/
-  snd_legal : List β → (β → Prop)
+  snd_legal : α → List β → (β → Prop)
+  /-- Given the initial state, the history, and an action of the frist player,
+  , and return next state-/
+  fst_transition : α → List β → β → α
+  /-- Given the initial state, the history, and an action of the second player,
+   and return next state-/
+  snd_transition : α → List β → β → α
 
 
+/-- `Game_World` with addtional drawing states, given by a predicate on states-/
 structure Game_World_wDraw (α β : Type u) extends Game_World α β where
   draw_states : α → Prop
 
@@ -46,10 +53,13 @@ structure Symm_Game_World (α β : Type u) where
   /-- A predicate that decides in which states the game is won for the players-/
   win_states : α → Prop
   /-- Given  the history, and an action of the player, return next state-/
-  transition : List β → β → α
+  transition : α → List β → β → α
   /-- A predicate that decides in which states the game is won for the players-/
-  law : List β → (β → Prop)
+  law : α → List β → (β → Prop)
 
+/-- `Symm_Game_World` with addtional drawing states, given by a predicate on states-/
+structure Symm_Game_World_wDraw (α β : Type u) extends Symm_Game_World α β where
+  draw_states : α → Prop
 
 /--
 Produce a `Game_World` from a `Symm_Game_World`.
@@ -110,6 +120,8 @@ lemma Symm_Game_World.toGame_World_snd_legal {α β : Type u} (g : Symm_Game_Wor
   by
   rfl
 
+
+
 /--
 The list of actions represents the history of actions taken
 by both players. From the history and initial state (first input),
@@ -148,6 +160,16 @@ def History_on_turn {α β : Type u}
          then (fst_strat ini h) :: h
          else (snd_strat ini h) :: h
 
+lemma History_on_turn_length {α β : Type u}
+    (ini : α) (fst_strat snd_strat: Strategy α β) (t : Nat) :
+    (History_on_turn ini fst_strat snd_strat t).length = t :=
+  by
+  induction' t with t ih
+  · dsimp [History_on_turn]
+  · dsimp [History_on_turn]
+    split_ifs <;> {rw [List.length_cons, ih]}
+
+
 /--
 FIX ME
 
@@ -182,9 +204,9 @@ structure Game (α β : Type u) extends Game_World α β where
   /-- The second players strategy-/
   snd_strat : Strategy α β
   /-- The first players strategy is legal wrt. `fst_legal` and the second strategy-/
-  fst_lawful : Strategy_legal_fst init_game_state (fun _ => fst_legal) fst_strat snd_strat
+  fst_lawful : Strategy_legal_fst init_game_state fst_legal fst_strat snd_strat
   /-- The second players strategy is legal wrt. `snd_legal` and the first strategy-/
-  snd_lawful : Strategy_legal_snd init_game_state (fun _ => snd_legal) fst_strat snd_strat
+  snd_lawful : Strategy_legal_snd init_game_state snd_legal fst_strat snd_strat
 
 /-- Same as `Game`, but for a symmetric game world-/
 structure Symm_Game (α β : Type u) extends Symm_Game_World α β where
@@ -193,9 +215,9 @@ structure Symm_Game (α β : Type u) extends Symm_Game_World α β where
   /-- The second players strategy-/
   snd_strat : Strategy α β
   /-- The first players strategy is legal wrt. `law` and the second strategy-/
-  fst_lawful : Strategy_legal_fst init_game_state (fun _ => law) fst_strat snd_strat
+  fst_lawful : Strategy_legal_fst init_game_state law fst_strat snd_strat
   /-- The second players strategy is legal wrt. `law` and the first strategy-/
-  snd_lawful : Strategy_legal_snd init_game_state (fun _ => law) fst_strat snd_strat
+  snd_lawful : Strategy_legal_snd init_game_state law fst_strat snd_strat
 
 
 /-- Build a `Game` from a `Symm_Game`-/
@@ -220,9 +242,9 @@ structure Game_wDraw (α β : Type u) extends Game_World_wDraw α β where
   /-- The second players strategy-/
   snd_strat : Strategy α β
   /-- The first players strategy is legal wrt. `fst_legal` and the second strategy-/
-  fst_lawful : Strategy_legal_fst init_game_state (fun _ => fst_legal) fst_strat snd_strat
+  fst_lawful : Strategy_legal_fst init_game_state fst_legal fst_strat snd_strat
   /-- The second players strategy is legal wrt. `snd_legal` and the first strategy-/
-  snd_lawful : Strategy_legal_snd init_game_state (fun _ => snd_legal) fst_strat snd_strat
+  snd_lawful : Strategy_legal_snd init_game_state snd_legal fst_strat snd_strat
 
 
 
@@ -297,6 +319,7 @@ lemma Symm_Game.toGame_toWorld {α β : Type u} (g : Symm_Game α β):
   g.toGame.toGame_World = g.toSymm_Game_World.toGame_World :=
   by
   dsimp [Symm_Game.toGame, Game.toGame_World, Symm_Game.toSymm_Game_World, Symm_Game_World.toGame_World]
+
 
 
 
@@ -628,8 +651,8 @@ def Game_World.state_on_turn {α β : Type u} (g : Game_World α β)
 | 0 => g.init_game_state
 | n+1 => let h := g.history_on_turn fst_strat snd_strat n
          if Turn_fst (n+1)
-         then g.fst_transition h (fst_strat g.init_game_state h)
-         else g.snd_transition h (snd_strat g.init_game_state h)
+         then g.fst_transition g.init_game_state h (fst_strat g.init_game_state h)
+         else g.snd_transition g.init_game_state h (snd_strat g.init_game_state h)
 
 
 /--
@@ -639,8 +662,8 @@ def Game.state_on_turn {α β : Type u} (g : Game α β) : ℕ → α
 | 0 => g.init_game_state
 | n+1 => let h := g.history_on_turn n
          if Turn_fst (n+1)
-         then g.fst_transition h (g.fst_strat g.init_game_state h)
-         else g.snd_transition h (g.snd_strat g.init_game_state h)
+         then g.fst_transition g.init_game_state h (g.fst_strat g.init_game_state h)
+         else g.snd_transition g.init_game_state h (g.snd_strat g.init_game_state h)
 
 
 lemma Game.state_on_turn_toWorld {α β : Type u} (g : Game α β):
@@ -658,8 +681,8 @@ def Symm_Game_World.state_on_turn {α β : Type u} (g : Symm_Game_World α β)
 | 0 => g.init_game_state
 | n+1 => let h := g.history_on_turn fst_strat snd_strat n
          if Turn_fst (n+1)
-         then g.transition h (fst_strat g.init_game_state h)
-         else g.transition h (snd_strat g.init_game_state h)
+         then g.transition g.init_game_state h (fst_strat g.init_game_state h)
+         else g.transition g.init_game_state h (snd_strat g.init_game_state h)
 
 
 /--
@@ -669,8 +692,8 @@ def Symm_Game.state_on_turn {α β : Type u} (g : Symm_Game α β) : ℕ → α
 | 0 => g.init_game_state
 | n+1 => let h := g.history_on_turn n
          if Turn_fst (n+1)
-         then g.transition h (g.fst_strat g.init_game_state h)
-         else g.transition h (g.snd_strat g.init_game_state h)
+         then g.transition g.init_game_state h (g.fst_strat g.init_game_state h)
+         else g.transition g.init_game_state h (g.snd_strat g.init_game_state h)
 
 
 /--
@@ -681,8 +704,8 @@ def Game_World_wDraw.state_on_turn {α β : Type u} (g : Game_World_wDraw α β)
 | 0 => g.init_game_state
 | n+1 => let h := g.history_on_turn fst_strat snd_strat n
          if Turn_fst (n+1)
-         then g.fst_transition h (fst_strat g.init_game_state h)
-         else g.snd_transition h (snd_strat g.init_game_state h)
+         then g.fst_transition g.init_game_state h (fst_strat g.init_game_state h)
+         else g.snd_transition g.init_game_state h (snd_strat g.init_game_state h)
 
 
 /--
@@ -692,8 +715,8 @@ def Game_wDraw.state_on_turn {α β : Type u} (g : Game_wDraw α β) : ℕ → �
 | 0 => g.init_game_state
 | n+1 => let h := g.history_on_turn n
          if Turn_fst (n+1)
-         then g.fst_transition h (g.fst_strat g.init_game_state h)
-         else g.snd_transition h (g.snd_strat g.init_game_state h)
+         then g.fst_transition g.init_game_state h (g.fst_strat g.init_game_state h)
+         else g.snd_transition g.init_game_state h (g.snd_strat g.init_game_state h)
 
 
 lemma Symm_Game.state_on_turn_toWorld {α β : Type u} (g : Symm_Game α β):
@@ -726,7 +749,7 @@ lemma Game.state_on_turn_fst_to_snd
   {α β : Type u} (g : Game α β) (turn : ℕ):
   let S := g.state_on_turn ;
   let H := g.history_on_turn turn ;
-  Turn_fst (turn + 1) → S (turn + 1) = g.fst_transition H  (g.fst_strat g.init_game_state H) :=
+  Turn_fst (turn + 1) → S (turn + 1) = g.fst_transition g.init_game_state H  (g.fst_strat g.init_game_state H) :=
   by
   intro S H t
   dsimp [Game.state_on_turn]
@@ -737,7 +760,7 @@ lemma Game.state_on_turn_snd_to_fst
   {α β : Type u} (g : Game α β) (turn : ℕ):
   let S := g.state_on_turn ;
   let H := g.history_on_turn turn ;
-  Turn_snd (turn + 1) → S (turn + 1) = g.snd_transition H  (g.snd_strat g.init_game_state H) :=
+  Turn_snd (turn + 1) → S (turn + 1) = g.snd_transition g.init_game_state H  (g.snd_strat g.init_game_state H) :=
   by
   intro S H t
   dsimp [Game.state_on_turn]
@@ -751,7 +774,7 @@ lemma Symm_Game.state_on_turn_fst_to_snd
   {α β : Type u} (g : Symm_Game α β) (turn : ℕ):
   let S := g.state_on_turn ;
   let H := g.history_on_turn turn ;
-  Turn_fst (turn + 1) → S (turn + 1) = g.transition H  (g.fst_strat g.init_game_state H) :=
+  Turn_fst (turn + 1) → S (turn + 1) = g.transition g.init_game_state H  (g.fst_strat g.init_game_state H) :=
   by
   intro S H t
   dsimp [Symm_Game.state_on_turn]
@@ -762,7 +785,7 @@ lemma Symm_Game.state_on_turn_snd_to_fst
   {α β : Type u} (g : Symm_Game α β) (turn : ℕ):
   let S := g.state_on_turn ;
   let H := g.history_on_turn turn ;
-  Turn_snd (turn + 1) → S (turn + 1) = g.transition H  (g.snd_strat g.init_game_state H) :=
+  Turn_snd (turn + 1) → S (turn + 1) = g.transition g.init_game_state H  (g.snd_strat g.init_game_state H) :=
   by
   intro S H t
   dsimp [Symm_Game.state_on_turn]
@@ -774,7 +797,7 @@ lemma Game_wDraw.state_on_turn_fst_to_snd
   {α β : Type u} (g : Game_wDraw α β) (turn : ℕ):
   let S := g.state_on_turn ;
   let H := g.history_on_turn turn ;
-  Turn_fst (turn + 1) → S (turn + 1) = g.fst_transition H  (g.fst_strat g.init_game_state H) :=
+  Turn_fst (turn + 1) → S (turn + 1) = g.fst_transition g.init_game_state H  (g.fst_strat g.init_game_state H) :=
   by
   intro S H t
   dsimp [Game_wDraw.state_on_turn]
@@ -785,128 +808,13 @@ lemma Game_wDraw.state_on_turn_snd_to_fst
   {α β : Type u} (g : Game_wDraw α β) (turn : ℕ):
   let S := g.state_on_turn ;
   let H := g.history_on_turn turn ;
-  Turn_snd (turn + 1) → S (turn + 1) = g.snd_transition H  (g.snd_strat g.init_game_state H) :=
+  Turn_snd (turn + 1) → S (turn + 1) = g.snd_transition g.init_game_state H  (g.snd_strat g.init_game_state H) :=
   by
   intro S H t
   dsimp [Game_wDraw.state_on_turn]
   rw [← Turn_not_fst_iff_snd] at t
   rw [if_neg t]
 
-
-
-inductive Game_World_wDraw.Turn_isWLD (g : Game_World_wDraw α β) (f_strat s_strat : Strategy α β) (turn : ℕ) : Prop where
-| wf : Turn_fst turn → g.fst_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWLD f_strat s_strat turn
-| ws : Turn_snd turn → g.snd_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWLD f_strat s_strat turn
-| d : g.draw_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWLD f_strat s_strat turn
-
-
-def Game_World_wDraw.isWLD (g : Game_World_wDraw α β) : Prop :=
-    ∀ f_strat s_strat : Strategy α β,
-    (f_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) f_strat s_strat) →
-    (s_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) f_strat s_strat) →
-    ∃ turn, g.Turn_isWLD f_strat s_strat turn
-
-
-structure Game_World_Terminating (α β : Type u) extends Game_World_wDraw α β where
-  termination : toGame_World_wDraw.isWLD
-
-
-def Game_World_wDraw.isWLD_wBound (g : Game_World_wDraw α β) (T : ℕ) : Prop :=
-    ∀ f_strat s_strat : Strategy α β,
-    (f_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) f_strat s_strat) →
-    (s_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) f_strat s_strat) →
-    ∃ turn ≤ T, g.Turn_isWLD f_strat s_strat turn
-
-
-structure Game_World_Finite (α β : Type u) extends Game_World_wDraw α β where
-  bound : ℕ
-  termination : toGame_World_wDraw.isWLD_wBound bound
-
-
-
-/--
-Given a game world and strategies, the state on a turn is "neutral"
-if it doesn't satifiy the winning state conditions of the player with
-the corresponding turn.
--/
-def Game_World.state_on_turn_neutral {α β : Type u} (g : Game_World α β)
-  (f_strat s_strat : Strategy α β) (turn : ℕ) : Prop :=
-  if Turn_fst turn
-  then ¬ (g.fst_win_states (g.state_on_turn f_strat s_strat turn))
-  else ¬ (g.snd_win_states (g.state_on_turn f_strat s_strat turn))
-
-
-/--
-ADD DOC
--/
-def Game_World_wDraw.state_on_turn_neutral {α β : Type u} (g : Game_World_wDraw α β)
-  (f_strat s_strat : Strategy α β) (turn : ℕ) : Prop :=
-  (¬ g.draw_states (g.state_on_turn f_strat s_strat turn))
-  ∧
-  (if Turn_fst turn
-  then ¬ (g.fst_win_states (g.state_on_turn f_strat s_strat turn))
-  else ¬ (g.snd_win_states (g.state_on_turn f_strat s_strat turn)))
-
-
-
-/--
-Given a symmetric game world and strategies, the state on a turn is "neutral"
-if it doesn't satifiy the winning state conditions of the player with
-the corresponding turn.
--/
-def Symm_Game_World.state_on_turn_neutral {α β : Type u} (g : Symm_Game_World α β)
-  (f_strat s_strat : Strategy α β) (turn : ℕ) : Prop :=
-  if Turn_fst turn
-  then ¬ (g.win_states (g.state_on_turn f_strat s_strat turn))
-  else ¬ (g.win_states (g.state_on_turn f_strat s_strat turn))
-
-/--
-Given a game, the state on a turn is "neutral"
-if it doesn't satifiy the winning state conditions of the player with
-the corresponding turn.
--/
-def Game.state_on_turn_neutral {α β : Type u} (g : Game α β) (turn : ℕ) : Prop :=
-  if Turn_fst turn
-  then ¬ (g.fst_win_states (g.state_on_turn turn))
-  else ¬ (g.snd_win_states (g.state_on_turn turn))
-
-/--
-Given a game, the state on a turn is "neutral"
-if it doesn't satifiy the winning state conditions of the player with
-the corresponding turn.
--/
-def Symm_Game.state_on_turn_neutral {α β : Type u} (g : Symm_Game α β) (turn : ℕ) : Prop :=
-  if Turn_fst turn
-  then ¬ (g.win_states (g.state_on_turn turn))
-  else ¬ (g.win_states (g.state_on_turn turn))
-
-
-/--
-ADD DOC
--/
-def Game_wDraw.state_on_turn_neutral {α β : Type u} (g : Game_wDraw α β) (turn : ℕ) : Prop :=
-  (¬ g.draw_states (g.state_on_turn turn))
-  ∧
-  (if Turn_fst turn
-  then ¬ (g.fst_win_states (g.state_on_turn turn))
-  else ¬ (g.snd_win_states (g.state_on_turn turn)))
-
-
-@[simp]
-lemma Symm_Game.state_on_turn_neutral_toWorld {α β : Type u} (g : Symm_Game α β) :
-  g.toSymm_Game_World.state_on_turn_neutral g.fst_strat g.snd_strat = g.state_on_turn_neutral := by rfl
-
-@[simp]
-lemma Game.state_on_turn_neutral_toWorld {α β : Type u} (g : Game α β) :
-  g.toGame_World.state_on_turn_neutral g.fst_strat g.snd_strat = g.state_on_turn_neutral := by rfl
-
-@[simp]
-lemma Symm_Game.state_on_turn_neutral_toGame {α β : Type u} (g : Symm_Game α β) :
-  g.toGame.state_on_turn_neutral = g.state_on_turn_neutral := by rfl
-
-@[simp]
-lemma Symm_Game_World.state_on_turn_neutral_toWorld {α β : Type u} (g : Symm_Game_World α β):
-  g.toGame_World.state_on_turn_neutral = g.state_on_turn_neutral := by rfl
 
 /-- The states from turn `0` to `turn - 1` -/
 def Game_World.state_upto_turn {α β : Type u} (g : Game_World α β)
@@ -928,181 +836,10 @@ def Symm_Game.state_upto_turn {α β : Type u} (g : Symm_Game α β) (turn : ℕ
 
 
 
--- # Termination
-
-
-/--
-A game is won by the first player if there exists a turn that is the first
-players turn, in which the winning condition for the first player is achieved
-by the current state, and for which all prior turn had neutral states.
-So one wins by having reached the win state at the end of ones turn.
--/
-def Game.fst_win  {α β : Type u} (g : Game α β) : Prop :=
-  ∃ turn : ℕ, Turn_fst turn ∧ g.fst_win_states (g.state_on_turn turn) ∧
-    (∀ t < turn, g.state_on_turn_neutral t)
-
-/--
-A game is won by the second player if there exists a turn that is the second
-players turn, in which the winning condition for the second player is achieved
-by the current state, and for which all prior turn had neutral states.
-So one wins by having reached the win state at the end of ones turn.
--/
-def Game.snd_win  {α β : Type u} (g : Game α β) : Prop :=
-  ∃ turn : ℕ, Turn_snd turn  ∧ g.snd_win_states (g.state_on_turn turn) ∧
-    (∀ t < turn, g.state_on_turn_neutral t)
-
-
-def Game_wDraw.fst_draw {α β : Type u} (g : Game_wDraw α β) : Prop :=
-  ∃ turn : ℕ, Turn_fst turn  ∧ g.draw_states (g.state_on_turn turn) ∧
-    (∀ t < turn, g.state_on_turn_neutral t)
-
-
-def Game_wDraw.snd_draw {α β : Type u} (g : Game_wDraw α β) : Prop :=
-  ∃ turn : ℕ, Turn_snd turn  ∧ g.draw_states (g.state_on_turn turn) ∧
-    (∀ t < turn, g.state_on_turn_neutral t)
-
-
-def Game_wDraw.draw {α β : Type u} (g : Game_wDraw α β) : Prop :=
-  g.fst_draw ∨ g.snd_draw
-
-
-/--
-A game world allows for a winning stategy for the first player, if there exists
-a stategy for which, for any other stategy, such that both are legal wrt. the
-laws of the game world and each other, the game in which these startegies are
-played is won by the first player.
--/
-def Game_World.is_fst_win  {α β : Type u} (g : Game_World α β) : Prop :=
-  ∃ ws : Strategy α β,
-  ∀ snd_s : Strategy α β,
-   (ws_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) ws snd_s) →
-   (snd_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) ws snd_s) →
-  ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game α β).fst_win
-
-/--
-A game world allows for a winning stategy for the second player, if there exists
-a stategy for which, for any other stategy, such that both are legal wrt. the
-laws of the game world and each other, the game in which these startegies are
-played is won by the second player.
--/
-def Game_World.is_snd_win  {α β : Type u} (g : Game_World α β) : Prop :=
-  ∃ ws : Strategy α β,
-  ∀ fst_s : Strategy α β,
-   (ws_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) fst_s ws) →
-   (fst_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) fst_s ws) →
-  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game α β).snd_win
-
-
-def Symm_Game.fst_win  {α β : Type u} (g : Symm_Game α β) : Prop :=
-  ∃ turn : ℕ, Turn_fst turn ∧ g.win_states (g.state_on_turn turn) ∧
-    (∀ t < turn, g.state_on_turn_neutral t)
-
-def Symm_Game.snd_win  {α β : Type u} (g : Symm_Game α β) : Prop :=
-  ∃ turn : ℕ, Turn_snd turn  ∧ g.win_states (g.state_on_turn turn) ∧
-    (∀ t < turn, g.state_on_turn_neutral t)
-
-
-def Symm_Game_World.is_fst_win  {α β : Type u} (g : Symm_Game_World α β) : Prop :=
-  ∃ ws : Strategy α β,
-  ∀ snd_s : Strategy α β,
-   (ws_leg : Strategy_legal_fst g.init_game_state (fun _ => g.law) ws snd_s) →
-   (snd_leg : Strategy_legal_snd g.init_game_state (fun _ => g.law) ws snd_s) →
-  ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Symm_Game α β).fst_win
-
-
-def Symm_Game_World.is_snd_win  {α β : Type u} (g : Symm_Game_World α β) : Prop :=
-  ∃ ws : Strategy α β,
-  ∀ fst_s : Strategy α β,
-   (ws_leg : Strategy_legal_snd g.init_game_state (fun _ => g.law) fst_s ws) →
-   (fst_leg : Strategy_legal_fst g.init_game_state (fun _ => g.law) fst_s ws ) →
-  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Symm_Game α β).snd_win
-
-
-
-
-def Game_wDraw.fst_win  {α β : Type u} (g : Game_wDraw α β) : Prop :=
-  ∃ turn : ℕ, Turn_fst turn ∧ g.fst_win_states (g.state_on_turn turn) ∧
-    (∀ t < turn, g.state_on_turn_neutral t)
-
-/--
-A game is won by the second player if there exists a turn that is the second
-players turn, in which the winning condition for the second player is achieved
-by the current state, and for which all prior turn had neutral states.
-So one wins by having reached the win state at the end of ones turn.
--/
-def Game_wDraw.snd_win  {α β : Type u} (g : Game_wDraw α β) : Prop :=
-  ∃ turn : ℕ, Turn_snd turn  ∧ g.snd_win_states (g.state_on_turn turn) ∧
-    (∀ t < turn, g.state_on_turn_neutral t)
-
-/--
-A game world allows for a winning stategy for the first player, if there exists
-a stategy for which, for any other stategy, such that both are legal wrt. the
-laws of the game world and each other, the game in which these startegies are
-played is won by the first player.
--/
-def Game_World_wDraw.is_fst_win  {α β : Type u} (g : Game_World_wDraw α β) : Prop :=
-  ∃ ws : Strategy α β,
-  ∀ snd_s : Strategy α β,
-   (ws_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) ws snd_s) →
-   (snd_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) ws snd_s) →
-  ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game α β).fst_win
-
-/--
-A game world allows for a winning stategy for the second player, if there exists
-a stategy for which, for any other stategy, such that both are legal wrt. the
-laws of the game world and each other, the game in which these startegies are
-played is won by the second player.
--/
-def Game_World_wDraw.is_snd_win  {α β : Type u} (g : Game_World_wDraw α β) : Prop :=
-  ∃ ws : Strategy α β,
-  ∀ fst_s : Strategy α β,
-   (ws_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) fst_s ws) →
-   (fst_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) fst_s ws) →
-  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game α β).snd_win
-
-
-def Game_World_wDraw.is_fst_draw  {α β : Type u} (g : Game_World_wDraw α β) : Prop :=
-  ∃ ws : Strategy α β,
-  ∀ snd_s : Strategy α β,
-   (ws_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) ws snd_s) →
-   (snd_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) ws snd_s) →
-  ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game_wDraw α β).fst_draw
-
-
-def Game_World_wDraw.is_snd_draw  {α β : Type u} (g : Game_World_wDraw α β) : Prop :=
-  ∃ ws : Strategy α β,
-  ∀ fst_s : Strategy α β,
-   (ws_leg : Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) fst_s ws) →
-   (fst_leg : Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) fst_s ws) →
-  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game_wDraw α β).snd_draw
-
-def Game_World_wDraw.is_draw {α β : Type u} (g : Game_World_wDraw α β) : Prop :=
-  g.is_fst_draw ∨ g.is_snd_draw
-
-
-@[simp]
-lemma Symm_Game.fst_win_toGame  {α β : Type u} (g : Symm_Game α β) :
-  g.toGame.fst_win ↔ g.fst_win := by rfl
-
-@[simp]
-lemma Symm_Game.snd_win_toGame  {α β : Type u} (g : Symm_Game α β) :
-  g.toGame.snd_win ↔ g.snd_win := by rfl
-
-@[simp]
-lemma Symm_Game_World.is_fst_win_toGame  {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.is_fst_win ↔ g.is_fst_win := by rfl
-
-@[simp]
-lemma Symm_Game_World.snd_win_toGame  {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.is_snd_win ↔ g.is_snd_win := by rfl
-
-
-
-
 
 -- # More
 
-lemma Symm_Game_World.mem_History_on_turn {α β : Type u} (g : Symm_Game_World α β)
+lemma Symm_Game_World.mem_History_on_turn {α β : Type u}
     (turn : ℕ)
     (ini : α) (f_strat s_strat: Strategy α β)
     (x : β) :
@@ -1233,3 +970,41 @@ lemma History_on_turn_getLast_fst_act (ini : α) (f_strat s_strat: Strategy α �
     · simp_rw [if_neg q]
       rw [List.getLast_cons]
       · exact ih
+
+
+
+
+inductive Hist_legal (f_law s_law : α → List β → (β → Prop)) (ini : α) : List β → Prop
+| nil : Hist_legal f_law s_law ini []
+| cons (l : List β) (act : β) : (if Turn_fst (l.length + 1)
+                                then f_law ini l act
+                                else s_law ini l act) → Hist_legal f_law s_law ini (act :: l)
+
+
+lemma Game_World.History_Hist_legal (g : Game_World α β)
+  (f_strat s_strat: Strategy α β)
+  (fst_lawful : Strategy_legal_fst g.init_game_state g.fst_legal f_strat s_strat)
+  (snd_lawful : Strategy_legal_snd g.init_game_state g.snd_legal f_strat s_strat)
+  (t : ℕ) :
+  Hist_legal g.fst_legal g.snd_legal g.init_game_state (History_on_turn g.init_game_state f_strat s_strat t) :=
+  by
+  cases' t with t
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs
+    all_goals apply Hist_legal.cons
+    all_goals rename_i c
+    all_goals rw [History_on_turn_length]
+    · rw [if_pos c]
+      exact fst_lawful t c
+    · rw [if_neg c]
+      exact snd_lawful t c
+
+
+lemma Game.History_Hist_legal (g : Game α β) (t : ℕ) :
+  Hist_legal g.fst_legal g.snd_legal g.init_game_state (History_on_turn g.init_game_state g.fst_strat g.snd_strat t) :=
+  by
+  apply Game_World.History_Hist_legal
+  · exact g.fst_lawful
+  · exact g.snd_lawful
