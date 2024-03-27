@@ -978,7 +978,7 @@ inductive Hist_legal (f_law s_law : α → List β → (β → Prop)) (ini : α)
 | nil : Hist_legal f_law s_law ini []
 | cons (l : List β) (act : β) : (if Turn_fst (l.length + 1)
                                 then f_law ini l act
-                                else s_law ini l act) → Hist_legal f_law s_law ini (act :: l)
+                                else s_law ini l act) → Hist_legal f_law s_law ini l →  Hist_legal f_law s_law ini (act :: l)
 
 
 lemma Game_World.History_Hist_legal (g : Game_World α β)
@@ -988,12 +988,12 @@ lemma Game_World.History_Hist_legal (g : Game_World α β)
   (t : ℕ) :
   Hist_legal g.fst_legal g.snd_legal g.init_game_state (History_on_turn g.init_game_state f_strat s_strat t) :=
   by
-  cases' t with t
+  induction' t with t ih
   · dsimp [History_on_turn]
     apply Hist_legal.nil
   · dsimp [History_on_turn]
     split_ifs
-    all_goals apply Hist_legal.cons
+    all_goals apply Hist_legal.cons _ _ _ ih
     all_goals rename_i c
     all_goals rw [History_on_turn_length]
     · rw [if_pos c]

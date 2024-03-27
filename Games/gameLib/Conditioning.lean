@@ -45,6 +45,16 @@ lemma Game_World_wDraw.world_after_fst_draw_states {α β : Type u} (g : Game_Wo
   (fst_act : β) : (g.world_after_fst fst_act).draw_states = g.draw_states :=
   by rfl
 
+@[simp]
+lemma Game_World_wDraw.world_after_fst_fst_transition {α β : Type u} (g : Game_World_wDraw α β)
+  (fst_act : β) : (g.world_after_fst fst_act).fst_transition = g.fst_transition :=
+  by rfl
+
+@[simp]
+lemma Game_World_wDraw.world_after_fst_snd_transition {α β : Type u} (g : Game_World_wDraw α β)
+  (fst_act : β) : (g.world_after_fst fst_act).snd_transition = g.snd_transition :=
+  by rfl
+
 
 instance (l : List α): Decidable (l = []) :=
   by
@@ -170,6 +180,68 @@ def Game_World_wDraw.hyper_transition_blind_snd (g : Game_World_wDraw α β) : P
 def Game_World_wDraw.hyper_transition_blind (g : Game_World_wDraw α β) : Prop :=
  g.hyper_transition_blind_fst ∧ g.hyper_transition_blind_snd
 
+
+lemma Game_World_wDraw.hyper_transition_blind_transition_eq (g : Game_World_wDraw α β) :
+  g.hyper_transition_blind → (g.fst_transition g.init_game_state = g.snd_transition g.init_game_state) :=
+  by
+  intro h
+  have := h.2 [] (by apply Hist_legal.nil)
+  dsimp [Game_World_wDraw.world_after_preHist] at this
+  simp_rw [List.append_nil] at this
+  apply funext₂
+  exact this
+
+
+lemma Game_World_wDraw.hyper_transition_blind_toStrong (g : Game_World_wDraw α β) :
+  g.hyper_transition_blind → g.strong_transition_blind :=
+  by
+  rintro ⟨f_hyper, s_hyper⟩
+  constructor
+  · intro f_act f_leg hist act
+    specialize f_hyper [f_act] _ hist act
+    · apply Hist_legal.cons
+      · dsimp
+        rw [if_pos (by decide)]
+        exact f_leg
+      · apply Hist_legal.nil
+    · dsimp [Game_World_wDraw.world_after_fst, Game_World_wDraw.world_after_preHist] at *
+      exact f_hyper
+  · intro f_act f_leg hist act
+    specialize s_hyper [f_act] _ hist act
+    · apply Hist_legal.cons
+      · dsimp
+        rw [if_pos (by decide)]
+        exact f_leg
+      · apply Hist_legal.nil
+    · dsimp [Game_World_wDraw.world_after_fst, Game_World_wDraw.world_after_preHist] at *
+      exact s_hyper
+
+@[simp]
+lemma Game_World_wDraw.world_after_preHist_singleton {α β : Type u} (g : Game_World_wDraw α β)
+  (act : β) : g.world_after_preHist [act] = g.world_after_fst act :=
+  by
+  dsimp [Game_World_wDraw.world_after_fst, Game_World_wDraw.world_after_preHist]
+
+
+lemma Game_World_wDraw.world_after_preHist_transition_blind
+  (g : Game_World_wDraw α β) (hg : g.hyper_transition_blind) (f_act : β) (f_leg : g.fst_legal g.init_game_state [] f_act) :
+  (g.world_after_fst f_act).hyper_transition_blind :=
+  by
+  have shg := g.hyper_transition_blind_toStrong hg
+  have teq := g.hyper_transition_blind_transition_eq hg
+  constructor
+  · intro prehist preh_leg hist act
+    obtain ⟨hgf, hgs⟩ := hg
+    obtain ⟨shgf, shgs⟩ := shg
+    specialize hgf (prehist ++ [f_act]) _ hist act
+    · sorry -- might need some sort of hyper legality for this
+    · rw [Game_World_wDraw.world_after_fst_snd_transition, Game_World_wDraw.world_after_fst_fst_transition]
+      specialize shgs f_act f_leg (hist ++ prehist) act
+      rw [shgs]
+      nth_rewrite 1 [← teq]
+      rw [List.append_assoc]
+      rw [← hgf]
+      sorry --todo
 
 #exit
 
