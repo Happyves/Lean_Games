@@ -300,20 +300,3 @@ inductive Game_World_wDraw.has_WLD (g : Game_World_wDraw α β) : Prop where
 | wf : g.is_fst_win → g.has_WLD
 | ws : g.is_snd_win → g.has_WLD
 | d : g.is_draw → g.has_WLD
-
-
-
-
--- # Coherent end
-
-structure Game_World_wDraw.coherent_end_aux
-  (g : Game_World_wDraw α β) (f_strat s_strat : Strategy α β) (t : ℕ) : Prop where
-  f : g.fst_win_states (g.state_on_turn f_strat s_strat t) → g.fst_win_states (g.state_on_turn f_strat s_strat (t+1))
-  s : g.snd_win_states (g.state_on_turn f_strat s_strat t) → g.snd_win_states (g.state_on_turn f_strat s_strat (t+1))
-  d : g.draw_states (g.state_on_turn f_strat s_strat t) → g.draw_states (g.state_on_turn f_strat s_strat (t+1))
-
-def Game_World_wDraw.coherent_end (g : Game_World_wDraw α β) : Prop :=
-  ∀ f_strat s_strat : Strategy α β, ∀ t : ℕ, g.coherent_end_aux f_strat s_strat t
-
-structure cGame_World_wDraw (α β : Type _) extends Game_World_wDraw α β :=
-  cohenrent : toGame_World_wDraw.coherent_end

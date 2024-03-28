@@ -709,6 +709,15 @@ def Game_World_wDraw.state_on_turn {α β : Type u} (g : Game_World_wDraw α β)
 
 
 /--
+todo
+-/
+lemma Game_World_wDraw.state_on_turn_toGame_World {α β : Type u} (g : Game_World_wDraw α β) :
+    g.state_on_turn = g.toGame_World.state_on_turn :=
+    by
+    rfl
+
+
+/--
 Given a game, return the state given a turn
 -/
 def Game_wDraw.state_on_turn {α β : Type u} (g : Game_wDraw α β) : ℕ → α

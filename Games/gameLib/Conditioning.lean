@@ -9,6 +9,8 @@ import Games.gameLib.Termination
 
 
 
+
+
 def Game_World_wDraw.world_after_fst {α β : Type u} (g : Game_World_wDraw α β)
   (fst_act : β) : Game_World_wDraw α β := -- act not required to be legal
   {g with init_game_state := g.fst_transition g.init_game_state [] fst_act }
@@ -54,6 +56,79 @@ lemma Game_World_wDraw.world_after_fst_fst_transition {α β : Type u} (g : Game
 lemma Game_World_wDraw.world_after_fst_snd_transition {α β : Type u} (g : Game_World_wDraw α β)
   (fst_act : β) : (g.world_after_fst fst_act).snd_transition = g.snd_transition :=
   by rfl
+
+
+
+-- # Coherent end
+
+structure Game_World_wDraw.coherent_end_aux
+  (g : Game_World_wDraw α β) (f_strat s_strat : Strategy α β) (t : ℕ) : Prop where
+  f : g.fst_win_states (g.state_on_turn f_strat s_strat t) → g.fst_win_states (g.state_on_turn f_strat s_strat (t+1))
+  s : g.snd_win_states (g.state_on_turn f_strat s_strat t) → g.snd_win_states (g.state_on_turn f_strat s_strat (t+1))
+  d : g.draw_states (g.state_on_turn f_strat s_strat t) → g.draw_states (g.state_on_turn f_strat s_strat (t+1))
+
+def Game_World_wDraw.coherent_end (g : Game_World_wDraw α β) : Prop :=
+  ∀ f_strat s_strat : Strategy α β, ∀ t : ℕ, g.coherent_end_aux f_strat s_strat t
+
+
+
+
+-- # Carelessness
+
+def careless (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
+  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) →
+    obj ini (hist ++ prehist) = obj (swap ini prehist.tail (prehist.head h)) hist
+
+lemma careless_singleton (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless obj swap) :
+  ∀ ini : α , ∀ hist : List β, ∀ act : β, obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
+  :=
+  by
+  intro ini hist act
+  apply hc ini hist [act]
+  apply List.noConfusion
+
+
+structure zGame_World_wDraw (α β : Type _) extends Game_World_wDraw α β where
+  f_law_careless : careless toGame_World_wDraw.fst_legal toGame_World_wDraw.fst_transition
+  s_law_careless : careless toGame_World_wDraw.snd_legal toGame_World_wDraw.fst_transition
+  f_transition_careless : careless toGame_World_wDraw.fst_transition toGame_World_wDraw.fst_transition
+  s_transition_careless : careless toGame_World_wDraw.snd_transition toGame_World_wDraw.fst_transition
+  coherent : toGame_World_wDraw.coherent_end
+
+
+lemma Game_World_wDraw.history_world_after_fst (g : Game_World_wDraw α β) (f_strat s_strat : Strategy α β) (t : ℕ):
+  History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state f_strat s_strat t = History_on_turn g.init_game_state f_strat s_strat (t+1) :=
+  by
+  sorry
+
+lemma Game_World_wDraw.state_world_after_fst (g : Game_World_wDraw α β) (f_strat s_strat : Strategy α β) (t : ℕ):
+  (g.world_after_fst (f_strat g.init_game_state [])).state_on_turn f_strat s_strat t = g.state_on_turn f_strat s_strat (t+1) :=
+  by
+  sorry
+
+--#exit
+
+def zGame_World_wDraw.world_after_fst {α β : Type u} (g : zGame_World_wDraw α β)
+  (fst_act : β) : zGame_World_wDraw α β := -- act not required to be legal
+  {(g.toGame_World_wDraw.world_after_fst fst_act) with
+      f_law_careless := by dsimp ; apply g.f_law_careless
+      s_law_careless := by dsimp ; apply g.s_law_careless
+      f_transition_careless := by dsimp ; apply g.f_transition_careless
+      s_transition_careless := by dsimp ; apply g.s_transition_careless
+      coherent := by
+                  intro f_strat s_strat t
+                  constructor
+                  · intro fws
+                    dsimp at *
+                    rw [Game_World_wDraw.state_on_turn_toGame_World] at *
+                    dsimp at *
+                    rw [Game_World_wDraw.state_world_after_fst]
+
+                  }
+
+#check Game_World_wDraw.state_on_turn
+
+#exit
 
 
 instance (l : List α): Decidable (l = []) :=
@@ -164,7 +239,11 @@ def Game_World_wDraw.world_after_preHist {α β : Type u} (g : Game_World_wDraw 
   | [] => g
   | last :: L => {g with init_game_state := g.fst_transition g.init_game_state L last}
 
+-- lemma Game_World_wDraw.world_after_preHist_init_game_state
+--   (g : Game_World_wDraw α β) (prehist : List β)  :
+--   (g.world_after_preHist prehist).init_game_state =
 
+-- #exit
 
 def Game_World_wDraw.hyper_transition_blind_fst (g : Game_World_wDraw α β) : Prop :=
   ∀ prehist : List β, Hist_legal g.fst_legal g.snd_legal g.init_game_state prehist →
@@ -241,7 +320,10 @@ lemma Game_World_wDraw.world_after_preHist_transition_blind
       nth_rewrite 1 [← teq]
       rw [List.append_assoc]
       rw [← hgf]
-      sorry --todo
+      dsimp [Game_World_wDraw.world_after_fst, Game_World_wDraw.world_after_preHist]
+      cases' prehist with x L
+      · dsimp
+      · dsimp
 
 #exit
 
