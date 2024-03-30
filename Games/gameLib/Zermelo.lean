@@ -4,109 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Yves Jäckle.
 -/
 
-import Games.gameLib.Basic
+import Games.gameLib.Conditioning
 import Games.gameLib.Termination
 import Mathlib.Tactic
 
 
 
-/-
-Note to self:
-
-Use conditionning as follows: we have the property of game that termintae
-at turn 0 and we know that for all games and teruns t, if the property is
-true for games that terminta before t, then it is also true for games that
-terminate before t+1. Then by basic induction on t we know that it's true
-for all game worlds that terminate before some t.
-
-For zermelo, given a game world that terminates before t+1, look at all
-those, indexed by the first move, hence indexed over β, where the first
-move yields the initial state. Show that these game worlds must terminate
-before t.
--/
 
 
 
-
-
-
-/-
-DIDN'T NEED THIS ?
-
-In chess, imaging a board with pieces at random, and consider two situations.
-In the first, the first player makes a move and then the second one does.
-In the second situation, the board is that of the first situation, but we ask the
-second player to move first. Will the second players moves be the same in both
-situations ?
-They don't have to. After all, in the first scenario, the second player gains
-some knowledge about how the first plays...
-We'll call strategies that play the same in both situations "careless".
--/
-
-def Game_World_wDraw.Strategy_careless (strat : Strategy α β) (g : Game_World_wDraw α β): Prop :=
-  ∀ f_act : β, ∀ hist : List β, strat (g.fst_transition [] f_act) hist = strat g.init_game_state (hist ++ [f_act])
-
-/-
-In ↑, we can't just have hist = [] and deduce the ↑ from this case : the moves
-for these two scenarios may be the same at that stage, but they could begin
-to differ at future stages
-
-Example for PUB in `Careless_Example`
--/
-
-
-/--
-The action is legal on turn t in the game with initial state being the state after f's first move,
-where s plays first and f second, iff it it legal on turn t+1 of the original game.
--/
-def Game_World_wDraw.law_blind_fst (g : Game_World_wDraw α β) : Prop :=
-  ∀ f_strat s_strat: Strategy α β,
-  ∀ turn : ℕ, ∀ act : β, g.snd_legal (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) act
-    ↔ g.fst_legal (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) act
-
-def Game_World_wDraw.law_blind_snd (g : Game_World_wDraw α β) : Prop :=
-  ∀ f_strat s_strat: Strategy α β,
-  ∀ turn : ℕ, ∀ act : β, g.fst_legal (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) act
-    ↔ g.snd_legal (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) act
-
-def Game_World_wDraw.law_blind (g : Game_World_wDraw α β) : Prop :=
-  g.law_blind_fst ∧ g.law_blind_snd
-
-
-
-
-
-
-
-
-def Game_World_wDraw.law_blind_fst' (g : Game_World_wDraw α β) : Prop :=
-  ∀ f_strat s_strat: Strategy α β, ∀ fst_act : β, g.fst_legal [] fst_act →
-  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
-  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
-  ∀ turn : ℕ, ∀ act : β, g.snd_legal (History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat turn) act
-    ↔ g.fst_legal (History_on_turn g.init_game_state fst_strat snd_strat (turn + 1)) act
-
-def Game_World_wDraw.law_blind_snd' (g : Game_World_wDraw α β) : Prop :=
-  ∀ f_strat s_strat: Strategy α β, ∀ fst_act : β, g.fst_legal [] fst_act →
-  let fst_strat : Strategy α β := (fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
-  let snd_strat : Strategy α β := (fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)) ;
-  ∀ turn : ℕ, ∀ act : β, g.fst_legal (History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat turn) act
-    ↔ g.snd_legal (History_on_turn g.init_game_state fst_strat snd_strat (turn + 1)) act
-
-
-def Game_World_wDraw.law_blind' (g : Game_World_wDraw α β) : Prop :=
- g.law_blind_fst' ∧ g.law_blind_snd'
-
--- TODO : Try to prove legality stuff with this notion of blindness, then maybe try to weaken it
-
-
-
-
-
-
-
-
---#exit
 
 inductive Game_World_wDraw.State_is_ws_d (g : Game_World_wDraw α β) (s : α) : Prop where
 | ws : g.snd_win_states s → g.State_is_ws_d s
@@ -129,10 +35,6 @@ lemma Game_World_wDraw.init_wld_of_turn_zero_wld
     apply Game_World_wDraw.State_is_ws_d.d
     exact h
 
-def Game_World_wDraw.nontrivial (g : Game_World_wDraw α β) : Prop :=
-  ∀ f_strat s_strat : Strategy α β, ¬ (g.Turn_isWLD f_strat s_strat 0)
-
-
 
 def Game_World_wDraw.win_state_eq (g : Game_World_wDraw α β) : Prop :=
   ∀ a : α, g.fst_win_states a ↔ g.snd_win_states a
@@ -141,16 +43,16 @@ def Game_World_wDraw.win_state_eq (g : Game_World_wDraw α β) : Prop :=
 lemma Game_World_wDraw.conditioning_bound
   (g : Game_World_wDraw α β)
   {T : ℕ} (hg : g.isWLD_wBound (T + 1))
-  (fst_act : β) (leg : g.fst_legal [] fst_act)
-  (b : g.law_blind') (nt : g.coherent_end) (tb : g.transition_blind) (wb : g.win_state_eq):
+  (fst_act : β) (leg : g.fst_legal g.init_game_state [] fst_act)
+  (b : g.legal_blind) (nt : g.coherent_end) (tb : g.transition_blind) (wb : g.win_state_eq):
   (g.world_after_fst fst_act).isWLD_wBound T :=
   by
   intro f_strat s_strat f_leg s_leg
   let fst_strat : Strategy α β := fun ini hist => if hist = [] then fst_act else s_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)
   let snd_strat : Strategy α β := fun ini hist => f_strat (g.world_after_fst fst_act).init_game_state (hist.dropLast)
   specialize hg fst_strat snd_strat _ _
-  · apply g.fst_legal_preconditioned' fst_act leg  f_strat s_strat s_leg b.1
-  · apply g.snd_legal_preconditioned' fst_act leg  f_strat s_strat f_leg b.2
+  · apply g.fst_legal_deconditioned fst_act leg  f_strat s_strat s_leg b.1
+  · apply g.snd_legal_deconditioned fst_act leg  f_strat s_strat f_leg b.2
   · obtain ⟨t, t_bd, t_prop⟩ := hg
     cases' t with t
     · use 0
@@ -184,7 +86,7 @@ lemma Game_World_wDraw.conditioning_bound
       · cases' t_prop with tp c tp c c
         · apply Turn_isWLD.ws
           · rw [Turn_snd_fst_step] ; exact tp
-          · rw [← Game_World_wDraw.State_of_preconditioned]
+          · rw [← Game_World_wDraw.State_of_deconditioned]
             · rw [Game_World_wDraw.world_after_fst_snd_win_states]
               rw [wb] at c
               exact c
@@ -192,14 +94,14 @@ lemma Game_World_wDraw.conditioning_bound
             · exact leg
         · apply Turn_isWLD.wf
           · rw [Turn_fst_snd_step] ; exact tp
-          · rw [← Game_World_wDraw.State_of_preconditioned]
+          · rw [← Game_World_wDraw.State_of_deconditioned]
             · rw [Game_World_wDraw.world_after_fst_fst_win_states]
               rw [← wb] at c
               exact c
             · exact tb
             · exact leg
         · apply Turn_isWLD.d
-          · rw [← Game_World_wDraw.State_of_preconditioned]
+          · rw [← Game_World_wDraw.State_of_deconditioned]
             · rw [Game_World_wDraw.world_after_fst_draw_states]
               exact c
             · exact tb
@@ -208,18 +110,12 @@ lemma Game_World_wDraw.conditioning_bound
 
 
 
-def Game_World_wDraw.playable (g : Game_World_wDraw α β) : Prop :=
-  ∃ f_strat s_strat : Strategy α β,
-  (Strategy_legal_fst g.init_game_state (fun _ => g.fst_legal) f_strat s_strat) ∧
-  (Strategy_legal_snd g.init_game_state (fun _ => g.snd_legal) f_strat s_strat)
-
-
-structure Game_World_wDraw.assumptions (g : Game_World_wDraw α β) : Prop where
- pl : g.playable -- note to self, get rid of this for coherent end
- bl : g.law_blind'
- nt : g.coherent_end
- tb : g.transition_blind
- wb : g.win_state_eq
+-- structure Game_World_wDraw.assumptions (g : Game_World_wDraw α β) : Prop where
+--  pl : g.playable -- note to self, get rid of this for coherent end
+--  bl : g.law_blind'
+--  nt : g.coherent_end
+--  tb : g.transition_blind
+--  wb : g.win_state_eq
 
 lemma Game_World_wDraw.win_state_eq_world_after_fst
   (g : Game_World_wDraw α β) (fst_act: β) :
@@ -227,48 +123,6 @@ lemma Game_World_wDraw.win_state_eq_world_after_fst
   by
   dsimp [Game_World_wDraw.win_state_eq]
   rfl
-
-
-lemma Game_World_wDraw.History_of_reconditioned
-  (g: Game_World_wDraw α β)
-  (fst_act: β)
-  (fst_strat snd_strat : Strategy α β)
-  (hfa : fst_act = fst_strat g.init_game_state [])
-  (turn : ℕ):
-  let f_strat : Strategy α β := fun _ hist => snd_strat g.init_game_state (hist ++ [fst_act])
-  let s_strat : Strategy α β := fun _ hist => fst_strat g.init_game_state (hist ++ [fst_act])
-  History_on_turn g.init_game_state fst_strat snd_strat (turn + 1) =
-  (History_on_turn (g.world_after_fst fst_act).init_game_state f_strat s_strat turn) ++ [fst_act] :=
-  by
-  intro f_strat s_strat
-  induction' turn with t ih
-  · dsimp [History_on_turn]
-    rw [if_pos (by decide)]
-    rw [hfa]
-  · sorry
-
-
-
---#exit
-
-lemma Game_World_wDraw.assumptions_invar (g : Game_World_wDraw α β)
-  (fst_act : β) (leg : g.fst_legal [] fst_act) :
-  g.assumptions → (g.world_after_fst fst_act).assumptions :=
-  by
-  intro hg
-  constructor
-  · obtain ⟨fst_strat, snd_strat, fst_leg, snd_leg⟩ := hg.pl
-    let f_strat : Strategy α β := fun _ hist => snd_strat g.init_game_state (hist ++ [fst_act])
-    let s_strat : Strategy α β := fun _ hist => fst_strat g.init_game_state (hist ++ [fst_act])
-    use f_strat
-    use s_strat
-    constructor
-    · rw [Game_World_wDraw.world_after_fst_init, Game_World_wDraw.world_after_fst_fst_legal]
-      intro t tf
-      sorry
-      -- cases' t with t
-      -- · dsimp [History_on_turn]
-    sorry
 
 
 --#exit
@@ -288,49 +142,18 @@ lemma Game_World_wDraw.conditioning_WLD_helper
 
 open Classical
 
-lemma History_zig_zag
-  [Inhabited β]
-  (g : Game_World_wDraw α β)
-  (f_strat_wb f_strat_wa : Strategy α β)
-  (h : ∀ fst_act : β, g.fst_legal [] fst_act → (g.world_after_fst fst_act).assumptions → (g.world_after_fst fst_act).has_WLD)
-  (qws: ∀ (f_act : β), Game_World.fst_legal g.toGame_World [] f_act → (g.world_after_fst f_act).assumptions → ¬ (g.world_after_fst f_act).is_snd_win)
-  (qd: ∀ (f_act : β), Game_World.fst_legal g.toGame_World [] f_act → (g.world_after_fst f_act).assumptions → ¬ (g.world_after_fst f_act).is_draw)
-  :
-  let s_strat_wa := fun ini hist => f_strat_wb g.init_game_state (hist ++  [f_strat_wb g.init_game_state []])
-  let s_strat_wb := fun (ini : α) hist  =>
-                                if hh : hist = [] -- shouldn't happen, as snd strat
-                                then default -- dummy
-                                else let f_act := List.getLast hist hh
-                                     if H : g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions -- should be the cases ?!?
-                                     then (Classical.choose ((g.world_after_fst f_act).conditioning_WLD_helper
-                                                              (h f_act H.1 H.2)
-                                                              (qws f_act H.1 H.2)
-                                                              (qd f_act H.1 H.2)))
-                                           ini hist.dropLast -- is it ? since ref to history in current game
-                                     else default
-  ∀ turn : ℕ,
-  (History_on_turn (g.world_after_fst (f_strat_wb g.init_game_state [])).init_game_state f_strat_wa s_strat_wa turn) ++ [f_strat_wb g.init_game_state []]
-  = History_on_turn g.init_game_state f_strat_wb s_strat_wb (turn +1) :=
-  by
-  sorry
-
--- State on turn next
-
-
---#exit
-
 
 lemma Game_World_wDraw.conditioning_WLD
   [Inhabited β]
-  (g : Game_World_wDraw α β)
-  (h : ∀ fst_act : β, g.fst_legal [] fst_act → (g.world_after_fst fst_act).assumptions → (g.world_after_fst fst_act).has_WLD)
+  (g : zGame_World_wDraw α β)
+  (h : ∀ fst_act : β, (hl : g.fst_legal g.init_game_state [] fst_act) → (g.world_after_fst fst_act hl).has_WLD)
   :
   g.has_WLD :=
   by
-  by_cases qws : ∃ f_act : β, g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions ∧ (g.world_after_fst f_act).is_snd_win
+  by_cases qws : ∃ f_act : β, ∃ (hl : g.fst_legal g.init_game_state [] f_act), (g.world_after_fst f_act hl).is_snd_win
   · sorry -- remeber, fst becomes snd after fst move
   · push_neg at qws
-    by_cases qd : ∃ f_act : β, g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions ∧ (g.world_after_fst f_act).is_draw
+    by_cases qd : ∃ f_act : β, ∃ (hl : g.fst_legal g.init_game_state [] f_act), (g.world_after_fst f_act hl).is_draw
     · sorry
     · push_neg at qd
       apply Game_World_wDraw.has_WLD.ws
@@ -338,11 +161,11 @@ lemma Game_World_wDraw.conditioning_WLD
                                 if hh : hist = [] -- shouldn't happen, as snd strat
                                 then default -- dummy
                                 else let f_act := List.getLast hist hh
-                                     if H : g.fst_legal [] f_act ∧ (g.world_after_fst f_act).assumptions -- should be the cases ?!?
-                                     then (Classical.choose ((g.world_after_fst f_act).conditioning_WLD_helper
-                                                              (h f_act H.1 H.2)
-                                                              (qws f_act H.1 H.2)
-                                                              (qd f_act H.1 H.2)))
+                                     if H : g.fst_legal g.init_game_state [] f_act-- should be the cases ?!?
+                                     then (Classical.choose ((g.world_after_fst f_act H).conditioning_WLD_helper
+                                                              (h f_act H)
+                                                              (qws f_act H)
+                                                              (qd f_act H)))
                                            ini hist.dropLast -- is it ? since ref to history in current game
                                      else default
       use ws
@@ -354,7 +177,7 @@ lemma Game_World_wDraw.conditioning_WLD
         by
         dsimp [f_act]
         apply History_on_turn_getLast_fst_act
-      have tres : ∀ t : ℕ, g.fst_legal [] ((History_on_turn g.init_game_state f_strat ws (t+1)).getLast (uno t)) :=
+      have tres : ∀ t : ℕ, g.fst_legal g.init_game_state [] ((History_on_turn g.init_game_state f_strat ws (t+1)).getLast (uno t)) :=
         by
         intro t
         rw [dos t]
@@ -362,23 +185,12 @@ lemma Game_World_wDraw.conditioning_WLD
         specialize f_leg 0 (by decide)
         dsimp [History_on_turn] at f_leg
         exact f_leg
-      have quatro : (g.world_after_fst f_act).assumptions :=
-        by
-        dsimp [f_act]
-        sorry
-        -- use : Game_World_wDraw.win_state_eq_world_after_fst
-
-      -- apriori useless
-      -- have unpack : WS = choose (_ : is_snd_win (world_after_fst g f_act)) g.init_game_state (History_on_turn g.init_game_state f_strat ws (0 + 1))
-      --     :=
-      --     by
-      --     dsimp [ws]
-      --     rw [dif_neg (by apply uno)]
-      --     rw [dif_pos ⟨(by apply tres), (by apply quatro)⟩]
-      have da_prop := choose_spec ((g.world_after_fst f_act).conditioning_WLD_helper
-                                      (h f_act (by rw [← (dos 0)] ; apply tres) (quatro))
-                                      (qws f_act (by rw [← (dos 0)] ; apply tres) quatro)
-                                      (qd f_act (by rw [← (dos 0)] ; apply tres) quatro))
+      have f_act_leg := f_leg 0 (by decide)
+      dsimp [History_on_turn] at f_act_leg
+      have da_prop := choose_spec ((g.world_after_fst f_act f_act_leg).conditioning_WLD_helper
+                                      (h f_act f_act_leg)
+                                      (qws f_act f_act_leg)
+                                      (qd f_act f_act_leg))
       specialize da_prop (fun _ hist => f_strat g.init_game_state (hist ++ [f_act]))
       specialize da_prop (by sorry) (by sorry)
 
@@ -397,7 +209,7 @@ lemma Game_World_wDraw.conditioning_WLD
           sorry
         · sorry
 
-#check Game.state_on_turn_neutral
+#exit
 
 -- work on Game_World_wDraw.History_of_reconditioned and legality in its context next
 

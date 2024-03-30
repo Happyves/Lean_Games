@@ -1017,3 +1017,20 @@ lemma Game.History_Hist_legal (g : Game α β) (t : ℕ) :
   apply Game_World.History_Hist_legal
   · exact g.fst_lawful
   · exact g.snd_lawful
+
+
+
+
+-- # Carelessness
+
+def careless (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
+  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) →
+    obj ini (hist ++ prehist) = obj (swap ini prehist.tail (prehist.head h)) hist
+
+lemma careless_singleton (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless obj swap) :
+  ∀ ini : α , ∀ hist : List β, ∀ act : β, obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
+  :=
+  by
+  intro ini hist act
+  apply hc ini hist [act]
+  apply List.noConfusion
