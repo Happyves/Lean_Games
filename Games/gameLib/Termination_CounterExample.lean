@@ -8,6 +8,7 @@ import Games.games.Chomp
 import Mathlib.Tactic
 
 
+-- use 1-dim version for ease of expo
 
 def InfiChomp : Symm_Game_World (List (ℕ × ℕ)) (ℕ × ℕ) where
   init_game_state := []
