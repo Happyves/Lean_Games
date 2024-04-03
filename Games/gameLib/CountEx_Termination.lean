@@ -108,8 +108,7 @@ lemma G_state_2 (f_strat s_strat : Strategy (List ℕ) ℕ)
 example : G.isWLD ∧ (∀ T : ℕ, ¬ G.isWLD_wBound T) :=
   by
   constructor
-  · --sorry -- works, but sorried for efficiency
-    intro f_strat s_strat f_leg s_leg
+  · intro f_strat s_strat f_leg s_leg
     set f_act := f_strat [] [] with f_act_def
     use f_act
     have that := G_state_2 f_strat s_strat f_leg s_leg
@@ -196,9 +195,25 @@ example : G.isWLD ∧ (∀ T : ℕ, ¬ G.isWLD_wBound T) :=
         · specialize this t q
           have that : 2 ≤ (List.minimum! (Game_World_wDraw.state_on_turn G (fun x hist => if h : ¬hist = [] then List.minimum! hist h - 1 else T + 1) (fun x hist => if h : ¬hist = [] then List.minimum! hist h - 1 else T + 1) t) ( G_state_1 (fun x hist => if h : ¬hist = [] then List.minimum! hist h - 1 else T + 1) (fun x hist => if h : ¬hist = [] then List.minimum! hist h - 1 else T + 1) t q)) :=
             by
-            rw [Nat.sub_ass]
-
-
-
-
-#check List.mem_range'
+            rw [this]
+            rw [← ne_eq, Nat.ne_zero_iff_zero_lt, Nat.lt_iff_add_one_le] at q
+            rw [tsub_tsub_assoc (by apply le_trans tbd ; apply Nat.le_succ) q]
+            rw [show T+1 = 1+T from by apply add_comm]
+            rw [add_comm, Nat.add_sub_assoc tbd, ← add_assoc]
+            norm_num
+          cases' con with tf wf ts ws d
+          · dsimp [G] at wf
+            have why := G_state_1 (fun _ hist => if h : hist ≠ [] then (hist.minimum! h) - 1 else (T+1)) (fun _ hist => if h : hist ≠ [] then (hist.minimum! h) - 1 else (T+1)) t q
+            dsimp [G] at why
+            rw [dif_pos why] at wf
+            dsimp [G] at that
+            rw [wf] at that
+            norm_num at that
+          · dsimp [G] at ws
+            have why := G_state_1 (fun _ hist => if h : hist ≠ [] then (hist.minimum! h) - 1 else (T+1)) (fun _ hist => if h : hist ≠ [] then (hist.minimum! h) - 1 else (T+1)) t q
+            dsimp [G] at why
+            rw [dif_pos why] at ws
+            dsimp [G] at that
+            rw [ws] at that
+            norm_num at that
+          · dsimp [G] at d

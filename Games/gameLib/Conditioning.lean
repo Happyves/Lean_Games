@@ -80,6 +80,7 @@ structure zGame_World_wDraw (α β : Type _) extends Game_World_wDraw α β wher
   coherent : toGame_World_wDraw.coherent_end
   sym_trans : toGame_World_wDraw.fst_transition = toGame_World_wDraw.snd_transition
   sym_legal : toGame_World_wDraw.fst_legal = toGame_World_wDraw.snd_legal
+  sym_win : toGame_World_wDraw.fst_win_states = toGame_World_wDraw.snd_win_states
 
 
 
@@ -367,6 +368,7 @@ def zGame_World_wDraw.world_after_fst {α β : Type u} (g : zGame_World_wDraw α
       s_transition_careless := by dsimp ; apply g.s_transition_careless
       sym_trans := by dsimp ; apply g.sym_trans
       sym_legal := by dsimp ; apply g.sym_legal
+      sym_win := by dsimp ; apply g.sym_win
       coherent := by
                   intro f_strat s_strat t
                   constructor
@@ -410,13 +412,15 @@ lemma zGame_World_wDraw.world_after_fst_init (g : zGame_World_wDraw α β)
 
 
 def Game_World_wDraw.Strategy_blind_fst (strat : Strategy α β) (g : Game_World_wDraw α β) : Prop :=
-  ∀ s_strat: Strategy α β, ∀ fst_act : β, --g.fst_legal g.init_game_state [] fst_act →
+  ∀ s_strat: Strategy α β,
+  let fst_act := strat g.init_game_state []
   ∀ turn : ℕ, strat (g.world_after_fst fst_act).init_game_state (History_on_turn (g.world_after_fst fst_act).init_game_state s_strat strat turn)
     = strat g.init_game_state (History_on_turn g.init_game_state strat s_strat (turn + 1))
 
 
 def Game_World_wDraw.Strategy_blind_snd (strat : Strategy α β) (g : Game_World_wDraw α β) : Prop :=
-  ∀ f_strat: Strategy α β, ∀ fst_act : β, --g.fst_legal g.init_game_state [] fst_act →
+  ∀ f_strat: Strategy α β,
+  let fst_act := f_strat g.init_game_state []
   ∀ turn : ℕ, strat (g.world_after_fst fst_act).init_game_state (History_on_turn (g.world_after_fst fst_act).init_game_state strat f_strat turn)
     = strat g.init_game_state (History_on_turn g.init_game_state f_strat strat (turn + 1))
 
@@ -428,10 +432,9 @@ def Game_World_wDraw.strong_Strategy_blind (strat : Strategy α β) (g : Game_Wo
   ∀ hist : List β, strat (g.world_after_fst fst_act).init_game_state hist
     = strat g.init_game_state (hist ++ [fst_act])
 
-lemma Game_World_wDraw.world_after_fst_History (g : Game_World_wDraw α β)
+lemma Game_World_wDraw.world_after_fst_History_blind (g : Game_World_wDraw α β)
   (f_strat s_strat : Strategy α β) (turn : ℕ)
-  (hf : g.Strategy_blind f_strat) (hs : g.Strategy_blind s_strat)
-  -- subtlety : must be blind when played in other position also !
+  (hf : g.Strategy_blind_fst f_strat) (hs : g.Strategy_blind_snd s_strat)
   :
   (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn)
   ++ [(f_strat g.init_game_state [])] = History_on_turn g.init_game_state f_strat s_strat (turn+1) :=
@@ -450,7 +453,7 @@ lemma Game_World_wDraw.world_after_fst_History (g : Game_World_wDraw α β)
       rw [Game_World_wDraw.world_after_fst_init] at *
       rw [List.cons_append, ih]
       congr 1
-      have := hs.2 f_strat (f_strat g.init_game_state []) t
+      have := hs f_strat t
       rw [← Game_World_wDraw.world_after_fst_init, this]
       dsimp [History_on_turn]
       rw [if_pos q]
@@ -462,27 +465,54 @@ lemma Game_World_wDraw.world_after_fst_History (g : Game_World_wDraw α β)
       rw [Game_World_wDraw.world_after_fst_init] at *
       rw [List.cons_append]
       congr 1
-      have := hf.1 s_strat (f_strat g.init_game_state []) t
+      have := hf s_strat t
       rw [Game_World_wDraw.world_after_fst_init] at this
       rw [this]
       dsimp [History_on_turn]
       rw [if_neg q]
 
 
-#exit
-
-
-lemma Game_World_wDraw.strong_Strategy_blind_toWeak (strat : Strategy α β) (g : Game_World_wDraw α β) :
-  g.strong_Strategy_blind strat → g.Strategy_blind strat :=
+lemma Game_World_wDraw.world_after_fst_History_strong_blind (g : Game_World_wDraw α β)
+  (f_strat s_strat : Strategy α β) (turn : ℕ)
+  (f_leg : Strategy_legal_fst g.init_game_state g.fst_legal f_strat s_strat)
+  (hf : g.strong_Strategy_blind f_strat) (hs : g.strong_Strategy_blind s_strat)
+  :
+  (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn)
+  ++ [(f_strat g.init_game_state [])] = History_on_turn g.init_game_state f_strat s_strat (turn+1) :=
   by
-  intro hyp
-  constructor
-  · intro s_strat f_act t
-  -- intro s_strat f_act f_act_leg t
-  -- rw [Game_World_wDraw.History]
-  -- apply hyp
-  -- exact f_act_leg
+  rw [History_on_turn]
+  induction' turn with t ih
+  · dsimp [History_on_turn]
+    rw [if_pos (by decide)]
+  · unfold History_on_turn
+    by_cases q : Turn_fst (t+1)
+    · rw [if_pos q]
+      rw [List.cons_append, ih]
+      specialize hs (f_strat g.init_game_state []) (by apply f_leg 0 (by decide)) (History_on_turn (Game_World.fst_transition g.toGame_World g.init_game_state [] (f_strat g.init_game_state [])) s_strat f_strat t)
+      rw [← Game_World_wDraw.world_after_fst_init] at hs
+      rw [hs, ih]
+      rw [if_neg (show ¬ Turn_fst (Nat.succ t + 1) from (by rw [← Turn_fst_not_step]; exact q))]
+    · rw [if_neg q]
+      rw [List.cons_append, ih]
+      specialize hf (f_strat g.init_game_state []) (by apply f_leg 0 (by decide)) (History_on_turn (Game_World.fst_transition g.toGame_World g.init_game_state [] (f_strat g.init_game_state [])) s_strat f_strat t)
+      rw [← Game_World_wDraw.world_after_fst_init] at hf
+      rw [hf, ih]
+      rw [if_pos (show Turn_fst (Nat.succ t + 1) from (by rw [iff_not_comm.mp (Turn_fst_not_step (t+1))]; exact q))]
 
+
+-- might not be the case, because we have no carelessness of other strat
+-- lemma Game_World_wDraw.strong_Strategy_blind_toWeak (strat : Strategy α β) (g : Game_World_wDraw α β)
+--   (f_leg : Strategy_legal_fst g.init_game_state g.fst_legal strat s_strat) :
+--   g.strong_Strategy_blind strat → g.Strategy_blind strat :=
+--   by
+--   intro hyp
+--   constructor
+--   · intro s_strat f_act t
+--     rw [hyp]
+
+
+
+--#exit
 
 def Game_World_wDraw.hyper_Strategy_blind
   (strat : Strategy α β) (g : Game_World_wDraw α β) : Prop :=
@@ -491,7 +521,7 @@ def Game_World_wDraw.hyper_Strategy_blind
     = strat g.init_game_state (hist ++ prehist)
 
 
-lemma Game_World_wDraw.hyper_Strategy_blind_toWeak
+lemma Game_World_wDraw.hyper_Strategy_blind_toStrong
   (strat : Strategy α β) (g : Game_World_wDraw α β) :
   g.hyper_Strategy_blind strat → g.strong_Strategy_blind strat :=
   by
@@ -507,7 +537,7 @@ lemma Game_World_wDraw.hyper_Strategy_blind_toWeak
     exact hyp
 
 
-#exit
+--#exit
 
 -- # Blind law
 
@@ -694,7 +724,7 @@ lemma Game_World_wDraw.snd_legal_deconditioned
 
 
 
-
+-- keep as exit ?
 #exit
 
 lemma Game_World.Strategy_careless_act_on_turn_snd (g : Game_World α β) (f_strat s_strat: Strategy α β)
