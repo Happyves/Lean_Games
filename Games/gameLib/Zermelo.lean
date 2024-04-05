@@ -187,25 +187,19 @@ lemma zGame_World_wDraw.conditioning_WLD
         · sorry
 
 
---#exit
-
-def Game_World_wDraw.playable (g : Game_World_wDraw α β) : Prop :=
-  ∃ f_strat : Strategy α β , ∃ s_strat : Strategy α β,
-  Strategy_legal_fst g.init_game_state g.fst_legal f_strat s_strat ∧
-  Strategy_legal_snd g.init_game_state g.snd_legal f_strat s_strat
+#exit
 
 lemma zGame_World_wDraw.Zermelo
   [Inhabited β]
   (g : zGame_World_wDraw α β)
-  (hp : g.playable)
   {T : ℕ} (hg : g.isWLD_wBound T)
   : g.has_WLD :=
   by
   revert g
   induction' T with t ih
-  · intro g hp t0
+  · intro g t0
     dsimp [Game_World_wDraw.isWLD_wBound] at t0
-    obtain ⟨f_strat, s_strat, f_leg, s_leg⟩ := hp
+    obtain ⟨f_strat, s_strat, f_leg, s_leg⟩ := g.playable_has_strat g.playable
     obtain ⟨t, tl0, t_end⟩ := t0 f_strat s_strat f_leg s_leg
     rw [Nat.le_zero] at tl0
     rw [tl0] at t_end
@@ -232,18 +226,11 @@ lemma zGame_World_wDraw.Zermelo
         · dsimp [Game.state_on_turn]
           rename_i h ; exact h
         · intro t ahhh ; contradiction
-  · intro g bd hp
+  · intro g bd
     apply zGame_World_wDraw.conditioning_WLD
     intro f_act f_leg
     apply ih
-    · exact Game_World_wDraw.conditioning_bound g bd f_act f_leg hp.bl hp.nt hp.tb hp.wb
-    · exact pl
-
-
-theorem Game_World_Finite.Zermelo [Inhabited β] (g : Game_World_Finite α β) (hp : g.assumptions) :
-  g.has_WLD :=
-  by
-  exact @Game_World_wDraw.Zermelo β α _ g.toGame_World_wDraw g.bound g.termination hp
+    exact zGame_World_wDraw.conditioning_bound g bd f_act f_leg
 
 
 
