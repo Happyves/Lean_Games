@@ -62,20 +62,20 @@ instance (l : List α): Decidable (l = []) :=
   | x :: L => apply isFalse ; exact List.cons_ne_nil x L
 
 
-def fst_strat_deconditioned (g : Symm_Game_World α β) (s_strat : Strategy g) (f_act : β): Strategy g :=
+def fst_strat_deconditioned (g : Symm_Game_World α β) (f_act : β) (s_strat : Strategy (g.world_after_fst f_act)): Strategy g :=
   (fun hist => if hist = [] then f_act else s_strat  (hist.dropLast))
 
-def snd_strat_deconditioned (g : Symm_Game_World α β) (f_strat : Strategy g) : Strategy g :=
+def snd_strat_deconditioned (g : Symm_Game_World α β) (f_act : β) (f_strat : Strategy (g.world_after_fst f_act)) : Strategy g :=
   (fun hist => f_strat (hist.dropLast))
 
 
 lemma Symm_Game_World.History_of_deconditioned
   (g: Symm_Game_World α β)
   (fst_act: β)
-  (f_strat s_strat : Strategy g)
+  (f_strat s_strat : Strategy (g.world_after_fst fst_act))
   (turn : ℕ):
-  let fst_strat := fst_strat_deconditioned g s_strat fst_act
-  let snd_strat := snd_strat_deconditioned g f_strat
+  let fst_strat := fst_strat_deconditioned g fst_act s_strat
+  let snd_strat := snd_strat_deconditioned g fst_act f_strat
   History_on_turn g fst_strat snd_strat (turn + 1) =
   (History_on_turn (g.world_after_fst fst_act) f_strat s_strat turn) ++ [fst_act] :=
   by
@@ -109,10 +109,10 @@ lemma Symm_Game_World.State_of_deconditioned
   (g: Symm_Game_World α β)
   (fst_act: β)
   (fst_act_legal: g.law [] fst_act)
-  (f_strat s_strat : Strategy g)
+  (f_strat s_strat : Strategy (g.world_after_fst fst_act))
   (turn : ℕ):
-  let fst_strat := fst_strat_deconditioned g s_strat fst_act
-  let snd_strat := snd_strat_deconditioned g f_strat
+  let fst_strat := fst_strat_deconditioned g fst_act s_strat
+  let snd_strat := snd_strat_deconditioned g fst_act f_strat
   g.state_on_turn fst_strat snd_strat (turn + 1) =
   (g.world_after_fst fst_act).state_on_turn f_strat s_strat turn :=
   by
@@ -133,6 +133,7 @@ lemma Symm_Game_World.State_of_deconditioned
       rw [snd_strat_deconditioned, List.dropLast_concat]
       rw [← this]
       clear this
+      -- some sort of transition blindness seems unavoidable
       dsimp [fst_strat_deconditioned]
       dsimp at this
       specialize this t (f_strat (world_after_fst g fst_act).toGame_World.init_game_state (History_on_turn (world_after_fst g fst_act).toGame_World.init_game_state f_strat s_strat t))
