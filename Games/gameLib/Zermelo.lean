@@ -135,7 +135,7 @@ lemma zGame_World_wDraw.conditioning_WLD
     by_cases qd : ∃ f_act : β, ∃ (hl : g.fst_legal g.init_game_state [] f_act), (g.world_after_fst f_act hl).is_draw
     · sorry
     · push_neg at qd
-      apply Game_World_wDraw.has_WLD.ws
+      apply zGame_World_wDraw.has_WLD.ws
       let ws : Strategy α β := fun (ini : α) hist  =>
                                 if hh : hist = [] -- shouldn't happen, as snd strat
                                 then default -- dummy
@@ -148,43 +148,59 @@ lemma zGame_World_wDraw.conditioning_WLD
                                            ini hist.dropLast -- is it ? since ref to history in current game
                                      else default
       use ws
-      intro f_strat ws_leg f_leg
-      let f_act := f_strat g.init_game_state []
-      set WS := ws g.init_game_state (History_on_turn g.init_game_state f_strat ws (0+1)) with WS_def
-      have uno : ∀ t : ℕ, (History_on_turn g.init_game_state f_strat ws (t+1)) ≠ [] := by apply History_on_turn_nonempty_of_succ
-      have dos : ∀ t : ℕ, (History_on_turn g.init_game_state f_strat ws (t+1)).getLast (uno t) = f_act :=
-        by
-        dsimp [f_act]
-        apply History_on_turn_getLast_fst_act
-      have tres : ∀ t : ℕ, g.fst_legal g.init_game_state [] ((History_on_turn g.init_game_state f_strat ws (t+1)).getLast (uno t)) :=
-        by
-        intro t
-        rw [dos t]
-        dsimp [f_act]
-        specialize f_leg 0 (by decide)
-        dsimp [History_on_turn] at f_leg
-        exact f_leg
-      have f_act_leg := f_leg 0 (by decide)
-      dsimp [History_on_turn] at f_act_leg
-      have da_prop := Classical.choose_spec ((g.world_after_fst f_act f_act_leg).conditioning_WLD_helper
-                                      (h f_act f_act_leg)
-                                      (qws f_act f_act_leg)
-                                      (qd f_act f_act_leg))
-      specialize da_prop (fun _ hist => f_strat g.init_game_state (hist ++ [f_act]))
-      specialize da_prop (by sorry) (by sorry)
-
-      clear WS WS_def
-
-
-
-      obtain ⟨t_w , t_f, t_wf, t_bn⟩ := da_prop
-      use (t_w + 1)
       constructor
-      · rw [← Turn_fst_snd_step] ; exact t_f
-      · constructor
-        · sorry
-          -- use t_wf
-        · sorry
+      · sorry
+      · intro f_strat f_blind ws_leg f_leg
+        let f_act := f_strat g.init_game_state []
+        -- set WS := ws g.init_game_state (History_on_turn g.init_game_state f_strat ws (0+1)) with WS_def
+        -- have uno : ∀ t : ℕ, (History_on_turn g.init_game_state f_strat ws (t+1)) ≠ [] := by apply History_on_turn_nonempty_of_succ
+        -- have dos : ∀ t : ℕ, (History_on_turn g.init_game_state f_strat ws (t+1)).getLast (uno t) = f_act :=
+        --   by
+        --   dsimp [f_act]
+        --   apply History_on_turn_getLast_fst_act
+        -- have tres : ∀ t : ℕ, g.fst_legal g.init_game_state [] ((History_on_turn g.init_game_state f_strat ws (t+1)).getLast (uno t)) :=
+        --   by
+        --   intro t
+        --   rw [dos t]
+        --   dsimp [f_act]
+        --   specialize f_leg 0 (by decide)
+        --   dsimp [History_on_turn] at f_leg
+        --   exact f_leg
+        have f_act_leg := f_leg 0 (by decide)
+        dsimp [History_on_turn] at f_act_leg
+        have proof := ((g.world_after_fst f_act f_act_leg).conditioning_WLD_helper
+                                        (h f_act f_act_leg)
+                                        (qws f_act f_act_leg)
+                                        (qd f_act f_act_leg))
+        have ⟨blind , da_prop⟩ := Classical.choose_spec proof
+        specialize da_prop (fun _ hist => f_strat g.init_game_state (hist ++ [f_act]))
+        have ws_leg :
+          Strategy_legal_fst (g.world_after_fst  f_act f_act_leg).toGame_World_wDraw.toGame_World.init_game_state
+            (g.world_after_fst f_act f_act_leg).toGame_World_wDraw.toGame_World.fst_legal
+            (Classical.choose proof)
+            fun x hist => f_strat g.init_game_state (hist ++ [f_act]) :=
+          by
+          intro t tf
+          specialize ws_leg (t+1) (by rw [← Turn_fst_snd_step] ; exact tf)
+
+        -- specialize da_prop
+        --   (by
+        --    intro t tf
+        --   )
+        --   (by sorry)
+
+        -- clear WS WS_def
+
+
+
+        obtain ⟨t_w , t_f, t_wf, t_bn⟩ := da_prop
+        use (t_w + 1)
+        constructor
+        · rw [← Turn_fst_snd_step] ; exact t_f
+        · constructor
+          · sorry
+            -- use t_wf
+          · sorry
 
 
 #exit

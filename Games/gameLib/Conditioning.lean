@@ -824,7 +824,7 @@ def zGame_wDraw.draw {α β : Type u} (g : zGame_wDraw α β) : Prop :=
   g.fst_draw ∨ g.snd_draw
 
 
-def zGame_wDraw.is_fst_win  {α β : Type u} (g : zGame_wDraw α β) : Prop :=
+def zGame_World_wDraw.is_fst_win  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
   ∃ ws : Strategy α β, g.Strategy_blind_fst ws ∧
   ∀ snd_s : Strategy α β, g.Strategy_blind_fst snd_s →
    (ws_leg : Strategy_legal_fst g.init_game_state g.fst_legal ws snd_s) →
@@ -832,14 +832,14 @@ def zGame_wDraw.is_fst_win  {α β : Type u} (g : zGame_wDraw α β) : Prop :=
   ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game α β).fst_win
 
 
-def zGame_wDraw.is_snd_win  {α β : Type u} (g : zGame_wDraw α β) : Prop :=
+def zGame_World_wDraw.is_snd_win  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
   ∃ ws : Strategy α β, g.Strategy_blind_snd ws ∧
   ∀ fst_s : Strategy α β, g.Strategy_blind_snd fst_s →
    (ws_leg : Strategy_legal_snd g.init_game_state g.snd_legal fst_s ws) →
    (fst_leg : Strategy_legal_fst g.init_game_state g.fst_legal fst_s ws) →
   ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game α β).snd_win
 
-def zGame_wDraw.is_fst_draw  {α β : Type u} (g : zGame_wDraw α β) : Prop :=
+def zGame_World_wDraw.is_fst_draw  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
   ∃ ws : Strategy α β, g.Strategy_blind_fst ws ∧
   ∀ snd_s : Strategy α β, g.Strategy_blind_fst snd_s →
    (ws_leg : Strategy_legal_fst g.init_game_state g.fst_legal ws snd_s) →
@@ -847,7 +847,7 @@ def zGame_wDraw.is_fst_draw  {α β : Type u} (g : zGame_wDraw α β) : Prop :=
   ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game_wDraw α β).fst_draw
 
 
-def zGame_wDraw.is_snd_draw  {α β : Type u} (g : zGame_wDraw α β) : Prop :=
+def zGame_World_wDraw.is_snd_draw  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
   ∃ ws : Strategy α β, g.Strategy_blind_snd ws ∧
   ∀ fst_s : Strategy α β, g.Strategy_blind_snd fst_s →
    (ws_leg : Strategy_legal_snd g.init_game_state g.snd_legal fst_s ws) →
@@ -860,13 +860,35 @@ def zGame_wDraw.is_draw {α β : Type u} (g : zGame_wDraw α β) : Prop :=
 
 
 
-inductive zGame_wDraw.has_WLD (g : zGame_wDraw α β) : Prop where
+inductive zGame_World_wDraw.has_WLD (g : zGame_World_wDraw α β) : Prop where
 | wf : g.is_fst_win → g.has_WLD
 | ws : g.is_snd_win → g.has_WLD
 | d : g.is_draw → g.has_WLD
 
 
+--#exit -- here to got Zermelo to compile
 
+-- # More conditioining
+
+def snd_strat_conditioned (f_strat : Strategy α β) (f_act : β) (g : Game_World_wDraw α β) : Strategy α β :=
+  fun _ hist => f_strat g.init_game_state (hist ++ [f_act])
+
+open Classical
+
+noncomputable
+def fst_strat_conditioned [Inhabited β] (f_strat : Strategy α β) (g : Game_World_wDraw α β) : Strategy α β :=
+  fun (ini : α) hist  =>
+    if hh : hist = [] -- shouldn't happen, as snd strat
+    then default -- dummy
+    else let f_act := List.getLast hist hh
+         if H : g.fst_legal g.init_game_state [] f_act-- should be the cases ?!?
+         then f_strat ini hist.dropLast -- is it ? since ref to history in current game
+         else default
+
+lemma conditioned_legal_fst [Inhabited β] (f_act : β)  () (f_strat fst_s: Strategy α β) (g : Game_World_wDraw α β) :
+  Strategy_legal_fst (g.world_after_fst f_act f_act_leg).init_game_state (g.world_after_fst f_act f_act_leg).fst_legal f_strat (snd_strat_conditioned fst_s g) :=
+  by -- replace fst_act wih stuff
+  sorry -- test on Zermelo first
 
 
 -- keep as exit ?
