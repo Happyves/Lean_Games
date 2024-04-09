@@ -174,14 +174,32 @@ lemma zGame_World_wDraw.conditioning_WLD
                                         (qd f_act f_act_leg))
         have ⟨blind , da_prop⟩ := Classical.choose_spec proof
         specialize da_prop (fun _ hist => f_strat g.init_game_state (hist ++ [f_act]))
-        have ws_leg :
-          Strategy_legal_fst (g.world_after_fst  f_act f_act_leg).toGame_World_wDraw.toGame_World.init_game_state
-            (g.world_after_fst f_act f_act_leg).toGame_World_wDraw.toGame_World.fst_legal
-            (Classical.choose proof)
-            fun x hist => f_strat g.init_game_state (hist ++ [f_act]) :=
-          by
-          intro t tf
-          specialize ws_leg (t+1) (by rw [← Turn_fst_snd_step] ; exact tf)
+        have test := g.conditioned_legal_fst f_strat (Classical.choose proof)
+          (by
+           unfold fst_strat_conditioned
+           convert f_leg
+           simp
+           --rw [ite_eq_iff]
+           rename_i a b c d
+           by_cases H : Game_World.fst_legal g.toGame_World g.init_game_state [] (List.getLast b d)
+           · rw [if_pos H, dif_pos H]
+             have : proof = ((g.world_after_fst f_act H).conditioning_WLD_helper
+                                                              (h f_act H)
+                                                              (qws f_act H)
+                                                              (qd f_act H))
+           )
+        -- simp_rw [zGame_World_wDraw.fst_strat_conditioned] at test
+        -- specialize da_prop (by sorry) (by apply test)
+
+
+        -- have ws_leg :
+        --   Strategy_legal_fst (g.world_after_fst  f_act f_act_leg).toGame_World_wDraw.toGame_World.init_game_state
+        --     (g.world_after_fst f_act f_act_leg).toGame_World_wDraw.toGame_World.fst_legal
+        --     (Classical.choose proof)
+        --     fun x hist => f_strat g.init_game_state (hist ++ [f_act]) :=
+        --   by
+        --   intro t tf
+        --   specialize ws_leg (t+1) (by rw [← Turn_fst_snd_step] ; exact tf)
 
         -- specialize da_prop
         --   (by

@@ -16,12 +16,16 @@ extern "C" {
 LEAN_EXPORT lean_object* l_zGame__World__wDraw_world__after__fst___rarg(lean_object*, lean_object*, lean_object*);
 lean_object* lean_mk_empty_array_with_capacity(lean_object*);
 LEAN_EXPORT lean_object* l_fst__strat__deconditioned(lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_zGame__World__wDraw_snd__strat__conditioned___rarg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_zGame__wDraw_state__on__turn___rarg(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_zGame__wDraw_history__on__turn___rarg___boxed(lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_zGame__World__wDraw_snd__strat__conditioned___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l___private_Games_gameLib_Conditioning_0__History__on__turn_match__1_splitter(lean_object*);
 LEAN_EXPORT uint8_t l_instDecidableEqListNil___rarg(lean_object*);
 LEAN_EXPORT lean_object* l_Game__World__wDraw_world__after__fst(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l___private_Games_gameLib_Conditioning_0__History__on__turn_match__1_splitter___rarg___boxed(lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_zGame__World__wDraw_snd__strat__conditioned(lean_object*, lean_object*);
+lean_object* l_List_appendTR___rarg(lean_object*, lean_object*);
 uint8_t l_instDecidablePredNatTurn__fst(lean_object*);
 LEAN_EXPORT lean_object* l_instDecidableEqListNil___rarg___boxed(lean_object*);
 lean_object* lean_array_pop(lean_object*);
@@ -439,6 +443,39 @@ lean_object* x_3;
 x_3 = l_zGame__wDraw_state__on__turn___rarg(x_1, x_2);
 lean_dec(x_2);
 return x_3;
+}
+}
+LEAN_EXPORT lean_object* l_zGame__World__wDraw_snd__strat__conditioned___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5) {
+_start:
+{
+lean_object* x_6; lean_object* x_7; lean_object* x_8; lean_object* x_9; lean_object* x_10; 
+x_6 = lean_ctor_get(x_3, 0);
+lean_inc(x_6);
+lean_dec(x_3);
+x_7 = lean_box(0);
+x_8 = lean_alloc_ctor(1, 2, 0);
+lean_ctor_set(x_8, 0, x_2);
+lean_ctor_set(x_8, 1, x_7);
+x_9 = l_List_appendTR___rarg(x_5, x_8);
+x_10 = lean_apply_2(x_1, x_6, x_9);
+return x_10;
+}
+}
+LEAN_EXPORT lean_object* l_zGame__World__wDraw_snd__strat__conditioned(lean_object* x_1, lean_object* x_2) {
+_start:
+{
+lean_object* x_3; 
+x_3 = lean_alloc_closure((void*)(l_zGame__World__wDraw_snd__strat__conditioned___rarg___boxed), 5, 0);
+return x_3;
+}
+}
+LEAN_EXPORT lean_object* l_zGame__World__wDraw_snd__strat__conditioned___rarg___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5) {
+_start:
+{
+lean_object* x_6; 
+x_6 = l_zGame__World__wDraw_snd__strat__conditioned___rarg(x_1, x_2, x_3, x_4, x_5);
+lean_dec(x_4);
+return x_6;
 }
 }
 lean_object* initialize_Init(uint8_t builtin, lean_object*);

@@ -870,13 +870,13 @@ inductive zGame_World_wDraw.has_WLD (g : zGame_World_wDraw α β) : Prop where
 
 -- # More conditioining
 
-def snd_strat_conditioned (f_strat : Strategy α β) (f_act : β) (g : Game_World_wDraw α β) : Strategy α β :=
+def zGame_World_wDraw.snd_strat_conditioned (f_strat : Strategy α β) (f_act : β) (g : zGame_World_wDraw α β) : Strategy α β :=
   fun _ hist => f_strat g.init_game_state (hist ++ [f_act])
 
 open Classical
 
 noncomputable
-def fst_strat_conditioned [Inhabited β] (f_strat : Strategy α β) (g : Game_World_wDraw α β) : Strategy α β :=
+def zGame_World_wDraw.fst_strat_conditioned [Inhabited β] (f_strat : Strategy α β) (g : zGame_World_wDraw α β) : Strategy α β :=
   fun (ini : α) hist  =>
     if hh : hist = [] -- shouldn't happen, as snd strat
     then default -- dummy
@@ -885,10 +885,20 @@ def fst_strat_conditioned [Inhabited β] (f_strat : Strategy α β) (g : Game_Wo
          then f_strat ini hist.dropLast -- is it ? since ref to history in current game
          else default
 
-lemma conditioned_legal_fst [Inhabited β] (f_act : β)  () (f_strat fst_s: Strategy α β) (g : Game_World_wDraw α β) :
-  Strategy_legal_fst (g.world_after_fst f_act f_act_leg).init_game_state (g.world_after_fst f_act f_act_leg).fst_legal f_strat (snd_strat_conditioned fst_s g) :=
+lemma zGame_World_wDraw.conditioned_legal_fst [Inhabited β] (f_strat fst_s: Strategy α β) (g : zGame_World_wDraw α β) :
+  let ws := g.fst_strat_conditioned fst_s
+  (f_leg : Strategy_legal_fst g.init_game_state g.fst_legal f_strat ws) →
+  (ws_leg : Strategy_legal_snd g.init_game_state g.fst_legal f_strat ws) →
+  let f_act := f_strat g.init_game_state []
+  let f_act_leg := f_leg 0 (by decide)
+  Strategy_legal_fst (g.world_after_fst f_act f_act_leg).init_game_state (g.world_after_fst f_act f_act_leg).fst_legal f_strat (g.snd_strat_conditioned f_strat f_act) :=
   by -- replace fst_act wih stuff
   sorry -- test on Zermelo first
+
+-- lemma zGame_World_wDraw.getLast_is_fst [Inhabited β] (g : zGame_World_wDraw α β)
+--   (f_strat s_strat: Strategy α β)
+--   (hist : List β) (hh : hist ≠ []) :
+
 
 
 -- keep as exit ?
