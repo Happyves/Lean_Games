@@ -885,6 +885,14 @@ def zGame_World_wDraw.fst_strat_conditioned [Inhabited β] (f_strat : Strategy �
          then f_strat ini hist.dropLast -- is it ? since ref to history in current game
          else default
 
+lemma owirgwr [Inhabited β] (f_strat fst_s: Strategy α β) (g : zGame_World_wDraw α β) :
+  Strategy_legal_snd g.init_game_state g.snd_legal fst_s (g.fst_strat_conditioned f_strat)
+  ↔ Strategy_legal_snd g.init_game_state g.snd_legal fst_s f_strat :=
+  by -- is it ?
+  sorry
+
+#exit
+
 lemma zGame_World_wDraw.conditioned_legal_fst [Inhabited β] (f_strat fst_s: Strategy α β) (g : zGame_World_wDraw α β) :
   let ws := g.fst_strat_conditioned fst_s
   (f_leg : Strategy_legal_fst g.init_game_state g.fst_legal f_strat ws) →
