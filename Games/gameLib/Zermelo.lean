@@ -136,15 +136,18 @@ lemma zGame_World_wDraw.conditioning_WLD
     · sorry
     · push_neg at qd
       apply zGame_World_wDraw.has_WLD.ws
+      let ws_aux (hi : List β) (hne : hi ≠ [])  (hil : g.fst_legal g.init_game_state [] (hi.getLast hne)) :=
+        let f_act := List.getLast hi hne
+        (Classical.choose ((g.world_after_fst f_act hil).conditioning_WLD_helper
+                                                              (h f_act hil)
+                                                              (qws f_act hil)
+                                                              (qd f_act hil)))
       let ws : Strategy α β := fun (ini : α) hist  =>
                                 if hh : hist = [] -- shouldn't happen, as snd strat
                                 then default -- dummy
                                 else let f_act := List.getLast hist hh
                                      if H : g.fst_legal g.init_game_state [] f_act-- should be the cases ?!?
-                                     then (Classical.choose ((g.world_after_fst f_act H).conditioning_WLD_helper
-                                                              (h f_act H)
-                                                              (qws f_act H)
-                                                              (qd f_act H)))
+                                     then (ws_aux hist hh H)
                                            ini hist.dropLast -- is it ? since ref to history in current game
                                      else default
       use ws
@@ -168,57 +171,74 @@ lemma zGame_World_wDraw.conditioning_WLD
         --   exact f_leg
         have f_act_leg := f_leg 0 (by decide)
         dsimp [History_on_turn] at f_act_leg
+
+        have hmm : ∀ t, ws g.init_game_state (History_on_turn g.init_game_state f_strat ws (t+1)) =
+                    (Classical.choose ((g.world_after_fst f_act f_act_leg).conditioning_WLD_helper
+                                                              (h f_act f_act_leg)
+                                                              (qws f_act f_act_leg)
+                                                              (qd f_act f_act_leg)))
+                      g.init_game_state (History_on_turn g.init_game_state f_strat ws (t+1)).dropLast
+                :=
+                by
+                sorry
+
         have proof := ((g.world_after_fst f_act f_act_leg).conditioning_WLD_helper
                                         (h f_act f_act_leg)
                                         (qws f_act f_act_leg)
                                         (qd f_act f_act_leg))
         have ⟨blind , da_prop⟩ := Classical.choose_spec proof
-        specialize da_prop (fun _ hist => f_strat g.init_game_state (hist ++ [f_act]))
-        have test := g.conditioned_legal_fst f_strat (Classical.choose proof)
-          (by
-           unfold fst_strat_conditioned
-           convert f_leg
-           simp
-           --rw [ite_eq_iff]
-           rename_i a b c d
-           by_cases H : Game_World.fst_legal g.toGame_World g.init_game_state [] (List.getLast b d)
-           · rw [if_pos H, dif_pos H]
-             have : proof = ((g.world_after_fst f_act H).conditioning_WLD_helper
-                                                              (h f_act H)
-                                                              (qws f_act H)
-                                                              (qd f_act H))
-           )
-        -- simp_rw [zGame_World_wDraw.fst_strat_conditioned] at test
-        -- specialize da_prop (by sorry) (by apply test)
+        specialize da_prop (g.snd_strat_conditioned f_strat f_act) (by sorry)
+        specialize da_prop (by
+                            have := g.conditioned_legal_fst f_strat ws_aux f_act_leg
+                            dsimp [ws_aux] at this
+                            rw [← this]
+                            --apply f_legin some way
+
+                            )
 
 
-        -- have ws_leg :
-        --   Strategy_legal_fst (g.world_after_fst  f_act f_act_leg).toGame_World_wDraw.toGame_World.init_game_state
-        --     (g.world_after_fst f_act f_act_leg).toGame_World_wDraw.toGame_World.fst_legal
-        --     (Classical.choose proof)
-        --     fun x hist => f_strat g.init_game_state (hist ++ [f_act]) :=
-        --   by
-        --   intro t tf
-        --   specialize ws_leg (t+1) (by rw [← Turn_fst_snd_step] ; exact tf)
-
-        -- specialize da_prop
+        -- have test := g.conditioned_legal_fst f_strat (Classical.choose proof)
         --   (by
-        --    intro t tf
-        --   )
-        --   (by sorry)
+        --    unfold fst_strat_conditioned
+        --    convert f_leg
+        --    simp
+        --    --rw [ite_eq_iff]
+        --    rename_i a b c d
+        --    by_cases H : Game_World.fst_legal g.toGame_World g.init_game_state [] (List.getLast b d)
+        --    · rw [if_pos H, dif_pos H]
 
-        -- clear WS WS_def
+        --    )
+        -- -- simp_rw [zGame_World_wDraw.fst_strat_conditioned] at test
+        -- -- specialize da_prop (by sorry) (by apply test)
+
+
+        -- -- have ws_leg :
+        -- --   Strategy_legal_fst (g.world_after_fst  f_act f_act_leg).toGame_World_wDraw.toGame_World.init_game_state
+        -- --     (g.world_after_fst f_act f_act_leg).toGame_World_wDraw.toGame_World.fst_legal
+        -- --     (Classical.choose proof)
+        -- --     fun x hist => f_strat g.init_game_state (hist ++ [f_act]) :=
+        -- --   by
+        -- --   intro t tf
+        -- --   specialize ws_leg (t+1) (by rw [← Turn_fst_snd_step] ; exact tf)
+
+        -- -- specialize da_prop
+        -- --   (by
+        -- --    intro t tf
+        -- --   )
+        -- --   (by sorry)
+
+        -- -- clear WS WS_def
 
 
 
-        obtain ⟨t_w , t_f, t_wf, t_bn⟩ := da_prop
-        use (t_w + 1)
-        constructor
-        · rw [← Turn_fst_snd_step] ; exact t_f
-        · constructor
-          · sorry
-            -- use t_wf
-          · sorry
+        -- obtain ⟨t_w , t_f, t_wf, t_bn⟩ := da_prop
+        -- use (t_w + 1)
+        -- constructor
+        -- · rw [← Turn_fst_snd_step] ; exact t_f
+        -- · constructor
+        --   · sorry
+        --     -- use t_wf
+        --   · sorry
 
 
 #exit

@@ -876,36 +876,75 @@ def zGame_World_wDraw.snd_strat_conditioned (f_strat : Strategy α β) (f_act : 
 open Classical
 
 noncomputable
-def zGame_World_wDraw.fst_strat_conditioned [Inhabited β] (f_strat : Strategy α β) (g : zGame_World_wDraw α β) : Strategy α β :=
+def zGame_World_wDraw.fst_strat_conditioned [Inhabited β] (g : zGame_World_wDraw α β)
+  (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
+  : Strategy α β :=
   fun (ini : α) hist  =>
     if hh : hist = [] -- shouldn't happen, as snd strat
     then default -- dummy
     else let f_act := List.getLast hist hh
          if H : g.fst_legal g.init_game_state [] f_act-- should be the cases ?!?
-         then f_strat ini hist.dropLast -- is it ? since ref to history in current game
+         then (f_strat hist hh H) ini hist.dropLast -- is it ? since ref to history in current game
          else default
 
-lemma owirgwr [Inhabited β] (f_strat fst_s: Strategy α β) (g : zGame_World_wDraw α β) :
-  Strategy_legal_snd g.init_game_state g.snd_legal fst_s (g.fst_strat_conditioned f_strat)
-  ↔ Strategy_legal_snd g.init_game_state g.snd_legal fst_s f_strat :=
+lemma zGame_World_wDraw.history_on_turn_conditioned
+  [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Strategy α β)
+  (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
+  (f_act_leg : g.fst_legal g.init_game_state [] (fst_s g.init_game_state [])):
+  let f_act := fst_s g.init_game_state []
+  ∀ t : ℕ,
+  g.history_on_turn fst_s (g.fst_strat_conditioned f_strat) (t+1) =
+  (g.world_after_fst f_act f_act_leg).history_on_turn (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) t:=
+  by
+  sorry
+
+
+lemma zGame_World_wDraw.state_on_turn_conditioned
+  [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Strategy α β)
+  (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
+  (f_act_leg : g.fst_legal g.init_game_state [] (fst_s g.init_game_state [])):
+  let f_act := fst_s g.init_game_state []
+  ∀ t : ℕ,
+  g.state_on_turn fst_s (g.fst_strat_conditioned f_strat) (t+1) =
+  (g.world_after_fst f_act f_act_leg).state_on_turn (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) t:=
+  by
+  sorry
+
+lemma zGame_World_wDraw.conditioned_legal_fst
+  [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Strategy α β)
+  (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
+  (f_act_leg : g.fst_legal g.init_game_state [] (fst_s g.init_game_state [])) :
+  let f_act := fst_s g.init_game_state []
+  Strategy_legal_fst g.init_game_state g.fst_legal fst_s (g.fst_strat_conditioned f_strat)
+  ↔ Strategy_legal_fst (g.world_after_fst f_act f_act_leg).init_game_state (g.world_after_fst f_act f_act_leg).fst_legal (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) :=
   by -- is it ?
   sorry
 
-#exit
+lemma zGame_World_wDraw.conditioned_legal_snd
+  [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Strategy α β)
+  (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
+  (f_act_leg : g.fst_legal g.init_game_state [] (fst_s g.init_game_state [])) :
+  let f_act := fst_s g.init_game_state []
+  Strategy_legal_snd g.init_game_state g.snd_legal fst_s (g.fst_strat_conditioned f_strat)
+  ↔ Strategy_legal_snd (g.world_after_fst f_act f_act_leg).init_game_state (g.world_after_fst f_act f_act_leg).snd_legal (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) :=
+  by -- is it ?
+  sorry
 
-lemma zGame_World_wDraw.conditioned_legal_fst [Inhabited β] (f_strat fst_s: Strategy α β) (g : zGame_World_wDraw α β) :
-  let ws := g.fst_strat_conditioned fst_s
-  (f_leg : Strategy_legal_fst g.init_game_state g.fst_legal f_strat ws) →
-  (ws_leg : Strategy_legal_snd g.init_game_state g.fst_legal f_strat ws) →
-  let f_act := f_strat g.init_game_state []
-  let f_act_leg := f_leg 0 (by decide)
-  Strategy_legal_fst (g.world_after_fst f_act f_act_leg).init_game_state (g.world_after_fst f_act f_act_leg).fst_legal f_strat (g.snd_strat_conditioned f_strat f_act) :=
-  by -- replace fst_act wih stuff
-  sorry -- test on Zermelo first
+--#exit
 
--- lemma zGame_World_wDraw.getLast_is_fst [Inhabited β] (g : zGame_World_wDraw α β)
---   (f_strat s_strat: Strategy α β)
---   (hist : List β) (hh : hist ≠ []) :
+-- lemma zGame_World_wDraw.conditioned_legal_fst' [Inhabited β] (f_strat fst_s: Strategy α β) (g : zGame_World_wDraw α β) :
+--   let ws := g.fst_strat_conditioned fst_s
+--   (f_leg : Strategy_legal_fst g.init_game_state g.fst_legal f_strat ws) →
+--   (ws_leg : Strategy_legal_snd g.init_game_state g.fst_legal f_strat ws) →
+--   let f_act := f_strat g.init_game_state []
+--   let f_act_leg := f_leg 0 (by decide)
+--   Strategy_legal_fst (g.world_after_fst f_act f_act_leg).init_game_state (g.world_after_fst f_act f_act_leg).fst_legal f_strat (g.snd_strat_conditioned f_strat f_act) :=
+--   by -- replace fst_act wih stuff
+--   sorry -- test on Zermelo first
+
+-- -- lemma zGame_World_wDraw.getLast_is_fst [Inhabited β] (g : zGame_World_wDraw α β)
+-- --   (f_strat s_strat: Strategy α β)
+-- --   (hist : List β) (hh : hist ≠ []) :
 
 
 
