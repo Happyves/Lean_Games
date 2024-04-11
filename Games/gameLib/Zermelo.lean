@@ -155,20 +155,6 @@ lemma zGame_World_wDraw.conditioning_WLD
       · sorry
       · intro f_strat f_blind ws_leg f_leg
         let f_act := f_strat g.init_game_state []
-        -- set WS := ws g.init_game_state (History_on_turn g.init_game_state f_strat ws (0+1)) with WS_def
-        -- have uno : ∀ t : ℕ, (History_on_turn g.init_game_state f_strat ws (t+1)) ≠ [] := by apply History_on_turn_nonempty_of_succ
-        -- have dos : ∀ t : ℕ, (History_on_turn g.init_game_state f_strat ws (t+1)).getLast (uno t) = f_act :=
-        --   by
-        --   dsimp [f_act]
-        --   apply History_on_turn_getLast_fst_act
-        -- have tres : ∀ t : ℕ, g.fst_legal g.init_game_state [] ((History_on_turn g.init_game_state f_strat ws (t+1)).getLast (uno t)) :=
-        --   by
-        --   intro t
-        --   rw [dos t]
-        --   dsimp [f_act]
-        --   specialize f_leg 0 (by decide)
-        --   dsimp [History_on_turn] at f_leg
-        --   exact f_leg
         have f_act_leg := f_leg 0 (by decide)
         dsimp [History_on_turn] at f_act_leg
 
@@ -192,53 +178,38 @@ lemma zGame_World_wDraw.conditioning_WLD
                             have := g.conditioned_legal_fst f_strat ws_aux f_act_leg
                             dsimp [ws_aux] at this
                             rw [← this]
-                            --apply f_legin some way
-
+                            apply Strategy_legal_fst_eq_strats_snd g f_strat ws (g.fst_strat_conditioned ws_aux)
+                            · intro t ts
+                              cases' t with t
+                              · contradiction
+                              · dsimp [ws, fst_strat_conditioned]
+                                rw [dif_neg (by apply History_on_turn_nonempty_of_succ)]
+                                rw [History_on_turn_getLast_fst_act]
+                                rw [dif_pos f_act_leg]
+                                rw [dif_neg (by apply History_on_turn_nonempty_of_succ)]
+                                rw [History_on_turn_getLast_fst_act]
+                                rw [dif_pos f_act_leg]
+                                rfl
+                            · exact f_leg
                             )
-
-
-        -- have test := g.conditioned_legal_fst f_strat (Classical.choose proof)
-        --   (by
-        --    unfold fst_strat_conditioned
-        --    convert f_leg
-        --    simp
-        --    --rw [ite_eq_iff]
-        --    rename_i a b c d
-        --    by_cases H : Game_World.fst_legal g.toGame_World g.init_game_state [] (List.getLast b d)
-        --    · rw [if_pos H, dif_pos H]
-
-        --    )
-        -- -- simp_rw [zGame_World_wDraw.fst_strat_conditioned] at test
-        -- -- specialize da_prop (by sorry) (by apply test)
-
-
-        -- -- have ws_leg :
-        -- --   Strategy_legal_fst (g.world_after_fst  f_act f_act_leg).toGame_World_wDraw.toGame_World.init_game_state
-        -- --     (g.world_after_fst f_act f_act_leg).toGame_World_wDraw.toGame_World.fst_legal
-        -- --     (Classical.choose proof)
-        -- --     fun x hist => f_strat g.init_game_state (hist ++ [f_act]) :=
-        -- --   by
-        -- --   intro t tf
-        -- --   specialize ws_leg (t+1) (by rw [← Turn_fst_snd_step] ; exact tf)
-
-        -- -- specialize da_prop
-        -- --   (by
-        -- --    intro t tf
-        -- --   )
-        -- --   (by sorry)
-
-        -- -- clear WS WS_def
-
-
-
-        -- obtain ⟨t_w , t_f, t_wf, t_bn⟩ := da_prop
-        -- use (t_w + 1)
-        -- constructor
-        -- · rw [← Turn_fst_snd_step] ; exact t_f
-        -- · constructor
-        --   · sorry
-        --     -- use t_wf
-        --   · sorry
+        specialize da_prop (by
+                            have := g.conditioned_legal_snd f_strat ws_aux f_act_leg
+                            dsimp [ws_aux] at this
+                            rw [← this]
+                            apply Strategy_legal_snd_eq_strats_snd g f_strat ws (g.fst_strat_conditioned ws_aux)
+                            · intro t ts
+                              cases' t with t
+                              · contradiction
+                              · dsimp [ws, fst_strat_conditioned]
+                                rw [dif_neg (by apply History_on_turn_nonempty_of_succ)]
+                                rw [History_on_turn_getLast_fst_act]
+                                rw [dif_pos f_act_leg]
+                                rw [dif_neg (by apply History_on_turn_nonempty_of_succ)]
+                                rw [History_on_turn_getLast_fst_act]
+                                rw [dif_pos f_act_leg]
+                                rfl
+                            · exact ws_leg
+                            )
 
 
 #exit
