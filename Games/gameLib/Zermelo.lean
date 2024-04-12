@@ -212,7 +212,7 @@ lemma zGame_World_wDraw.conditioning_WLD
                             )
 
 
-#exit
+--#exit
 
 lemma zGame_World_wDraw.Zermelo
   [Inhabited β]
@@ -230,7 +230,7 @@ lemma zGame_World_wDraw.Zermelo
     rw [tl0] at t_end
     replace t_end := g.init_wld_of_turn_zero_wld f_strat s_strat t_end
     cases' t_end
-    · apply Game_World_wDraw.has_WLD.ws
+    · apply zGame_World_wDraw.has_WLD.ws
       use (fun _ _ => default)
       intro f_strat' leg f_leg'
       use 0

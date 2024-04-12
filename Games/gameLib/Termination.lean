@@ -106,6 +106,15 @@ def Game_wDraw.state_on_turn_neutral {α β : Type u} (g : Game_wDraw α β) (tu
   else ¬ (g.snd_win_states (g.state_on_turn turn)))
 
 
+lemma Game_wDraw.state_on_turn_neutral_from_World {α β : Type u} (g : Game_wDraw α β) (turn : ℕ) :
+  g.toGame_World_wDraw.state_on_turn_neutral g.fst_strat g.snd_strat t → g.state_on_turn_neutral t :=
+  by
+  dsimp [Game_World_wDraw.state_on_turn_neutral, Game_wDraw.state_on_turn_neutral]
+  intro w
+  convert w
+
+
+
 @[simp]
 lemma Symm_Game.state_on_turn_neutral_toWorld {α β : Type u} (g : Symm_Game α β) :
   g.toSymm_Game_World.state_on_turn_neutral g.fst_strat g.snd_strat = g.state_on_turn_neutral := by rfl

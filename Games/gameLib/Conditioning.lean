@@ -873,7 +873,7 @@ def zGame_World_wDraw.is_fst_win  {α β : Type u} (g : zGame_World_wDraw α β)
   ∀ snd_s : Strategy α β, g.Strategy_blind_fst snd_s →
    (ws_leg : Strategy_legal_fst g.init_game_state g.fst_legal ws snd_s) →
    (snd_leg : Strategy_legal_snd g.init_game_state g.snd_legal ws snd_s) →
-  ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game α β).fst_win
+  ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game_wDraw α β).fst_win
 
 
 def zGame_World_wDraw.is_snd_win  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
@@ -881,7 +881,7 @@ def zGame_World_wDraw.is_snd_win  {α β : Type u} (g : zGame_World_wDraw α β)
   ∀ fst_s : Strategy α β, g.Strategy_blind_snd fst_s →
    (ws_leg : Strategy_legal_snd g.init_game_state g.snd_legal fst_s ws) →
    (fst_leg : Strategy_legal_fst g.init_game_state g.fst_legal fst_s ws) →
-  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game α β).snd_win
+  ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game_wDraw α β).snd_win
 
 def zGame_World_wDraw.is_fst_draw  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
   ∃ ws : Strategy α β, g.Strategy_blind_fst ws ∧
@@ -974,6 +974,19 @@ lemma zGame_World_wDraw.conditioned_legal_snd
   by -- is it ?
   sorry
 
+
+lemma zGame_World_wDraw.conditioned_state_on_turn_neutral
+  [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Strategy α β)
+  (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
+  (f_act_leg : g.fst_legal g.init_game_state [] (fst_s g.init_game_state [])):
+  let f_act := fst_s g.init_game_state []
+  ∀ t : ℕ,
+  g.state_on_turn_neutral fst_s (g.fst_strat_conditioned f_strat) (t+1) =
+  (g.world_after_fst f_act f_act_leg).state_on_turn_neutral (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) t:=
+  by
+  sorry
+
+
 --#exit
 
 -- lemma zGame_World_wDraw.conditioned_legal_fst' [Inhabited β] (f_strat fst_s: Strategy α β) (g : zGame_World_wDraw α β) :
@@ -1037,39 +1050,64 @@ lemma Conditioning_win [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Stra
   (Leg_f : Strategy_legal_fst g.init_game_state g.fst_legal fst_s (zGame_World_wDraw.fst_strat_conditioned g f_strat))
   (Leg_s : Strategy_legal_snd g.init_game_state g.snd_legal fst_s (zGame_World_wDraw.fst_strat_conditioned g f_strat))
   (hw : let f_act := fst_s g.init_game_state []
-        Game.fst_win { toGame_World := (g.world_after_fst f_act f_act_leg).toGame_World_wDraw.toGame_World,
-                       fst_strat := f_strat [f_act] (by apply List.cons_ne_nil) f_act_leg,
-                       snd_strat := g.snd_strat_conditioned fst_s f_act,
-                       fst_lawful :=
-                        (by
-                         have := g.conditioned_legal_fst fst_s f_strat f_act_leg
-                         dsimp at this
-                         rw [zGame_World_wDraw.world_after_fst_fst_legal, ← this]
-                         exact Leg_f),
-                       snd_lawful :=
-                        (by
-                         have := g.conditioned_legal_snd fst_s f_strat f_act_leg
-                         dsimp at this
-                         rw [zGame_World_wDraw.world_after_fst_snd_legal, ← this]
-                         exact Leg_s) }) :
-    Game.snd_win { toGame_World := g.toGame_World_wDraw.toGame_World,
-                   fst_strat := fst_s,
-                   snd_strat := (zGame_World_wDraw.fst_strat_conditioned g f_strat),
-                   fst_lawful := (Leg_f),
-                   snd_lawful := (Leg_s)} :=
+        Game_wDraw.fst_win { toGame_World_wDraw := (g.world_after_fst f_act f_act_leg).toGame_World_wDraw,
+                              fst_strat := f_strat [f_act] (by apply List.cons_ne_nil) f_act_leg,
+                              snd_strat := g.snd_strat_conditioned fst_s f_act,
+                              fst_lawful :=
+                                (by
+                                have := g.conditioned_legal_fst fst_s f_strat f_act_leg
+                                dsimp at this
+                                rw [zGame_World_wDraw.world_after_fst_fst_legal, ← this]
+                                exact Leg_f),
+                              snd_lawful :=
+                                (by
+                                have := g.conditioned_legal_snd fst_s f_strat f_act_leg
+                                dsimp at this
+                                rw [zGame_World_wDraw.world_after_fst_snd_legal, ← this]
+                                exact Leg_s) }) :
+    Game_wDraw.snd_win { toGame_World_wDraw := g.toGame_World_wDraw,
+                          fst_strat := fst_s,
+                          snd_strat := (zGame_World_wDraw.fst_strat_conditioned g f_strat),
+                          fst_lawful := (Leg_f),
+                          snd_lawful := (Leg_s)} :=
   by
   obtain ⟨t, ⟨ts,tw,tn⟩⟩ := hw
-  use (t+1)
-  constructor
-  · rw [← Turn_fst_snd_step]
-    exact ts
-  · constructor
-    · rw [← g.sym_win]
-      dsimp at tw
-      convert tw using 1
+  by_cases q : g.snd_win_states g.init_game_state
+  · use 0
+    constructor
+    · decide
+    · constructor
+      · apply q
+      · intro n no
+        contradiction
+  · use (t+1)
+    constructor
+    · rw [← Turn_fst_snd_step]
+      exact ts
+    · constructor
+      · rw [← g.sym_win]
+        dsimp at tw
+        convert tw using 1
+        apply zGame_World_wDraw.state_on_turn_conditioned
+      · intro n nt
+        cases' n with n
+        · dsimp [Game_wDraw.state_on_turn_neutral]
+          rw [if_neg (by decide)]
+          dsimp [Game_wDraw.state_on_turn]
+          exact q
+        · have := g.conditioned_state_on_turn_neutral fst_s f_strat f_act_leg n
+          apply Game_wDraw.state_on_turn_neutral_from_World _ (n+1)
+          dsimp
+          rw [this]
+          apply tn
+          exact Nat.lt_of_add_lt_add_right nt
 
 
 
+
+
+
+#check Game_wDraw.state_on_turn_neutral
 
 
 
