@@ -129,6 +129,8 @@ lemma zGame_World_wDraw.conditioning_WLD
   g.has_WLD :=
   by
   classical
+  apply g.has_WLD_init_end _ h
+  rintro ⟨_,wlg_d,wlg_ws⟩
   by_cases qws : ∃ f_act : β, ∃ (hl : g.fst_legal g.init_game_state [] f_act), (g.world_after_fst f_act hl).is_snd_win
   · sorry -- remeber, fst becomes snd after fst move
   · push_neg at qws
@@ -158,15 +160,15 @@ lemma zGame_World_wDraw.conditioning_WLD
         have f_act_leg := f_leg 0 (by decide)
         dsimp [History_on_turn] at f_act_leg
 
-        have hmm : ∀ t, ws g.init_game_state (History_on_turn g.init_game_state f_strat ws (t+1)) =
-                    (Classical.choose ((g.world_after_fst f_act f_act_leg).conditioning_WLD_helper
-                                                              (h f_act f_act_leg)
-                                                              (qws f_act f_act_leg)
-                                                              (qd f_act f_act_leg)))
-                      g.init_game_state (History_on_turn g.init_game_state f_strat ws (t+1)).dropLast
-                :=
-                by
-                sorry
+        -- have hmm : ∀ t, ws g.init_game_state (History_on_turn g.init_game_state f_strat ws (t+1)) =
+        --             (Classical.choose ((g.world_after_fst f_act f_act_leg).conditioning_WLD_helper
+        --                                                       (h f_act f_act_leg)
+        --                                                       (qws f_act f_act_leg)
+        --                                                       (qd f_act f_act_leg)))
+        --               g.init_game_state (History_on_turn g.init_game_state f_strat ws (t+1)).dropLast
+        --         :=
+        --         by
+        --         sorry
 
         have proof := ((g.world_after_fst f_act f_act_leg).conditioning_WLD_helper
                                         (h f_act f_act_leg)
@@ -177,6 +179,7 @@ lemma zGame_World_wDraw.conditioning_WLD
         specialize da_prop (by
                             have := g.conditioned_legal_fst f_strat ws_aux f_act_leg
                             dsimp [ws_aux] at this
+                            simp_rw [zGame_World_wDraw.world_after_fst_fst_legal]
                             rw [← this]
                             apply Strategy_legal_fst_eq_strats_snd g f_strat ws (g.fst_strat_conditioned ws_aux)
                             · intro t ts
@@ -195,6 +198,7 @@ lemma zGame_World_wDraw.conditioning_WLD
         specialize da_prop (by
                             have := g.conditioned_legal_snd f_strat ws_aux f_act_leg
                             dsimp [ws_aux] at this
+                            simp_rw [zGame_World_wDraw.world_after_fst_snd_legal]
                             rw [← this]
                             apply Strategy_legal_snd_eq_strats_snd g f_strat ws (g.fst_strat_conditioned ws_aux)
                             · intro t ts
@@ -210,9 +214,14 @@ lemma zGame_World_wDraw.conditioning_WLD
                                 rfl
                             · exact ws_leg
                             )
+        apply Conditioning_win
+        · exact wlg_d
+        · exact wlg_ws
+        · apply da_prop
 
 
---#exit
+
+#exit
 
 lemma zGame_World_wDraw.Zermelo
   [Inhabited β]

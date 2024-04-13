@@ -112,6 +112,48 @@ lemma Game_World_wDraw.playable_has_strat (g : Game_World_wDraw α β)
     apply ps
 
 
+
+
+lemma Game_World_wDraw.has_WLD_init_end
+  (g : Game_World_wDraw α β)
+  (hg : g.playable)
+  (P : Prop)
+  (hp : P)
+  (h : (P ∧ ((¬ g.draw_states g.init_game_state) ∧ (¬ g.snd_win_states g.init_game_state))) → g.has_WLD) :
+  g.has_WLD :=
+  by
+  obtain ⟨fs,ss,_,_⟩ := g.playable_has_strat hg
+  by_cases q1 : g.draw_states g.init_game_state
+  · apply Game_World_wDraw.has_WLD.d
+    right
+    use fs
+    intro _ _ _
+    use 0
+    constructor
+    · decide
+    · constructor
+      · dsimp [Game_wDraw.state_on_turn]
+        exact q1
+      · intro n no
+        contradiction
+  · by_cases q2 : g.snd_win_states g.init_game_state
+    · apply Game_World_wDraw.has_WLD.ws
+      use fs
+      intro _ _ _
+      use 0
+      constructor
+      · decide
+      · constructor
+        · dsimp [Game_wDraw.state_on_turn]
+          exact q2
+        · intro n no
+          contradiction
+    · exact h ⟨hp, q1, q2⟩
+
+
+
+
+
 -- # zGame
 
 structure zGame_World_wDraw (α β : Type _) extends Game_World_wDraw α β where
@@ -910,6 +952,45 @@ inductive zGame_World_wDraw.has_WLD (g : zGame_World_wDraw α β) : Prop where
 | d : g.is_draw → g.has_WLD
 
 
+lemma zGame_World_wDraw.has_WLD_init_end
+  (g : zGame_World_wDraw α β)
+  (P : Prop)
+  (hp : P)
+  (h : (P ∧ ((¬ g.draw_states g.init_game_state) ∧ (¬ g.snd_win_states g.init_game_state))) → g.has_WLD) :
+  g.has_WLD :=
+  by
+  obtain ⟨fs,ss,_,_⟩ := g.playable_has_strat g.playable
+  by_cases q1 : g.draw_states g.init_game_state
+  · apply zGame_World_wDraw.has_WLD.d
+    right
+    use fs
+    intro _ _ _
+    use 0
+    constructor
+    · decide
+    · constructor
+      · dsimp [Game_wDraw.state_on_turn]
+        exact q1
+      · intro n no
+        contradiction
+  · by_cases q2 : g.snd_win_states g.init_game_state
+    · apply zGame_World_wDraw.has_WLD.ws
+      use fs
+      --figure out it strat blindess is truely needed cause it's a pain
+      sorry
+      -- intro _ _ _
+      -- use 0
+      -- constructor
+      -- · decide
+      -- · constructor
+      --   · dsimp [Game_wDraw.state_on_turn]
+      --     exact q2
+      --   · intro n no
+          -- contradiction
+    · exact h ⟨hp, q1, q2⟩
+
+
+
 --#exit -- here to got Zermelo to compile
 
 -- # More conditioining
@@ -938,10 +1019,20 @@ lemma zGame_World_wDraw.history_on_turn_conditioned
   let f_act := fst_s g.init_game_state []
   ∀ t : ℕ,
   g.history_on_turn fst_s (g.fst_strat_conditioned f_strat) (t+1) =
-  (g.world_after_fst f_act f_act_leg).history_on_turn (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) t:=
+  ((g.world_after_fst f_act f_act_leg).history_on_turn (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) t) ++ [f_act]:=
   by
-  sorry
+  intro f_act t
+  induction' t with t ih
+  · dsimp [Game_World_wDraw.history_on_turn, History_on_turn]
+    rw [if_pos (by decide)]
+  · dsimp [Game_World_wDraw.history_on_turn, History_on_turn]
+    by_cases q : Turn_fst (Nat.succ t + 1)
+    · rw [if_pos q]
+      rw [iff_not_comm.mp (Turn_fst_not_step (t+1))] at q
+      rw [if_neg q,if_neg q]
 
+
+--#exit
 
 lemma zGame_World_wDraw.state_on_turn_conditioned
   [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Strategy α β)
@@ -1049,6 +1140,8 @@ lemma Conditioning_win [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Stra
   (f_act_leg : g.fst_legal g.init_game_state [] (fst_s g.init_game_state []))
   (Leg_f : Strategy_legal_fst g.init_game_state g.fst_legal fst_s (zGame_World_wDraw.fst_strat_conditioned g f_strat))
   (Leg_s : Strategy_legal_snd g.init_game_state g.snd_legal fst_s (zGame_World_wDraw.fst_strat_conditioned g f_strat))
+  (wlg_d : ¬Game_World_wDraw.draw_states g.toGame_World_wDraw g.init_game_state)
+  (wlg_ws : ¬Game_World.snd_win_states g.toGame_World g.init_game_state)
   (hw : let f_act := fst_s g.init_game_state []
         Game_wDraw.fst_win { toGame_World_wDraw := (g.world_after_fst f_act f_act_leg).toGame_World_wDraw,
                               fst_strat := f_strat [f_act] (by apply List.cons_ne_nil) f_act_leg,
@@ -1072,42 +1165,32 @@ lemma Conditioning_win [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Stra
                           snd_lawful := (Leg_s)} :=
   by
   obtain ⟨t, ⟨ts,tw,tn⟩⟩ := hw
-  by_cases q : g.snd_win_states g.init_game_state
-  · use 0
-    constructor
-    · decide
-    · constructor
-      · apply q
-      · intro n no
-        contradiction
-  · use (t+1)
-    constructor
-    · rw [← Turn_fst_snd_step]
-      exact ts
-    · constructor
-      · rw [← g.sym_win]
-        dsimp at tw
-        convert tw using 1
-        apply zGame_World_wDraw.state_on_turn_conditioned
-      · intro n nt
-        cases' n with n
-        · dsimp [Game_wDraw.state_on_turn_neutral]
-          rw [if_neg (by decide)]
-          dsimp [Game_wDraw.state_on_turn]
-          exact q
-        · have := g.conditioned_state_on_turn_neutral fst_s f_strat f_act_leg n
-          apply Game_wDraw.state_on_turn_neutral_from_World _ (n+1)
-          dsimp
-          rw [this]
-          apply tn
-          exact Nat.lt_of_add_lt_add_right nt
+  use (t+1)
+  constructor
+  · rw [← Turn_fst_snd_step]
+    exact ts
+  · constructor
+    · rw [← g.sym_win]
+      dsimp at tw
+      convert tw using 1
+      apply zGame_World_wDraw.state_on_turn_conditioned
+    · intro n nt
+      cases' n with n
+      · dsimp [Game_wDraw.state_on_turn_neutral]
+        rw [if_neg (by decide)]
+        dsimp [Game_wDraw.state_on_turn]
+        constructor
+        · exact wlg_d
+        · exact wlg_ws
+      · have := g.conditioned_state_on_turn_neutral fst_s f_strat f_act_leg n
+        apply Game_wDraw.state_on_turn_neutral_from_World _ (n+1)
+        dsimp
+        rw [this]
+        apply tn
+        exact Nat.lt_of_add_lt_add_right nt
 
 
 
-
-
-
-#check Game_wDraw.state_on_turn_neutral
 
 
 
