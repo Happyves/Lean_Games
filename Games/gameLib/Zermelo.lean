@@ -150,7 +150,7 @@ lemma zGame_World_wDraw.conditioning_WLD
                                 else let f_act := List.getLast hist hh
                                      if H : g.fst_legal g.init_game_state [] f_act-- should be the cases ?!?
                                      then (ws_aux hist hh H)
-                                           ini hist.dropLast -- is it ? since ref to history in current game
+                                           (g.fst_transition g.init_game_state [] f_act) hist.dropLast -- is it ? since ref to history in current game
                                      else default
       use ws
       constructor
