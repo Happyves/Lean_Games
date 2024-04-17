@@ -69,7 +69,9 @@ def Symm_Game_World.strategy_fst (g : Symm_Game_World α β) :=
     g.legal_move
 
 
-
+structure Symm_Game_World.strategy_fst' (g : Symm_Game_World α β) :=
+  val : (hist : List β) → (tf : Turn_fst hist.length) → (nto : ¬ g.win_states (g.state_from_hist hist)) → β
+  prop : (hist : List β) → (tf : Turn_fst hist.length) → (nto : ¬ g.win_states (g.state_from_hist hist)) →  g.law g.init_game_state hist (val hist tf nto)
 
 
 
