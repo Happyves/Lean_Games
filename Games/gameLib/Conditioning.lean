@@ -100,14 +100,12 @@ lemma Game_World_wDraw.playable_has_strat (g : Game_World_wDraw α β)
     set hist := (History_on_turn g.init_game_state
     (fun ini hist => Classical.choose (_ : ∃ act, Game_World.fst_legal g.toGame_World ini hist act))
     (fun ini hist => Classical.choose (_ : ∃ act, Game_World.snd_legal g.toGame_World ini hist act)) t)
-      with hist_def
     have pf := Classical.choose_spec (hg.1 g.init_game_state hist)
     apply pf
   · intro t _
     set hist := (History_on_turn g.init_game_state
     (fun ini hist => Classical.choose (_ : ∃ act, Game_World.fst_legal g.toGame_World ini hist act))
     (fun ini hist => Classical.choose (_ : ∃ act, Game_World.snd_legal g.toGame_World ini hist act)) t)
-      with hist_def
     have ps:= Classical.choose_spec (hg.2 g.init_game_state hist)
     apply ps
 
@@ -911,34 +909,35 @@ def zGame_wDraw.draw {α β : Type u} (g : zGame_wDraw α β) : Prop :=
 
 
 def zGame_World_wDraw.is_fst_win  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
-  ∃ ws : Strategy α β, g.Strategy_blind_fst ws ∧
-  ∀ snd_s : Strategy α β, g.Strategy_blind_fst snd_s →
+  ∃ ws : Strategy α β, --g.Strategy_blind_fst ws ∧
+  ∀ snd_s : Strategy α β, --g.Strategy_blind_fst snd_s →
    (ws_leg : Strategy_legal_fst g.init_game_state g.fst_legal ws snd_s) →
    (snd_leg : Strategy_legal_snd g.init_game_state g.snd_legal ws snd_s) →
   ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game_wDraw α β).fst_win
 
 
 def zGame_World_wDraw.is_snd_win  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
-  ∃ ws : Strategy α β, g.Strategy_blind_snd ws ∧
-  ∀ fst_s : Strategy α β, g.Strategy_blind_snd fst_s →
+  ∃ ws : Strategy α β, -- g.Strategy_blind_snd ws ∧
+  ∀ fst_s : Strategy α β, --g.Strategy_blind_snd fst_s →
    (ws_leg : Strategy_legal_snd g.init_game_state g.snd_legal fst_s ws) →
    (fst_leg : Strategy_legal_fst g.init_game_state g.fst_legal fst_s ws) →
   ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game_wDraw α β).snd_win
 
 def zGame_World_wDraw.is_fst_draw  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
-  ∃ ws : Strategy α β, g.Strategy_blind_fst ws ∧
-  ∀ snd_s : Strategy α β, g.Strategy_blind_fst snd_s →
+  ∃ ws : Strategy α β, -- g.Strategy_blind_fst ws ∧
+  ∀ snd_s : Strategy α β, -- g.Strategy_blind_fst snd_s →
    (ws_leg : Strategy_legal_fst g.init_game_state g.fst_legal ws snd_s) →
    (snd_leg : Strategy_legal_snd g.init_game_state g.snd_legal ws snd_s) →
   ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game_wDraw α β).fst_draw
 
 
 def zGame_World_wDraw.is_snd_draw  {α β : Type u} (g : zGame_World_wDraw α β) : Prop :=
-  ∃ ws : Strategy α β, g.Strategy_blind_snd ws ∧
-  ∀ fst_s : Strategy α β, g.Strategy_blind_snd fst_s →
+  ∃ ws : Strategy α β,-- g.Strategy_blind_snd ws ∧
+  ∀ fst_s : Strategy α β, -- g.Strategy_blind_snd fst_s →
    (ws_leg : Strategy_legal_snd g.init_game_state g.snd_legal fst_s ws) →
    (fst_leg : Strategy_legal_fst g.init_game_state g.fst_legal fst_s ws) →
   ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game_wDraw α β).snd_draw
+
 
 
 def zGame_wDraw.is_draw {α β : Type u} (g : zGame_wDraw α β) : Prop :=
@@ -976,17 +975,14 @@ lemma zGame_World_wDraw.has_WLD_init_end
   · by_cases q2 : g.snd_win_states g.init_game_state
     · apply zGame_World_wDraw.has_WLD.ws
       use fs
-      --figure out it strat blindess is truely needed cause it's a pain
-      sorry
-      -- intro _ _ _
-      -- use 0
-      -- constructor
-      -- · decide
-      -- · constructor
-      --   · dsimp [Game_wDraw.state_on_turn]
-      --     exact q2
-      --   · intro n no
-          -- contradiction
+      intro _ _ _
+      use 0
+      constructor
+      · decide
+      · constructor
+        · apply q2
+        · intro t no
+          contradiction
     · exact h ⟨hp, q1, q2⟩
 
 
@@ -1004,7 +1000,7 @@ noncomputable
 def zGame_World_wDraw.fst_strat_conditioned [Inhabited β] (g : zGame_World_wDraw α β)
   (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
   : Strategy α β :=
-  fun (ini : α) hist  =>
+  fun (_ : α) hist  =>
     if hh : hist = [] -- shouldn't happen, as snd strat
     then default -- dummy
     else let f_act := List.getLast hist hh
@@ -1162,30 +1158,130 @@ lemma zGame_World_wDraw.conditioned_legal_fst
     unfold Game_World_wDraw.history_on_turn at hh
     rw [hh] at leg
     rw [hc] at leg
+    dsimp [snd_strat_conditioned]
+    rw [← g.sym_legal]
+    apply leg
+  · intro leg t tf
+    cases' t with t
+    · dsimp [History_on_turn]
+      apply f_act_leg
+    · specialize leg (t) (by rw [Turn_snd_fst_step] ; exact tf)
+      have hh := g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg t
+      have hc := careless_singleton _ _ (g.f_legal_careless)
+      unfold Game_World_wDraw.history_on_turn at hh
+      rw [hh, hc]
+      dsimp [snd_strat_conditioned] at leg
+      rw [g.sym_legal]
+      apply leg
 
-#exit
+
+
 
 lemma zGame_World_wDraw.conditioned_legal_snd
   [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Strategy α β)
   (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
+  (h_f_strat : ∀ h H: List β, (hne : h ≠ []) → (Hne : H ≠ []) →
+      (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → (Hl : g.fst_legal g.init_game_state [] (H.getLast Hne)) →
+      h.getLast hne = H.getLast Hne →
+      f_strat h hne hl = f_strat H Hne Hl)
   (f_act_leg : g.fst_legal g.init_game_state [] (fst_s g.init_game_state [])) :
   let f_act := fst_s g.init_game_state []
   Strategy_legal_snd g.init_game_state g.snd_legal fst_s (g.fst_strat_conditioned f_strat)
-  ↔ Strategy_legal_snd (g.world_after_fst f_act f_act_leg).init_game_state (g.world_after_fst f_act f_act_leg).snd_legal (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) :=
-  by -- is it ?
-  sorry
+  ↔ Strategy_legal_fst (g.world_after_fst f_act f_act_leg).init_game_state (g.world_after_fst f_act f_act_leg).fst_legal (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) :=
+  by
+  intro f_act
+  constructor
+  · intro leg t tf
+    have hh := g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg t
+    have hc := careless_singleton _ _ (g.s_legal_careless)
+    specialize leg (t+1) (by rw [← Turn_fst_snd_step] ; exact tf)
+    unfold Game_World_wDraw.history_on_turn at hh
+    rw [hh] at leg
+    rw [hc] at leg
+    dsimp [snd_strat_conditioned]
+    rw [g.sym_legal]
+    dsimp [fst_strat_conditioned] at leg
+    rw [dif_neg (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)] at leg
+    rw [dif_pos (by rw [List.getLast_append] ; apply f_act_leg)] at leg
+    rw [List.dropLast_append_of_ne_nil _ (show [f_act] ≠ [] from by apply List.cons_ne_nil)] at leg
+    dsimp at leg
+    rw [List.append_nil] at leg
+    have := h_f_strat ((Game_World_wDraw.history_on_turn (world_after_fst g (fst_s g.init_game_state []) f_act_leg).toGame_World_wDraw
+            (f_strat [fst_s g.init_game_state []] ((by apply List.cons_ne_nil) : [fst_s g.init_game_state []] ≠ []) f_act_leg)
+            (snd_strat_conditioned fst_s (fst_s g.init_game_state []) g) t ++
+             [fst_s g.init_game_state []])) [f_act]
+             (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)
+             (by apply List.cons_ne_nil)
+             (by rw [List.getLast_append] ; apply f_act_leg)
+             (by apply f_act_leg)
+             (by rw [List.getLast_append] ; dsimp)
+    unfold Game_World_wDraw.history_on_turn at this
+    rw [this] at leg
+    rw [List.getLast_append] at leg
+    apply leg
+  · intro leg t ts
+    cases' t with t
+    · contradiction
+    · have hh := g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg t
+      have hc := careless_singleton _ _ (g.s_legal_careless)
+      specialize leg (t) (by rw [Turn_fst_snd_step] ; exact ts)
+      unfold Game_World_wDraw.history_on_turn at hh
+      rw [hh]
+      rw [hc]
+      rw [← g.sym_legal]
+      rw [zGame_World_wDraw.world_after_fst_fst_legal] at leg
+      convert leg using 1
+      dsimp [fst_strat_conditioned]
+      rw [dif_neg (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)]
+      rw [dif_pos (by rw [List.getLast_append] ; apply f_act_leg)]
+      rw [List.dropLast_append_of_ne_nil _ (show [f_act] ≠ [] from by apply List.cons_ne_nil)]
+      dsimp
+      rw [List.append_nil]
+      have := h_f_strat ((Game_World_wDraw.history_on_turn (world_after_fst g (fst_s g.init_game_state []) f_act_leg).toGame_World_wDraw
+              (f_strat [fst_s g.init_game_state []] ((by apply List.cons_ne_nil) : [fst_s g.init_game_state []] ≠ []) f_act_leg)
+              (snd_strat_conditioned fst_s (fst_s g.init_game_state []) g) t ++
+              [fst_s g.init_game_state []])) [f_act]
+              (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)
+              (by apply List.cons_ne_nil)
+              (by rw [List.getLast_append] ; apply f_act_leg)
+              (by apply f_act_leg)
+              (by rw [List.getLast_append] ; dsimp)
+      unfold Game_World_wDraw.history_on_turn at this
+      rw [this]
+      rw [List.getLast_append]
+      rfl
+
 
 
 lemma zGame_World_wDraw.conditioned_state_on_turn_neutral
   [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Strategy α β)
   (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
+  (h_f_strat : ∀ h H: List β, (hne : h ≠ []) → (Hne : H ≠ []) →
+      (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → (Hl : g.fst_legal g.init_game_state [] (H.getLast Hne)) →
+      h.getLast hne = H.getLast Hne →
+      f_strat h hne hl = f_strat H Hne Hl)
   (f_act_leg : g.fst_legal g.init_game_state [] (fst_s g.init_game_state [])):
   let f_act := fst_s g.init_game_state []
   ∀ t : ℕ,
   g.state_on_turn_neutral fst_s (g.fst_strat_conditioned f_strat) (t+1) =
   (g.world_after_fst f_act f_act_leg).state_on_turn_neutral (f_strat [f_act] (List.cons_ne_nil f_act []) f_act_leg) (g.snd_strat_conditioned fst_s f_act) t:=
   by
-  sorry
+  intro f_act t
+  dsimp [Game_World_wDraw.state_on_turn_neutral]
+  rw [g.state_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg]
+  congr 1
+  by_cases q : Turn_fst t
+  · rw [if_pos q]
+    rw [Turn_fst_not_step] at q
+    rw [if_neg q]
+    rw [g.sym_win]
+  · rw [if_neg q]
+    rw [Turn_fst_not_step, not_not] at q
+    rw [if_pos q]
+    rw [g.sym_win]
+
+
+
 
 
 --#exit
@@ -1245,8 +1341,14 @@ lemma Strategy_legal_snd_eq_strats_snd
   rw [h t ts, ← History_on_turn_eq_strats_snd g f_strat sSa sSb h] at hl
   exact hl
 
+
+
 lemma Conditioning_win [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Strategy α β)
   (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β)
+  (h_f_strat : ∀ h H: List β, (hne : h ≠ []) → (Hne : H ≠ []) →
+      (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → (Hl : g.fst_legal g.init_game_state [] (H.getLast Hne)) →
+      h.getLast hne = H.getLast Hne →
+      f_strat h hne hl = f_strat H Hne Hl)
   (f_act_leg : g.fst_legal g.init_game_state [] (fst_s g.init_game_state []))
   (Leg_f : Strategy_legal_fst g.init_game_state g.fst_legal fst_s (zGame_World_wDraw.fst_strat_conditioned g f_strat))
   (Leg_s : Strategy_legal_snd g.init_game_state g.snd_legal fst_s (zGame_World_wDraw.fst_strat_conditioned g f_strat))
@@ -1258,16 +1360,17 @@ lemma Conditioning_win [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Stra
                               snd_strat := g.snd_strat_conditioned fst_s f_act,
                               fst_lawful :=
                                 (by
-                                have := g.conditioned_legal_fst fst_s f_strat f_act_leg
+                                have := g.conditioned_legal_snd fst_s f_strat h_f_strat f_act_leg
                                 dsimp at this
                                 rw [zGame_World_wDraw.world_after_fst_fst_legal, ← this]
-                                exact Leg_f),
+                                exact Leg_s),
                               snd_lawful :=
                                 (by
-                                have := g.conditioned_legal_snd fst_s f_strat f_act_leg
+                                have := g.conditioned_legal_fst fst_s f_strat h_f_strat f_act_leg
                                 dsimp at this
                                 rw [zGame_World_wDraw.world_after_fst_snd_legal, ← this]
-                                exact Leg_s) }) :
+                                exact Leg_f),
+                                }) :
     Game_wDraw.snd_win { toGame_World_wDraw := g.toGame_World_wDraw,
                           fst_strat := fst_s,
                           snd_strat := (zGame_World_wDraw.fst_strat_conditioned g f_strat),
@@ -1283,7 +1386,7 @@ lemma Conditioning_win [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Stra
     · rw [← g.sym_win]
       dsimp at tw
       convert tw using 1
-      apply zGame_World_wDraw.state_on_turn_conditioned
+      apply g.state_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg
     · intro n nt
       cases' n with n
       · dsimp [Game_wDraw.state_on_turn_neutral]
@@ -1292,101 +1395,9 @@ lemma Conditioning_win [Inhabited β] (g : zGame_World_wDraw α β) (fst_s: Stra
         constructor
         · exact wlg_d
         · exact wlg_ws
-      · have := g.conditioned_state_on_turn_neutral fst_s f_strat f_act_leg n
+      · have := g.conditioned_state_on_turn_neutral fst_s f_strat h_f_strat f_act_leg n
         apply Game_wDraw.state_on_turn_neutral_from_World _ (n+1)
         dsimp
         rw [this]
         apply tn
         exact Nat.lt_of_add_lt_add_right nt
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--- keep as exit ?
-#exit
-
-lemma Game_World.Strategy_careless_act_on_turn_snd (g : Game_World α β) (f_strat s_strat: Strategy α β)
-  (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat) (turn : ℕ) :
-  s_strat (g.world_after_fst (f_strat g.init_game_state [])).init_game_state
-    (History_on_turn (g.world_after_fst (f_strat g.init_game_state [])).init_game_state s_strat f_strat turn) =
-  s_strat g.init_game_state (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) :=
-  by
-  rw [Game_World.world_after_fst_init, hs]
-  congr
-  apply Game_World.world_after_fst_History g f_strat s_strat turn hs hf
-
-
-
-lemma Game_World.Strategy_careless_act_on_turn_fst
-  (g : zGame_World_wDraw α β)
-  (f_strat s_strat: Strategy α β)
-  (h : Strategy_legal_fst g.init_game_state g.fst_legal f_strat s_strat)
-  (hf : careless f_strat g.fst_transition) (hs : careless s_strat g.fst_transition) (turn : ℕ) :
-  f_strat (g.world_after_fst (f_strat g.init_game_state []) (by apply h 0 (by decide))).init_game_state
-    (History_on_turn (g.world_after_fst (f_strat g.init_game_state []) (by apply h 0 (by decide))).init_game_state s_strat f_strat turn) =
-  f_strat g.init_game_state (History_on_turn g.init_game_state f_strat s_strat (turn + 1)) :=
-  by
-  specialize hf g.init_game_state
-  dsimp [careless] at hf
-  rw [zGame_World_wDraw.world_after_fst_init, hf]
-  congr
-  apply Game_World.world_after_fst_History g f_strat s_strat turn hs hf
-
-
-lemma Game_World.world_after_fst_legal
-  (g : zGame_World_wDraw α β)
-  (f_strat s_strat: Strategy α β)
-  (h : Strategy_legal_fst g.init_game_state g.fst_legal f_strat s_strat)
-  (hf : careless f_strat g.fst_transition) (hs : careless s_strat g.fst_transition) :
-  Strategy_legal_snd (g.world_after_fst (f_strat g.init_game_state []) (by apply h 0 (by decide))).init_game_state g.snd_legal s_strat f_strat :=
-  by
-  dsimp [Strategy_legal_snd] at *
-  intro t
-  have := g.Strategy_careless_act_on_turn_fst f_strat s_strat hs hf t
-  rw [Game_World.world_after_fst_init] at this
-  rw [this]
-  clear this
-  obtain ⟨bf, bs⟩ := hg
-  specialize h (t+1)
-  specialize bf t (f_strat g.init_game_state (History_on_turn g.init_game_state f_strat s_strat (t + 1)))
-  rw [← Game_World.world_after_fst_init, bf]
-  exact h
-
-#exit
-
-lemma Game_World.world_after_snd_legal (g : Game_World α β)
-   (f_strat s_strat: Strategy α β) (h : Strategy_legal g.init_game_state (fun x => g.snd_legal) f_strat s_strat s_strat)
-   (hs : g.Strategy_careless s_strat) (hf : g.Strategy_careless f_strat)
-   (hg : g.law_blind f_strat s_strat):
-   Strategy_legal (g.world_after_fst (f_strat g.init_game_state [])).init_game_state (fun x => (g.world_after_fst (f_strat g.init_game_state [])).fst_legal) s_strat f_strat s_strat :=
-   by
-   dsimp [Strategy_legal] at *
-   intro t
-   have := g.Strategy_careless_act_on_turn_snd f_strat s_strat hs hf t
-   rw [Game_World.world_after_fst_init] at this
-   rw [this]
-   clear this
-   obtain ⟨bf, bs⟩ := hg
-   specialize h (t+1)
-   specialize bs t (s_strat g.init_game_state (History_on_turn g.init_game_state f_strat s_strat (t + 1)))
-   rw [← Game_World.world_after_fst_init, bs]
-   exact h
