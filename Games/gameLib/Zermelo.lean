@@ -110,8 +110,11 @@ lemma zGame_World.conditioning_WL
   by_cases qws : ∃ f_act : β, ∃ (hl : g.fst_legal g.init_game_state [] f_act), (g.world_after_fst f_act hl).is_snd_win
   · obtain ⟨f_act, f_act_leg, ws, ws_prop⟩ := qws
     apply zGame_World.has_WL.wf
-    use (g.snd_strat_deconditioned ws f_act f_act_leg)
+    use (g.snd_strat_reconditioned ws f_act f_act_leg)
     intro snd_s ws_leg snd_leg
+    specialize ws_prop (g.fst_strat_reconditioned snd_s f_act)
+    specialize ws_prop (by apply zGame_World.snd_reconditioned_legal ; exact ws_leg)
+    specialize ws_prop (by apply g.fst_reconditioned_legal f_act f_act_leg snd_s ws ; exact snd_leg )
 
   · sorry
     -- push_neg at qws
