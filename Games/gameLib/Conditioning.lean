@@ -1406,10 +1406,45 @@ lemma zGame_World.state_reconditioned
   (snd_s ws : Strategy α β) :
   ∀ t : ℕ,
   g.state_on_turn (g.snd_strat_reconditioned ws f_act f_act_leg) snd_s (t+1) =
-  g.state_on_turn (g.fst_strat_reconditioned snd_s f_act) ws (t)
+  (world_after_fst g f_act f_act_leg).state_on_turn (g.fst_strat_reconditioned snd_s f_act) ws (t)
   :=
   by
-  sorry
+  intro t
+  cases' t with t
+  · dsimp [Game_World.state_on_turn, Game_World.history_on_turn, History_on_turn, snd_strat_reconditioned]
+    rw [if_pos (by decide)]
+    rw [if_pos (by rfl)]
+    rfl
+  · dsimp [Game_World.state_on_turn]
+    by_cases q : Turn_fst (t + 1 + 1)
+    · rw [if_pos q]
+      rw [iff_not_comm.mp (Turn_fst_not_step (t+1))] at q
+      rw [if_neg q]
+      have := careless_singleton _ _ g.f_transition_careless
+      unfold Game_World.history_on_turn
+      rw [zGame_World.history_reconditioned]
+      rw [this]
+      rw [g.sym_trans]
+      congr
+      · rw [← g.sym_trans]
+        rfl
+      · dsimp [snd_strat_reconditioned]
+        rw [if_neg (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)]
+        rw [List.dropLast_append_of_ne_nil]
+        · dsimp
+          rw [List.append_nil]
+        · apply List.cons_ne_nil
+    · rw [if_neg q]
+      rw [iff_not_comm.mp (Turn_fst_not_step (t+1)), not_not] at q
+      rw [if_pos q]
+      have := careless_singleton _ _ g.s_transition_careless
+      unfold Game_World.history_on_turn
+      rw [zGame_World.history_reconditioned]
+      rw [this]
+      rw [g.sym_trans]
+      congr
+      rw [← g.sym_trans]
+      rfl
 
 
 
@@ -1418,10 +1453,28 @@ lemma zGame_World.state_neutral_reconditioned
   (snd_s ws : Strategy α β) :
   ∀ t : ℕ,
   g.state_on_turn_neutral (g.snd_strat_reconditioned ws f_act f_act_leg) snd_s (t+1) =
-  g.state_on_turn_neutral (g.fst_strat_reconditioned snd_s f_act) ws (t)
+  (world_after_fst g f_act f_act_leg).state_on_turn_neutral (g.fst_strat_reconditioned snd_s f_act) ws (t)
   :=
   by
-  sorry
+  intro t
+  unfold Game_World.state_on_turn_neutral
+  by_cases q : Turn_fst (t + 1)
+  · rw [if_pos q]
+    rw [iff_not_comm.mp (Turn_fst_not_step (t))] at q
+    rw [if_neg q]
+    rw [g.sym_win]
+    rw [zGame_World.world_after_fst_snd_win_states]
+    congr 2
+    apply zGame_World.state_reconditioned
+  · rw [if_neg q]
+    rw [iff_not_comm.mp (Turn_fst_not_step (t)), not_not] at q
+    rw [if_pos q]
+    rw [← g.sym_win]
+    rw [zGame_World.world_after_fst_fst_win_states]
+    congr 2
+    apply zGame_World.state_reconditioned
+
+
 
 
 
@@ -1430,6 +1483,7 @@ lemma zGame_World.reCondition_win
   (snd_s ws : Strategy α β)
   (ws_leg : Strategy_legal_fst g.init_game_state g.fst_legal (snd_strat_reconditioned ws f_act g f_act_leg) snd_s)
   (snd_leg : Strategy_legal_snd g.init_game_state g.snd_legal (snd_strat_reconditioned ws f_act g f_act_leg) snd_s)
+  (wlg_ws : ¬Game_World.snd_win_states g.toGame_World g.init_game_state)
   (H : Game.snd_win
     { toGame_World := (g.world_after_fst f_act f_act_leg).toGame_World,
       fst_strat := g.fst_strat_reconditioned snd_s f_act,
@@ -1453,5 +1507,20 @@ lemma zGame_World.reCondition_win
   · rw [← Turn_snd_fst_step]
     exact ts
   · constructor
-    · sorry
-    · sorry
+    · dsimp
+      rw [g.sym_win]
+      rw [zGame_World.world_after_fst_snd_win_states] at tw
+      convert tw using 1
+      apply zGame_World.state_reconditioned
+    · intro n nt
+      cases' n with n
+      · dsimp [Game.state_on_turn_neutral]
+        rw [if_neg (by decide)]
+        dsimp [Game.state_on_turn]
+        exact wlg_ws
+      · have := g.state_neutral_reconditioned
+        apply Game.state_on_turn_neutral_from_World _ (n+1)
+        dsimp
+        rw [this]
+        apply tn
+        exact Nat.lt_of_add_lt_add_right nt
