@@ -11,11 +11,23 @@ inductive Game_World.Turn_isWL (g : Game_World α β) (f_strat s_strat : Strateg
 | wf : Turn_fst turn → g.fst_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWL f_strat s_strat turn
 | ws : Turn_snd turn → g.snd_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWL f_strat s_strat turn
 
+
+--
+def Symm_Game_World.Turn_isWL (g : Symm_Game_World α β) (f_strat s_strat : Strategy α β) (turn : ℕ) : Prop := g.win_states (g.state_on_turn f_strat s_strat turn)
+
+
 inductive Game_World_wDraw.Turn_isWLD (g : Game_World_wDraw α β) (f_strat s_strat : Strategy α β) (turn : ℕ) : Prop where
 | wf : Turn_fst turn → g.fst_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWLD f_strat s_strat turn
 | ws : Turn_snd turn → g.snd_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWLD f_strat s_strat turn
 | d : g.draw_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWLD f_strat s_strat turn
 
+
+
+def Symm_Game_World.isWL (g : Symm_Game_World α β) : Prop :=
+    ∀ f_strat s_strat : Strategy α β,
+    (f_leg : Strategy_legal_fst g.init_game_state g.law f_strat s_strat) →
+    (s_leg : Strategy_legal_snd g.init_game_state g.law f_strat s_strat) →
+    ∃ turn, g.Turn_isWL f_strat s_strat turn
 
 def Game_World.isWL (g : Game_World α β) : Prop :=
     ∀ f_strat s_strat : Strategy α β,
@@ -40,6 +52,13 @@ def Game_World.isWL_wBound (g : Game_World α β) (T : ℕ) : Prop :=
     (f_leg : Strategy_legal_fst g.init_game_state g.fst_legal f_strat s_strat) →
     (s_leg : Strategy_legal_snd g.init_game_state g.snd_legal f_strat s_strat) →
     ∃ turn ≤ T, g.Turn_isWL f_strat s_strat turn
+
+def Symm_Game_World.isWL_wBound (g : Symm_Game_World α β) (T : ℕ) : Prop :=
+    ∀ f_strat s_strat : Strategy α β,
+    (f_leg : Strategy_legal_fst g.init_game_state g.law f_strat s_strat) →
+    (s_leg : Strategy_legal_snd g.init_game_state g.law f_strat s_strat) →
+    ∃ turn ≤ T, g.Turn_isWL f_strat s_strat turn
+
 
 def Game_World_wDraw.isWLD_wBound (g : Game_World_wDraw α β) (T : ℕ) : Prop :=
     ∀ f_strat s_strat : Strategy α β,
@@ -133,6 +152,13 @@ lemma Game.state_on_turn_neutral_from_World {α β : Type u} (g : Game α β) (t
   g.toGame_World.state_on_turn_neutral g.fst_strat g.snd_strat t → g.state_on_turn_neutral t :=
   by
   dsimp [Game_World.state_on_turn_neutral]
+  intro w
+  convert w
+
+lemma Symm_Game.state_on_turn_neutral_from_World {α β : Type u} (g : Symm_Game α β) (turn : ℕ) :
+  g.toSymm_Game_World.state_on_turn_neutral g.fst_strat g.snd_strat t → g.state_on_turn_neutral t :=
+  by
+  dsimp [Symm_Game_World.state_on_turn_neutral]
   intro w
   convert w
 
