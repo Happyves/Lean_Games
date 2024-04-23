@@ -6,6 +6,7 @@ Author: Yves Jäckle.
 
 import Games.exLib.Nat
 import Games.gameLib.Basic
+import Games.gameLib.Termination
 import Mathlib.Tactic
 
 
@@ -42,8 +43,8 @@ lemma bricks_start_cons (ini : ℕ) (hist : List ℕ) (x : ℕ) :
 def PickUpBricks : Symm_Game_World ℕ ℕ where
   init_game_state := init_bricks
   win_states := (fun n => n = 0) -- won once no bricks left
-  transition := bricks_end_turn_from_ini_hist_act init_bricks
-  law := fun hist act => match M : (bricks_start_turn_from_ini_hist init_bricks hist) with
+  transition := fun ini => bricks_end_turn_from_ini_hist_act ini
+  law := fun ini hist act => match M : (bricks_start_turn_from_ini_hist ini hist) with
                              | 0 => act = 0 -- if no bricks there, then take none
                              | 1 => act = 1 -- if only one brick there, then take it
                              | _ => act = 1 ∨ act = 2 -- else, take one or two bricks
@@ -78,6 +79,7 @@ lemma PUB_state_bricks {g : Symm_Game ℕ ℕ} {n : ℕ} (h : g.toSymm_Game_Worl
       congr
       all_goals rw [h]
       all_goals rw [PickUpBricks]
+
 
 
 def pub_win_strat : List ℕ → ℕ  := -- for fst player ; (is strat ; remeber that init_bricks is section param)
@@ -152,7 +154,7 @@ wrt. PickUpBricks and this strategy as second stargegy
 lemma pub_win_strat_legal (s_strat : Strategy ℕ ℕ):
   Strategy_legal_fst
     init_bricks
-    (fun _ : ℕ => (PickUpBricks init_bricks).law)
+    (fun ini : ℕ => (PickUpBricks init_bricks).law ini)
     pub_win_strat
     s_strat
     :=
@@ -174,13 +176,14 @@ lemma pub_win_strat_legal (s_strat : Strategy ℕ ℕ):
     · apply h1
 
 
+
 def toy_strat : List ℕ → ℕ  := -- for demonstration purposes
   fun hist => if bricks_start_turn_from_ini_hist init_bricks hist = 0 then 0 else 1
 
 lemma toy_strat_legal (f_strat : Strategy ℕ ℕ):
   Strategy_legal_snd
     init_bricks
-    (fun _ : ℕ => (PickUpBricks init_bricks).law)
+    (fun ini : ℕ => (PickUpBricks init_bricks).law ini)
     f_strat
     toy_strat
     :=
@@ -246,7 +249,7 @@ the first players turns are always 0 mod 3.
 lemma loop_invariant
   (win_hyp : init_bricks % 3 = 1 ∨ init_bricks % 3 = 2)
   (s_strat : Strategy ℕ ℕ)
-  (s_law : Strategy_legal_snd init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) pub_win_strat s_strat) :
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) pub_win_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := pub_win_strat
                              fst_lawful := pub_win_strat_legal init_bricks s_strat
@@ -341,10 +344,11 @@ lemma loop_invariant
                 · contradiction
 
 
+
 lemma acts_le_bricks
   (f_strat s_strat : Strategy ℕ ℕ)
-  (f_law : Strategy_legal_fst init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat)
-  (s_law : Strategy_legal_snd init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat) :
+  (f_law : Strategy_legal_fst init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat)
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              fst_lawful := f_law
@@ -412,8 +416,8 @@ lemma acts_le_bricks
 
 lemma acts_pos_condition
   (f_strat s_strat : Strategy ℕ ℕ)
-  (f_law : Strategy_legal_fst init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat)
-  (s_law : Strategy_legal_snd init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat) :
+  (f_law : Strategy_legal_fst init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat)
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              fst_lawful := f_law
@@ -459,10 +463,11 @@ lemma acts_pos_condition
       · intro ts ; cases' s_law ts with c c <;> {rw [c] ; decide}
 
 
+
 lemma loop_invariant'
   (win_hyp : init_bricks % 3 = 1 ∨ init_bricks % 3 = 2)
   (s_strat : Strategy ℕ ℕ)
-  (s_law : Strategy_legal_snd init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) pub_win_strat s_strat) :
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) pub_win_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := pub_win_strat
                              fst_lawful := pub_win_strat_legal init_bricks s_strat
@@ -519,8 +524,8 @@ lemma loop_invariant'
 
 lemma termination_pre
   (f_strat s_strat : Strategy ℕ ℕ)
-  (f_law : Strategy_legal_fst init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat)
-  (s_law : Strategy_legal_snd init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat) :
+  (f_law : Strategy_legal_fst init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat)
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              fst_lawful := f_law
@@ -564,8 +569,8 @@ reach a turn where there are no bricks left.
 -/
 lemma termination
   (fst_strat snd_strat : Strategy ℕ ℕ )
-  (f_law : Strategy_legal_fst init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat)
-  (s_law : Strategy_legal_snd init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat) :
+  (f_law : Strategy_legal_fst init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat)
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              fst_lawful := f_law

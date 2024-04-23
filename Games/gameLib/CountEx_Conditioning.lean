@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Yves Jäckle.
 -/
 
-import Games.gameLib.Conditioning
+import Games.gameLib.Conditioning_wDraw
 
 
 

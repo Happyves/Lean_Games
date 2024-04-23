@@ -27,7 +27,6 @@ instance : DecidableRel nondomi :=
   exact Not.decidable
 
 
-variable (height length : ℕ) -- implicit def opens a world of pain
 
 
 instance (l : List (ℕ × ℕ)) : DecidablePred (fun p => ∀ q ∈ l, nondomi q p) :=
@@ -36,68 +35,35 @@ instance (l : List (ℕ × ℕ)) : DecidablePred (fun p => ∀ q ∈ l, nondomi 
   dsimp [nondomi,domi]
   exact List.decidableBAll (fun x => ¬(x.1 ≤ p.1 ∧ x.2 ≤ p.2)) l
 
+variable (height length : ℕ)
+
 -- pretty print the state
 def pp_Chomp_state (l : List (ℕ × ℕ)) :=
-  ((List.range (length + 1)) ×ˢ (List.range (height + 1))).filter
+  ((List.range (length)) ×ˢ (List.range (height))).filter
     (fun p => ∀ q ∈ l, nondomi q p)
 
-
-structure Chomp_law (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Prop where
+structure Chomp_law (_ : List (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Prop where
   h : act.2 ≤ height
   l : act.1 ≤ length
-  nd : @pp_Chomp_state height length hist ≠ [(0,0)] → ∀ q ∈ hist, nondomi q act
+  nd : pp_Chomp_state height length hist ≠ [(0,0)] → ∀ q ∈ hist, nondomi q act
   nz : act ≠ (0,0) -- even when end is reached, the partial function phenomenon forbids playing (0,0)
   -- for the game to be playable, one of `height` or `length` must be positive
 
 def Chomp : Symm_Game_World (List (ℕ × ℕ)) (ℕ × ℕ) where
-  init_game_state := (@pp_Chomp_state height length) []
+  init_game_state := (pp_Chomp_state height length) []
   win_states := (fun state => state = [(0,0)])
-  transition := fun hist act => (@pp_Chomp_state height length) (act :: hist)
-  law := @Chomp_law height length
+  transition := fun _ hist act => if (pp_Chomp_state height length hist) = [(0,0)]
+                                    then [(0,0)]
+                                    else (pp_Chomp_state height length) (act :: hist)
+  law := Chomp_law height length
 
 
-def some_strat : Strategy (List (ℕ × ℕ)) (ℕ × ℕ) :=
-  fun _ hist =>
-      let s := pp_Chomp_state height length hist ;
-                  if h1 : s ≠ [(0,0)]
-                  then (if h2 : s.contains (1,0)
-                        then (1,0)
-                        else (if h3 : s.contains (0,1)
-                              then (0,1)
-                              else (length, height)))
-                  else (length, height)
+lemma Chomp_law_careless : careless (Chomp height length).law (Chomp height length).transition :=
+  by
+  intro ini hist prehist Hpre
+  dsimp [Chomp]
+  ext
 
-
-lemma some_strat_strat_legal_fst
-  (s_strat : Strategy (List (ℕ × ℕ)) (ℕ × ℕ)) :
-  Strategy_legal
-    (pp_Chomp_state 3 3 [])
-    (fun _ : (List (ℕ × ℕ)) => (Chomp 3 3).law)
-    (some_strat 3 3)
-    s_strat
-    (some_strat 3 3)
-    :=
-    by
-    dsimp [Strategy_legal, Chomp, some_strat, History_on_turn]
-    intro t
-    constructor
-    · split_ifs <;> decide
-    · split_ifs <;> decide
-    · intro nz q qdef
-      split_ifs
-      · rename_i a b
-        contradiction
-      · rename_i a b c
-        contradiction
-      · rename_i a b c
-        contradiction
-      · rename_i a b
-        rw [nondomi,domi]
-        dsimp
-        sorry
-      · sorry
-      · sorry
-    · split_ifs <;> decide
 
 
 
