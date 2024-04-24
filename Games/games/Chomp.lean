@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Yves Jäckle.
 -/
 
-import Games.exLib.Nat
+import Games.exLib.List
 import Games.gameLib.Basic
 import Mathlib.Tactic
 import Mathlib.Data.List.ProdSigma
@@ -58,11 +58,41 @@ def Chomp : Symm_Game_World (List (ℕ × ℕ)) (ℕ × ℕ) where
   law := Chomp_law height length
 
 
+lemma act_ne_zero_of_Chomp_law (ini : List (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act now : ℕ × ℕ)
+  (h : Chomp_law height length ini hist now) (ha : act ∈ hist) : act ≠ (0,0) :=
+  by
+  induction' hist with x l ih
+  · contradiction
+  · cases' ha with q
+    · intro con
+
+
+#exit
+
+
+lemma pp_Chomp_state_nonempty (h : 1 ≤ height ∨ 1 ≤ length) (l : List (ℕ × ℕ)) : pp_Chomp_state height length l ≠ [] :=
+  by
+  apply @List.ne_nil_of_mem _ (0,0) _
+
+
+
+
 lemma Chomp_law_careless : careless (Chomp height length).law (Chomp height length).transition :=
   by
   intro ini hist prehist Hpre
   dsimp [Chomp]
-  ext
+  ext act
+  constructor
+  · intro H
+    constructor
+    · exact H.h
+    · exact H.l
+    · intro hh q qh
+      apply H.nd
+      · intro con
+
+      · exact List.mem_append_left _ qh
+
 
 
 
