@@ -57,6 +57,26 @@ def Chomp : Symm_Game_World (List (ℕ × ℕ)) (ℕ × ℕ) where
                                     else (pp_Chomp_state height length) (act :: hist)
   law := Chomp_law height length
 
+lemma pp_Chomp_state_terminal_iff (hist : List (ℕ × ℕ)) :
+  pp_Chomp_state height length hist = [(0,0)] ↔
+  (∀ q ∈ (List.range (length)) ×ˢ (List.range (height)), q ≠ (0,0) → ∃ p ∈ hist, domi p q) :=
+  by
+  constructor
+  · intro c q qdef qnz
+    by_contra! con
+    have : q ∈ pp_Chomp_state height length hist :=
+      by
+      dsimp [pp_Chomp_state]
+      rw [List.mem_filter]
+      rw [Bool.coe_decide]
+      exact ⟨qdef, con⟩
+    rw [c, List.mem_singleton] at this
+    exact qnz this
+  · intro c
+    dsimp [pp_Chomp_state]
+
+
+#exit
 
 lemma act_ne_zero_of_Chomp_law (ini : List (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act now : ℕ × ℕ)
   (h : Chomp_law height length ini hist now) (ha : act ∈ hist) : act ≠ (0,0) :=
@@ -67,17 +87,27 @@ lemma act_ne_zero_of_Chomp_law (ini : List (ℕ × ℕ)) (hist : List (ℕ × �
     · intro con
 
 
-#exit
+--#exit
 
 
-lemma pp_Chomp_state_nonempty (h : 1 ≤ height ∨ 1 ≤ length) (l : List (ℕ × ℕ)) : pp_Chomp_state height length l ≠ [] :=
+lemma pp_Chomp_state_nonempty (h_base : 0 < height ∧ 0 < length) (l : List (ℕ × ℕ)) : pp_Chomp_state height length l ≠ [] :=
   by
   apply @List.ne_nil_of_mem _ (0,0) _
+  dsimp [pp_Chomp_state]
+  rw [List.mem_filter]
+  constructor
+  · rw [List.mem_product, List.mem_range, List.mem_range]
+    exact ⟨h_base.2, h_base.1⟩
+  · rw [Bool.coe_decide]
+    intro q ql
+    dsimp [nondomi, domi]
+    intro con
+    rw [Nat.le_zero, Nat.le_zero] at con
 
 
 
 
-lemma Chomp_law_careless : careless (Chomp height length).law (Chomp height length).transition :=
+lemma Chomp_law_careless (h_base : 0 < height ∧ 0 < length) : careless (Chomp height length).law (Chomp height length).transition :=
   by
   intro ini hist prehist Hpre
   dsimp [Chomp]

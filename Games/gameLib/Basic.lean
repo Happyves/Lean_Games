@@ -1034,3 +1034,61 @@ lemma careless_singleton (obj : α → List β → γ) (swap : α → List β �
   intro ini hist act
   apply hc ini hist [act]
   apply List.noConfusion
+
+
+-- # More
+
+lemma History_eq_of_strat_strong_eq
+  (ini : α) (f_strat s_strat F_strat S_strat : Strategy α β)
+  (T : Nat)
+  (hf : ∀ hist : List β, hist.length ≤ T → f_strat ini hist = F_strat ini hist)
+  (hs : ∀ hist : List β, hist.length ≤ T → s_strat ini hist = S_strat ini hist) :
+  ∀ t ≤ (T+1), History_on_turn ini f_strat s_strat t = History_on_turn ini F_strat S_strat t :=
+  by
+  intro t tle
+  induction' t with t ih
+  · dsimp [History_on_turn]
+  · dsimp [History_on_turn]
+    by_cases q : Turn_fst (t + 1)
+    · rw [if_pos q, if_pos q]
+      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
+      rw [ih]
+      congr
+      apply hf
+      rw [History_on_turn_length]
+      exact Nat.lt_succ.mp tle
+    · rw [if_neg q, if_neg q]
+      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
+      rw [ih]
+      congr
+      apply hs
+      rw [History_on_turn_length]
+      exact Nat.lt_succ.mp tle
+
+
+lemma History_eq_of_strat_strong_eq'
+  (ini : α) (f_strat s_strat F_strat S_strat : Strategy α β)
+  (T : Nat)
+  (hf : ∀ hist : List β, hist.length < T → f_strat ini hist = F_strat ini hist)
+  (hs : ∀ hist : List β, hist.length < T → s_strat ini hist = S_strat ini hist) :
+  ∀ t ≤ (T), History_on_turn ini f_strat s_strat t = History_on_turn ini F_strat S_strat t :=
+  by
+  intro t tle
+  induction' t with t ih
+  · dsimp [History_on_turn]
+  · dsimp [History_on_turn]
+    by_cases q : Turn_fst (t + 1)
+    · rw [if_pos q, if_pos q]
+      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
+      rw [ih]
+      congr
+      apply hf
+      rw [History_on_turn_length]
+      exact tle
+    · rw [if_neg q, if_neg q]
+      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
+      rw [ih]
+      congr
+      apply hs
+      rw [History_on_turn_length]
+      exact tle

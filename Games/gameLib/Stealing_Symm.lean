@@ -14,12 +14,11 @@ def strat_predeco (strat : Strategy α β) (prehist : List β) (g : Symm_Game_Wo
   (fun _ hist => if s : hist.length < prehist.length then prehist.reverse.get ⟨hist.length, (by rw [List.length_reverse] ; exact s)⟩  else strat (g.world_after_preHist prehist).init_game_state (hist.rdrop prehist.length))
 
 
-
 lemma Symm_Game_World.History_of_predeco_len_prehist
   (g: Symm_Game_World α β)
   (prehist: List β)
   (f_strat s_strat : Strategy α β)
-  (turn : ℕ):
+  :
   let fst_strat := strat_predeco s_strat prehist g
   let snd_strat := strat_predeco f_strat prehist g
   History_on_turn g.init_game_state fst_strat snd_strat (prehist.length) = prehist :=
@@ -33,9 +32,34 @@ lemma Symm_Game_World.History_of_predeco_len_prehist
       dsimp [strat_predeco]
       simp_rw [History_on_turn_length]
       rw [dif_pos (by exact Nat.lt.base (List.length l))]
-      have := List.reverse_cons x l
-      simp_rw [this]
+      have := List.get_reverse (x :: l) 0
+          (by dsimp ; rw [Nat.succ_sub_one, List.length_reverse] ; dsimp ; apply Nat.lt.base )
+          (by dsimp ; exact Nat.succ_pos (List.length l))
+      dsimp at this
+      simp_rw [Nat.succ_sub_one] at this
+      rw [this]
+      congr
+      convert ih using 1
+      apply History_eq_of_strat_strong_eq' _ _ _ _ _ (l.length)
+      · intro h hl
+        dsimp [strat_predeco]
+        simp_rw [Nat.lt_succ, dif_pos hl, dif_pos (le_of_lt hl)]
+        have tec1 := List.get_reverse (x :: l) (l.length - h.length)
+          (by dsimp ; rw [Nat.succ_sub_one, List.length_reverse] ; dsimp ; rw [Nat.sub_sub_self (le_of_lt hl)] ; exact Nat.lt.step hl)
+          (by dsimp ; rw [Nat.lt_succ] ; exact Nat.sub_le (List.length l) (List.length h) )
+        dsimp at tec1
+        simp_rw [Nat.succ_sub_one, Nat.sub_sub_self (le_of_lt hl)] at tec1
+        rw [tec1]
+        clear tec1
+        have tec2 := List.get_reverse' (l) ⟨h.length, (by rwa [List.length_reverse])⟩
+          (by dsimp ; exact Nat.sub_one_sub_lt hl )
+        dsimp at tec2
+        rw [tec2]
+        clear tec2
+        sorry
+        -- disjoin cases on l, can't be empty due to hl, use ↓
 
+#check List.get_cons_succ
 
 #exit
 
