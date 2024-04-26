@@ -488,8 +488,8 @@ lemma Symm_Game.History_Hist_legal (g : Symm_Game α β) (t : ℕ) :
 
 -- # Carelessness
 
-def careless (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
-  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) →
+def careless () (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
+  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) → →
     obj ini (hist ++ prehist) = obj (swap ini prehist.tail (prehist.head h)) hist
 
 lemma careless_singleton (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless obj swap) :

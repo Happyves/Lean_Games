@@ -5,7 +5,7 @@ Author: Yves Jäckle.
 -/
 
 import Mathlib.Tactic
-
+import Mathlib.Data.List.DropRight
 
 def List.minimum! [Preorder α] [@DecidableRel α (· < ·)] (l : List α) (h : l ≠ []) : α :=
   match l with
@@ -27,36 +27,38 @@ lemma List.ne_empty_iff_exists_mem (L : List α) : L ≠ [] ↔ ∃ a, a ∈ L :
     exact ne_nil_of_mem adef
 
 
-lemma List.filter_eq_iff [DecidableEq α] (a b : List α) {P : α → Bool} :
-  a.filter P = b ↔ ((∀ x ∈ b, x ∈ a) ∧ (∀ x ∈ a, (x ∈ b → P x) ∧ (x ∉ b → ¬ P x)) ) :=
+lemma List.rdrop_append.{u} {α : Type u} {l₁ l₂ : List α} (i : ℕ) : List.rdrop (l₁ ++ l₂) (List.length l₂ + i)  = List.rdrop l₁ i:=
   by
+  simp_rw [List.rdrop_eq_reverse_drop_reverse, List.reverse_append]
+  congr 1
+  rw [← List.length_reverse]
+  apply List.drop_append
+
+
+
+
+lemma List.filter_eq_if [DecidableEq α] (a b : List α) {P : α → Bool} :
+  a.filter P = b → ((∀ x ∈ b, x ∈ a) ∧ (∀ x ∈ a, (x ∈ b ↔ P x))) :=
+  -- converse only up to permutation !
+  by
+  intro c
   constructor
-  · intro c
+  · intro x xb
+    rw [← c] at xb
+    exact mem_of_mem_filter xb
+  · intro x xa
     constructor
-    · intro x xb
+    · intro xb
       rw [← c] at xb
-      exact mem_of_mem_filter xb
-    · intro x xa
-      constructor
-      · intro xb
-        rw [← c] at xb
-        exact of_mem_filter xb
-      · contrapose!
-        rw [← c]
-        exact fun a_1 => mem_filter_of_mem xa a_1
-  · intro ⟨c1,c2⟩
-    induction' b with y l ih
-    · simp at *
-      rw [List.filter_eq_nil]
-      simp
-      apply c2
-    ·
-    -- induction' a with x l ih
-    -- · rw [List.filter_nil]
-    --   cases' b with y b
-    --   · rfl
-    --   · exfalso
-    --     exact (List.not_mem_nil y) (c1 y (by apply List.mem_cons_self))
-    -- · rw [List.filter_cons]
-    --   split_ifs with q
-    --   · specialize c2 x (by apply List.mem_cons_self)
+      exact of_mem_filter xb
+    · rw [← c]
+      exact fun a_1 => mem_filter_of_mem xa a_1
+
+
+lemma List.cons_head_tail (l : List α) (hl : l ≠ []) : (l.head hl) :: l.tail = l :=
+  match l with
+  | [] => (by contradiction)
+  | x :: l => (by dsimp)
+
+
+lemma List.cons_eq_singleton_append (l : List α) (x : α) : x :: l = [x] ++ l := by exact rfl

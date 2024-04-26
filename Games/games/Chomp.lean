@@ -5,7 +5,7 @@ Author: Yves Jäckle.
 -/
 
 import Games.exLib.List
-import Games.gameLib.Basic
+import Games.gameLib.Conditioning_Symm
 import Mathlib.Tactic
 import Mathlib.Data.List.ProdSigma
 
@@ -26,40 +26,266 @@ instance : DecidableRel nondomi :=
   rw [nondomi]
   exact Not.decidable
 
-
-
-
 instance (l : List (ℕ × ℕ)) : DecidablePred (fun p => ∀ q ∈ l, nondomi q p) :=
   by
   intro p
   dsimp [nondomi,domi]
   exact List.decidableBAll (fun x => ¬(x.1 ≤ p.1 ∧ x.2 ≤ p.2)) l
 
-variable (height length : ℕ)
+
+def Chomp_state (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) :=
+  ini.filter (fun p => ∀ q ∈ hist, nondomi q p)
+
+
+
+lemma Chomp_state_sub (ini : Finset (ℕ × ℕ)) (l L :  List (ℕ × ℕ)) :
+  Chomp_state ini (l ++ L) ⊆ Chomp_state ini l :=
+  by
+  intro x xdef
+  dsimp [Chomp_state] at *
+  rw [Finset.mem_filter] at *
+  constructor
+  · apply xdef.1
+  · intro q ql
+    apply xdef.2
+    exact List.mem_append.mpr (Or.inl ql)
+
+lemma Chomp_state_sub' (ini : Finset (ℕ × ℕ)) (l L :  List (ℕ × ℕ)) :
+  Chomp_state ini (l ++ L) ⊆ Chomp_state ini L :=
+  by
+  intro x xdef
+  dsimp [Chomp_state] at *
+  rw [Finset.mem_filter] at *
+  constructor
+  · apply xdef.1
+  · intro q ql
+    apply xdef.2
+    exact List.mem_append_right l ql
+
+
+def Comp_init (height length : ℕ) := (Finset.range (length)) ×ˢ (Finset.range (height))
+
+
+def chain_nondomi : List (ℕ × ℕ) → Prop := List.Pairwise nondomi
+
+lemma chain_nondomi_sub (l L :  List (ℕ × ℕ)) :
+  chain_nondomi (l ++ L) → chain_nondomi l :=
+  by
+  induction' l with x l ih
+  · intro _
+    dsimp [chain_nondomi]
+    apply List.Pairwise.nil
+  · intro H
+    dsimp [chain_nondomi] at *
+    cases' H
+    rename_i H1 H2
+    apply List.Pairwise.cons
+    · intro q ql
+      apply H2
+      exact List.mem_append.mpr (Or.inl ql)
+    · exact ih H1
+
+
+lemma chain_nondomi_sub' (l L :  List (ℕ × ℕ)) :
+  chain_nondomi (l ++ L) → chain_nondomi L :=
+  by
+  induction' l with x l ih
+  · intro h
+    simp_rw [List.nil_append] at h
+    exact h
+  · intro H
+    dsimp [chain_nondomi] at *
+    cases' H
+    rename_i H1 H2
+    exact ih H1
+
+
+
+structure Chomp_law (height length : ℕ) (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Prop where
+  h : act.2 ≤ height
+  l : act.1 ≤ length
+  nd : Chomp_state ini hist ≠ {(0,0)} → chain_nondomi hist
+  nz_act : act ≠ (0,0)
+  nz_hist : (0,0) ∉ hist
+
+def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
+  init_game_state := Comp_init height length
+  win_states := (fun state => state = {(0,0)})
+  transition := fun ini hist act => if Chomp_state ini hist ≠ {(0,0)}
+                                    then {(0,0)}
+                                    else (Chomp_state ini) (act :: hist)
+  law := Chomp_law height length
+
+
+lemma Chomp_state_blind (ini : Finset (ℕ × ℕ)) (hist prehist : List (ℕ × ℕ)) :
+  Chomp_state (Chomp_state ini prehist) hist = Chomp_state ini (hist ++ prehist) :=
+  by
+  ext x
+  constructor
+  · intro H
+    dsimp [Chomp_state] at *
+    simp_rw [Finset.mem_filter] at *
+    constructor
+    · exact H.1.1
+    · intro q qq
+      rw [List.mem_append] at qq
+      cases' qq with k k
+      · exact H.2 q k
+      · exact H.1.2 q k
+  · intro H
+    dsimp [Chomp_state] at *
+    simp_rw [Finset.mem_filter] at *
+    constructor
+    · constructor
+      · exact H.1
+      · intro q qh
+        apply H.2
+        exact List.mem_append_right hist qh
+    · intro q qh
+      apply H.2
+      exact List.mem_append.mpr (Or.inl qh)
+
+lemma Chomp_state_zero (hist : List (ℕ × ℕ)) (hh : (0,0) ∉ hist): Chomp_state {(0,0)} hist = {(0,0)} :=
+  by
+  dsimp [Chomp_state]
+  rw [Finset.filter_eq_self]
+  intro x xdef q qh
+  rw [Finset.mem_singleton] at xdef
+  rw [xdef]
+  dsimp [nondomi, domi]
+  intro con
+  simp_rw [Nat.le_zero] at con
+  apply hh
+  convert qh
+  · exact con.1.symm
+  · exact con.2.symm
+
+--#exit
+lemma Chomp_law_careless (h_base : 0 < height ∧ 0 < length) :
+  careless (Chomp_law height length) (Chomp_law height length) (Chomp_state (preChomp height length).init_game_state []) (preChomp height length).law (preChomp height length).transition :=
+  by
+  intro ini hist prehist Hpre Hleg
+  dsimp [preChomp]
+  ext act
+  constructor
+  · intro c
+    constructor
+    · exact c.h
+    · exact c.l
+    · intro H
+      split_ifs at H with q
+      · rw [List.cons_head_tail, Chomp_state_blind] at H
+        apply chain_nondomi_sub _ _ (c.nd H)
+      · exfalso
+        apply H
+        apply Chomp_state_zero
+        intro con
+        apply c.nz_hist
+        exact List.mem_append_left prehist con
+    · exact c.nz_act
+    · intro con
+      apply c.nz_hist
+      exact List.mem_append_left prehist con
+  · intro c
+    constructor
+    · exact c.h
+    · exact c.l
+    · intro H
+      split_ifs at c with q
+      · exfalso
+        apply H
+        rw [Finset.eq_singleton_iff_unique_mem]
+        constructor
+        · sorry
+        · intro x xdef
+          replace xdef := (Chomp_state_sub' ini _ _) xdef
+          rw [← List.cons_head_tail _ Hpre, List.cons_eq_singleton_append ] at xdef
+          replace xdef := (Chomp_state_sub' ini _ _) xdef
+          rwa [q, Finset.mem_singleton] at xdef
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- # First approach
+
+#exit
 
 -- pretty print the state
 def pp_Chomp_state (l : List (ℕ × ℕ)) :=
-  ((List.range (length)) ×ˢ (List.range (height))).filter
+  ((Finset.range (length)) ×ˢ (Finset.range (height))).filter
     (fun p => ∀ q ∈ l, nondomi q p)
 
-structure Chomp_law (_ : List (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Prop where
+--def play_condition (hist : List (ℕ × ℕ)) := ∃ x ∈ (List.range (length)) ×ˢ (List.range (height)), ∀ q ∈ hist, nondomi q x
+
+def chain_nondomi : List (ℕ × ℕ) → Prop
+| [] => True
+| act :: hist => (chain_nondomi hist) ∧ (∀ q ∈ hist, nondomi q act)
+
+lemma chain_nondomi_sub (l L :  List (ℕ × ℕ)) :
+  chain_nondomi (l ++ L) → chain_nondomi l :=
+  by
+  induction' l with x l ih
+  · intro _
+    dsimp [chain_nondomi]
+  · intro H
+    dsimp [chain_nondomi] at *
+    constructor
+    · apply ih
+      exact H.1
+    · intro q ql
+      apply H.2
+      exact List.mem_append.mpr (Or.inl ql)
+
+
+
+structure Chomp_law (_ : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Prop where
   h : act.2 ≤ height
   l : act.1 ≤ length
-  nd : pp_Chomp_state height length hist ≠ [(0,0)] → ∀ q ∈ hist, nondomi q act
+  nd : pp_Chomp_state height length hist ≠ {(0,0)}  → chain_nondomi hist
+  --nd : pp_Chomp_state height length hist ≠ {(0,0)}  → ∀ q ∈ hist, nondomi q act
   nz : act ≠ (0,0) -- even when end is reached, the partial function phenomenon forbids playing (0,0)
   -- for the game to be playable, one of `height` or `length` must be positive
 
-def Chomp : Symm_Game_World (List (ℕ × ℕ)) (ℕ × ℕ) where
+
+
+def Chomp : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
   init_game_state := (pp_Chomp_state height length) []
-  win_states := (fun state => state = [(0,0)])
-  transition := fun _ hist act => if (pp_Chomp_state height length hist) = [(0,0)]
-                                    then [(0,0)]
+  win_states := (fun state => state = {(0,0)})
+  transition := fun _ hist act => if pp_Chomp_state height length hist ≠ {(0,0)}
+                                    then {(0,0)}
                                     else (pp_Chomp_state height length) (act :: hist)
   law := Chomp_law height length
 
+
+lemma pp_Chomp_state_sub (l L :  List (ℕ × ℕ)) :
+  pp_Chomp_state height length (l ++ L) ⊆ pp_Chomp_state height length l :=
+  by
+  intro x xdef
+  dsimp [pp_Chomp_state] at *
+  rw [Finset.mem_filter, Finset.mem_product] at *
+  constructor
+  · apply xdef.1
+  · intro q ql
+    apply xdef.2
+    exact List.mem_append.mpr (Or.inl ql)
+
+
+
 lemma pp_Chomp_state_terminal_iff (hist : List (ℕ × ℕ)) :
-  pp_Chomp_state height length hist = [(0,0)] ↔
-  (∀ q ∈ (List.range (length)) ×ˢ (List.range (height)), q ≠ (0,0) → ∃ p ∈ hist, domi p q) :=
+  pp_Chomp_state height length hist = {(0,0)} ↔
+  (∀ q ∈ (Finset.range (length)) ×ˢ (Finset.range (height)), q ≠ (0,0) → ∃ p ∈ hist, domi p q) :=
   by
   constructor
   · intro c q qdef qnz
@@ -67,18 +293,17 @@ lemma pp_Chomp_state_terminal_iff (hist : List (ℕ × ℕ)) :
     have : q ∈ pp_Chomp_state height length hist :=
       by
       dsimp [pp_Chomp_state]
-      rw [List.mem_filter]
-      rw [Bool.coe_decide]
+      rw [Finset.mem_filter]
       exact ⟨qdef, con⟩
-    rw [c, List.mem_singleton] at this
+    rw [c, Finset.mem_singleton] at this
     exact qnz this
   · intro c
     dsimp [pp_Chomp_state]
 
 
-#exit
+--#exit
 
-lemma act_ne_zero_of_Chomp_law (ini : List (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act now : ℕ × ℕ)
+lemma act_ne_zero_of_Chomp_law (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act now : ℕ × ℕ)
   (h : Chomp_law height length ini hist now) (ha : act ∈ hist) : act ≠ (0,0) :=
   by
   induction' hist with x l ih
@@ -90,16 +315,15 @@ lemma act_ne_zero_of_Chomp_law (ini : List (ℕ × ℕ)) (hist : List (ℕ × �
 --#exit
 
 
-lemma pp_Chomp_state_nonempty (h_base : 0 < height ∧ 0 < length) (l : List (ℕ × ℕ)) : pp_Chomp_state height length l ≠ [] :=
+lemma pp_Chomp_state_nonempty (h_base : 0 < height ∧ 0 < length) (l : List (ℕ × ℕ)) : pp_Chomp_state height length l ≠ ∅ :=
   by
-  apply @List.ne_nil_of_mem _ (0,0) _
+  apply @Finset.ne_empty_of_mem _ (0,0) _
   dsimp [pp_Chomp_state]
-  rw [List.mem_filter]
+  rw [Finset.mem_filter]
   constructor
-  · rw [List.mem_product, List.mem_range, List.mem_range]
+  · rw [Finset.mem_product, Finset.mem_range, Finset.mem_range]
     exact ⟨h_base.2, h_base.1⟩
-  · rw [Bool.coe_decide]
-    intro q ql
+  · intro q ql
     dsimp [nondomi, domi]
     intro con
     rw [Nat.le_zero, Nat.le_zero] at con
@@ -107,9 +331,10 @@ lemma pp_Chomp_state_nonempty (h_base : 0 < height ∧ 0 < length) (l : List (�
 
 
 
-lemma Chomp_law_careless (h_base : 0 < height ∧ 0 < length) : careless (Chomp height length).law (Chomp height length).transition :=
+lemma Chomp_law_careless (h_base : 0 < height ∧ 0 < length) :
+  careless (Chomp_law height length) (Chomp_law height length) ((pp_Chomp_state height length) []) (Chomp height length).law (Chomp height length).transition :=
   by
-  intro ini hist prehist Hpre
+  intro ini hist prehist Hpre Hleg
   dsimp [Chomp]
   ext act
   constructor
@@ -117,12 +342,9 @@ lemma Chomp_law_careless (h_base : 0 < height ∧ 0 < length) : careless (Chomp 
     constructor
     · exact H.h
     · exact H.l
-    · intro hh q qh
+    · intro hh
+      apply chain_nondomi_sub hist prehist
       apply H.nd
-      · intro con
-
-      · exact List.mem_append_left _ qh
-
 
 
 

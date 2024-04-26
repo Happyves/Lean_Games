@@ -7,11 +7,23 @@ Author: Yves Jäckle.
 
 import Mathlib.Tactic
 import Games.gameLib.Zermelo_Symm
-import Mathlib.Data.List.DropRight
+import Games.exLib.List
 
 
 def strat_predeco (strat : Strategy α β) (prehist : List β) (g : Symm_Game_World α β) : Strategy α β :=
   (fun _ hist => if s : hist.length < prehist.length then prehist.reverse.get ⟨hist.length, (by rw [List.length_reverse] ; exact s)⟩  else strat (g.world_after_preHist prehist).init_game_state (hist.rdrop prehist.length))
+
+lemma strat_predeco_at_append_prehist (strat : Strategy α β) (prehist : List β) (g : Symm_Game_World α β) :
+  ∀ hist : List β, (strat_predeco strat prehist g) g.init_game_state (hist ++ prehist) = strat (g.world_after_preHist prehist).init_game_state hist :=
+  by
+  intro hist
+  dsimp [strat_predeco]
+  rw [dif_neg (by simp only [List.length_append, add_lt_iff_neg_right, not_lt_zero', not_false_eq_true])]
+  have hmm := @List.rdrop_append _ hist prehist 0
+  dsimp at hmm
+  simp_rw [hmm]
+  rw [List.rdrop_zero]
+
 
 
 lemma Symm_Game_World.History_of_predeco_len_prehist
@@ -19,8 +31,8 @@ lemma Symm_Game_World.History_of_predeco_len_prehist
   (prehist: List β)
   (f_strat s_strat : Strategy α β)
   :
-  let fst_strat := strat_predeco s_strat prehist g
-  let snd_strat := strat_predeco f_strat prehist g
+  let fst_strat := strat_predeco f_strat prehist g
+  let snd_strat := strat_predeco s_strat prehist g
   History_on_turn g.init_game_state fst_strat snd_strat (prehist.length) = prehist :=
   by
   induction' prehist with x l ih
@@ -40,44 +52,101 @@ lemma Symm_Game_World.History_of_predeco_len_prehist
       rw [this]
       congr
       convert ih using 1
+      have that (f_strat : Strategy α β): ∀ (hist : List β), List.length hist < List.length l →
+            strat_predeco f_strat (x :: l) g g.init_game_state hist = strat_predeco f_strat l g g.init_game_state hist :=
+            by
+            intro h hl
+            dsimp [strat_predeco]
+            simp_rw [Nat.lt_succ, dif_pos hl, dif_pos (le_of_lt hl)]
+            have tec1 := List.get_reverse (x :: l) (l.length - h.length)
+              (by dsimp ; rw [Nat.succ_sub_one, List.length_reverse] ; dsimp ; rw [Nat.sub_sub_self (le_of_lt hl)] ; exact Nat.lt.step hl)
+              (by dsimp ; rw [Nat.lt_succ] ; exact Nat.sub_le (List.length l) (List.length h) )
+            dsimp at tec1
+            simp_rw [Nat.succ_sub_one, Nat.sub_sub_self (le_of_lt hl)] at tec1
+            rw [tec1]
+            clear tec1
+            have tec2 := List.get_reverse' (l) ⟨h.length, (by rwa [List.length_reverse])⟩
+              (by dsimp ; exact Nat.sub_one_sub_lt hl )
+            dsimp at tec2
+            rw [tec2]
+            clear tec2
+            cases' l with z l
+            · contradiction
+            · dsimp at *
+              simp_rw [Nat.succ_sub_one, Nat.succ_eq_add_one]
+              dsimp at hl
+              rw [Nat.lt_succ] at hl
+              simp_rw [Nat.sub_add_comm hl]
+              rw [List.get_cons_succ]
       apply History_eq_of_strat_strong_eq' _ _ _ _ _ (l.length)
-      · intro h hl
-        dsimp [strat_predeco]
-        simp_rw [Nat.lt_succ, dif_pos hl, dif_pos (le_of_lt hl)]
-        have tec1 := List.get_reverse (x :: l) (l.length - h.length)
-          (by dsimp ; rw [Nat.succ_sub_one, List.length_reverse] ; dsimp ; rw [Nat.sub_sub_self (le_of_lt hl)] ; exact Nat.lt.step hl)
-          (by dsimp ; rw [Nat.lt_succ] ; exact Nat.sub_le (List.length l) (List.length h) )
-        dsimp at tec1
-        simp_rw [Nat.succ_sub_one, Nat.sub_sub_self (le_of_lt hl)] at tec1
-        rw [tec1]
-        clear tec1
-        have tec2 := List.get_reverse' (l) ⟨h.length, (by rwa [List.length_reverse])⟩
-          (by dsimp ; exact Nat.sub_one_sub_lt hl )
-        dsimp at tec2
-        rw [tec2]
-        clear tec2
-        sorry
-        -- disjoin cases on l, can't be empty due to hl, use ↓
+      · exact that f_strat
+      · exact that s_strat
+      · apply Nat.le.refl
+    · rw [if_neg q]
+      dsimp [strat_predeco]
+      simp_rw [History_on_turn_length]
+      rw [dif_pos (by exact Nat.lt.base (List.length l))]
+      have := List.get_reverse (x :: l) 0
+          (by dsimp ; rw [Nat.succ_sub_one, List.length_reverse] ; dsimp ; apply Nat.lt.base )
+          (by dsimp ; exact Nat.succ_pos (List.length l))
+      dsimp at this
+      simp_rw [Nat.succ_sub_one] at this
+      rw [this]
+      congr
+      convert ih using 1
+      have that (f_strat : Strategy α β): ∀ (hist : List β), List.length hist < List.length l →
+            strat_predeco f_strat (x :: l) g g.init_game_state hist = strat_predeco f_strat l g g.init_game_state hist :=
+            by
+            intro h hl
+            dsimp [strat_predeco]
+            simp_rw [Nat.lt_succ, dif_pos hl, dif_pos (le_of_lt hl)]
+            have tec1 := List.get_reverse (x :: l) (l.length - h.length)
+              (by dsimp ; rw [Nat.succ_sub_one, List.length_reverse] ; dsimp ; rw [Nat.sub_sub_self (le_of_lt hl)] ; exact Nat.lt.step hl)
+              (by dsimp ; rw [Nat.lt_succ] ; exact Nat.sub_le (List.length l) (List.length h) )
+            dsimp at tec1
+            simp_rw [Nat.succ_sub_one, Nat.sub_sub_self (le_of_lt hl)] at tec1
+            rw [tec1]
+            clear tec1
+            have tec2 := List.get_reverse' (l) ⟨h.length, (by rwa [List.length_reverse])⟩
+              (by dsimp ; exact Nat.sub_one_sub_lt hl )
+            dsimp at tec2
+            rw [tec2]
+            clear tec2
+            cases' l with z l
+            · contradiction
+            · dsimp at *
+              simp_rw [Nat.succ_sub_one, Nat.succ_eq_add_one]
+              dsimp at hl
+              rw [Nat.lt_succ] at hl
+              simp_rw [Nat.sub_add_comm hl]
+              rw [List.get_cons_succ]
+      apply History_eq_of_strat_strong_eq' _ _ _ _ _ (l.length)
+      · exact that f_strat
+      · exact that s_strat
+      · apply Nat.le.refl
 
-#check List.get_cons_succ
 
-#exit
+--#exit
 
-lemma Symm_Game_World.History_of_predeco
+lemma Symm_Game_World.History_of_predeco_even
   (g: Symm_Game_World α β)
   (prehist: List β)
+  (hp : prehist.length % 2 = 0)
   (f_strat s_strat : Strategy α β)
   (turn : ℕ):
-  let fst_strat := strat_predeco s_strat prehist g
-  let snd_strat := strat_predeco f_strat prehist g
+  let fst_strat := strat_predeco f_strat prehist g
+  let snd_strat := strat_predeco s_strat prehist g
   History_on_turn g.init_game_state fst_strat snd_strat (turn + prehist.length) =
   (History_on_turn (g.world_after_preHist prehist).init_game_state f_strat s_strat turn) ++ prehist :=
   by
   intro fst_strat snd_strat
   induction' turn with t ih
   · dsimp [History_on_turn]
-
-  · sorry
+    rw [Nat.zero_add, g.History_of_predeco_len_prehist]
+  · rw [Nat.succ_eq_add_one, add_assoc, (show 1 + prehist.length = prehist.length + 1 from by rw [add_comm]), ← add_assoc]
+    dsimp [History_on_turn]
+    simp_rw [ih]
+    -- add lemmata on turn parity next
 
 #exit
 

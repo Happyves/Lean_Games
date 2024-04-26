@@ -1,6 +1,6 @@
 // Lean compiler output
 // Module: Games.exLib.List
-// Imports: Init Mathlib.Tactic
+// Imports: Init Mathlib.Tactic Mathlib.Data.List.DropRight
 #include <lean/lean.h>
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wunused-parameter"
@@ -110,6 +110,7 @@ return x_5;
 }
 lean_object* initialize_Init(uint8_t builtin, lean_object*);
 lean_object* initialize_Mathlib_Tactic(uint8_t builtin, lean_object*);
+lean_object* initialize_Mathlib_Data_List_DropRight(uint8_t builtin, lean_object*);
 static bool _G_initialized = false;
 LEAN_EXPORT lean_object* initialize_Games_exLib_List(uint8_t builtin, lean_object* w) {
 lean_object * res;
@@ -119,6 +120,9 @@ res = initialize_Init(builtin, lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
 res = initialize_Mathlib_Tactic(builtin, lean_io_mk_world());
+if (lean_io_result_is_error(res)) return res;
+lean_dec_ref(res);
+res = initialize_Mathlib_Data_List_DropRight(builtin, lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
 return lean_io_result_mk_ok(lean_box(0));

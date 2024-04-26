@@ -155,10 +155,10 @@ lemma Game_World_wDraw.has_WLD_init_end
 -- # zGame
 
 structure zGame_World_wDraw (α β : Type _) extends Game_World_wDraw α β where
-  f_legal_careless : careless toGame_World_wDraw.fst_legal toGame_World_wDraw.fst_transition
-  s_legal_careless : careless toGame_World_wDraw.snd_legal toGame_World_wDraw.fst_transition
-  f_transition_careless : careless toGame_World_wDraw.fst_transition toGame_World_wDraw.fst_transition
-  s_transition_careless : careless toGame_World_wDraw.snd_transition toGame_World_wDraw.fst_transition
+  f_legal_careless : careless toGame_World_wDraw.fst_legal toGame_World_wDraw.snd_legal toGame_World_wDraw.init_game_state toGame_World_wDraw.fst_legal toGame_World_wDraw.fst_transition
+  s_legal_careless : careless toGame_World_wDraw.fst_legal toGame_World_wDraw.snd_legal toGame_World_wDraw.init_game_state toGame_World_wDraw.snd_legal toGame_World_wDraw.fst_transition
+  f_transition_careless : careless toGame_World_wDraw.fst_legal toGame_World_wDraw.snd_legal toGame_World_wDraw.init_game_state toGame_World_wDraw.fst_transition toGame_World_wDraw.fst_transition
+  s_transition_careless : careless toGame_World_wDraw.fst_legal toGame_World_wDraw.snd_legal toGame_World_wDraw.init_game_state toGame_World_wDraw.snd_transition toGame_World_wDraw.fst_transition
   coherent : toGame_World_wDraw.coherent_end
   playable : toGame_World_wDraw.playable
   sym_trans : toGame_World_wDraw.fst_transition = toGame_World_wDraw.snd_transition
@@ -359,9 +359,10 @@ lemma zGame_World_wDraw.is_hyper_transition_blind (g : zGame_World_wDraw α β) 
     | x :: l =>
         specialize this (by apply List.noConfusion)
         rw [this, that]
-        dsimp [Game_World_wDraw.world_after_preHist]
-        nth_rewrite 1 [that]
-        rfl
+        · dsimp [Game_World_wDraw.world_after_preHist]
+          nth_rewrite 1 [that]
+          rfl
+        · exact preh_leg
   · intro prehist preh_leg hist act
     have := g.s_transition_careless g.init_game_state hist prehist
     have that := g.sym_trans
@@ -372,9 +373,10 @@ lemma zGame_World_wDraw.is_hyper_transition_blind (g : zGame_World_wDraw α β) 
     | x :: l =>
         specialize this (by apply List.noConfusion)
         rw [this, that]
-        dsimp [Game_World_wDraw.world_after_preHist]
-        nth_rewrite 1 [that]
-        rfl
+        · dsimp [Game_World_wDraw.world_after_preHist]
+          nth_rewrite 1 [that]
+          rfl
+        · exact preh_leg
 
 
 lemma Game_World_wDraw.State_of_deconditioned
@@ -799,7 +801,8 @@ lemma zGame_World_wDraw.is_hyper_legal_blind (g : zGame_World_wDraw α β) :
     | x :: l =>
         specialize this (by apply List.noConfusion)
         rw [this, that]
-        dsimp [Game_World_wDraw.world_after_preHist]
+        · dsimp [Game_World_wDraw.world_after_preHist]
+        · exact preh_leg
   · intro prehist preh_leg hist act
     have := g.s_legal_careless g.init_game_state hist prehist
     have that := g.sym_legal
@@ -810,7 +813,8 @@ lemma zGame_World_wDraw.is_hyper_legal_blind (g : zGame_World_wDraw α β) :
     | x :: l =>
         specialize this (by apply List.noConfusion)
         rw [this, that]
-        dsimp [Game_World_wDraw.world_after_preHist]
+        · dsimp [Game_World_wDraw.world_after_preHist]
+        · exact preh_leg
 
 
 
@@ -1125,10 +1129,10 @@ lemma zGame_World_wDraw.state_on_turn_conditioned
       rw [iff_not_comm.mp (Turn_fst_not_step (t+1))] at q
       rw [if_neg q]
       rw [g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg]
-      have := careless_singleton _ _ (g.f_transition_careless)
+      have := careless_singleton _ _ _ _ _ (g.f_transition_careless)
       specialize this g.init_game_state ((Game_World_wDraw.history_on_turn (world_after_fst g (fst_s g.init_game_state []) f_act_leg).toGame_World_wDraw
           (f_strat [fst_s g.init_game_state []] ((by apply List.cons_ne_nil) : [fst_s g.init_game_state []] ≠ []) f_act_leg)
-          (snd_strat_conditioned fst_s (fst_s g.init_game_state []) g) t)) f_act
+          (snd_strat_conditioned fst_s (fst_s g.init_game_state []) g) t)) f_act f_act_leg
       simp_rw [this]
       rw [g.sym_trans]
       congr
@@ -1138,10 +1142,10 @@ lemma zGame_World_wDraw.state_on_turn_conditioned
       rw [iff_not_comm.mp (Turn_fst_not_step (t+1)), not_not] at q
       rw [if_pos q]
       rw [g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg]
-      have := careless_singleton _ _ (g.s_transition_careless)
+      have := careless_singleton _ _ _ _ _ (g.s_transition_careless)
       specialize this g.init_game_state ((Game_World_wDraw.history_on_turn (world_after_fst g (fst_s g.init_game_state []) f_act_leg).toGame_World_wDraw
           (f_strat [fst_s g.init_game_state []] ((by apply List.cons_ne_nil) : [fst_s g.init_game_state []] ≠ []) f_act_leg)
-          (snd_strat_conditioned fst_s (fst_s g.init_game_state []) g) t)) f_act
+          (snd_strat_conditioned fst_s (fst_s g.init_game_state []) g) t)) f_act f_act_leg
       simp_rw [this]
       rw [← g.sym_trans]
       congr
@@ -1182,26 +1186,28 @@ lemma zGame_World_wDraw.conditioned_legal_fst
   constructor
   · intro leg t ts
     have hh := g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg t
-    have hc := careless_singleton _ _ (g.f_legal_careless)
+    have hc := careless_singleton _ _ _ _ _ (g.f_legal_careless)
     specialize leg (t+1) (by rw [← Turn_snd_fst_step] ; exact ts)
     unfold Game_World_wDraw.history_on_turn at hh
     rw [hh] at leg
     rw [hc] at leg
-    dsimp [snd_strat_conditioned]
-    rw [← g.sym_legal]
-    apply leg
+    · dsimp [snd_strat_conditioned]
+      rw [← g.sym_legal]
+      apply leg
+    · apply f_act_leg
   · intro leg t tf
     cases' t with t
     · dsimp [History_on_turn]
       apply f_act_leg
     · specialize leg (t) (by rw [Turn_snd_fst_step] ; exact tf)
       have hh := g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg t
-      have hc := careless_singleton _ _ (g.f_legal_careless)
+      have hc := careless_singleton _ _ _ _ _ (g.f_legal_careless)
       unfold Game_World_wDraw.history_on_turn at hh
       rw [hh, hc]
-      dsimp [snd_strat_conditioned] at leg
-      rw [g.sym_legal]
-      apply leg
+      · dsimp [snd_strat_conditioned] at leg
+        rw [g.sym_legal]
+        apply leg
+      · apply f_act_leg
 
 
 
@@ -1222,50 +1228,19 @@ lemma zGame_World_wDraw.conditioned_legal_snd
   constructor
   · intro leg t tf
     have hh := g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg t
-    have hc := careless_singleton _ _ (g.s_legal_careless)
+    have hc := careless_singleton _ _ _ _ _ (g.s_legal_careless)
     specialize leg (t+1) (by rw [← Turn_fst_snd_step] ; exact tf)
     unfold Game_World_wDraw.history_on_turn at hh
     rw [hh] at leg
     rw [hc] at leg
-    dsimp [snd_strat_conditioned]
-    rw [g.sym_legal]
-    dsimp [fst_strat_conditioned] at leg
-    rw [dif_neg (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)] at leg
-    rw [dif_pos (by rw [List.getLast_append] ; apply f_act_leg)] at leg
-    rw [List.dropLast_append_of_ne_nil _ (show [f_act] ≠ [] from by apply List.cons_ne_nil)] at leg
-    dsimp at leg
-    rw [List.append_nil] at leg
-    have := h_f_strat ((Game_World_wDraw.history_on_turn (world_after_fst g (fst_s g.init_game_state []) f_act_leg).toGame_World_wDraw
-            (f_strat [fst_s g.init_game_state []] ((by apply List.cons_ne_nil) : [fst_s g.init_game_state []] ≠ []) f_act_leg)
-            (snd_strat_conditioned fst_s (fst_s g.init_game_state []) g) t ++
-             [fst_s g.init_game_state []])) [f_act]
-             (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)
-             (by apply List.cons_ne_nil)
-             (by rw [List.getLast_append] ; apply f_act_leg)
-             (by apply f_act_leg)
-             (by rw [List.getLast_append] ; dsimp)
-    unfold Game_World_wDraw.history_on_turn at this
-    rw [this] at leg
-    rw [List.getLast_append] at leg
-    apply leg
-  · intro leg t ts
-    cases' t with t
-    · contradiction
-    · have hh := g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg t
-      have hc := careless_singleton _ _ (g.s_legal_careless)
-      specialize leg (t) (by rw [Turn_fst_snd_step] ; exact ts)
-      unfold Game_World_wDraw.history_on_turn at hh
-      rw [hh]
-      rw [hc]
-      rw [← g.sym_legal]
-      rw [zGame_World_wDraw.world_after_fst_fst_legal] at leg
-      convert leg using 1
-      dsimp [fst_strat_conditioned]
-      rw [dif_neg (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)]
-      rw [dif_pos (by rw [List.getLast_append] ; apply f_act_leg)]
-      rw [List.dropLast_append_of_ne_nil _ (show [f_act] ≠ [] from by apply List.cons_ne_nil)]
-      dsimp
-      rw [List.append_nil]
+    · dsimp [snd_strat_conditioned]
+      rw [g.sym_legal]
+      dsimp [fst_strat_conditioned] at leg
+      rw [dif_neg (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)] at leg
+      rw [dif_pos (by rw [List.getLast_append] ; apply f_act_leg)] at leg
+      rw [List.dropLast_append_of_ne_nil _ (show [f_act] ≠ [] from by apply List.cons_ne_nil)] at leg
+      dsimp at leg
+      rw [List.append_nil] at leg
       have := h_f_strat ((Game_World_wDraw.history_on_turn (world_after_fst g (fst_s g.init_game_state []) f_act_leg).toGame_World_wDraw
               (f_strat [fst_s g.init_game_state []] ((by apply List.cons_ne_nil) : [fst_s g.init_game_state []] ≠ []) f_act_leg)
               (snd_strat_conditioned fst_s (fst_s g.init_game_state []) g) t ++
@@ -1276,9 +1251,42 @@ lemma zGame_World_wDraw.conditioned_legal_snd
               (by apply f_act_leg)
               (by rw [List.getLast_append] ; dsimp)
       unfold Game_World_wDraw.history_on_turn at this
-      rw [this]
-      rw [List.getLast_append]
-      rfl
+      rw [this] at leg
+      rw [List.getLast_append] at leg
+      apply leg
+    · apply f_act_leg
+  · intro leg t ts
+    cases' t with t
+    · contradiction
+    · have hh := g.history_on_turn_conditioned fst_s f_strat h_f_strat f_act_leg t
+      have hc := careless_singleton _ _ _  _ _ (g.s_legal_careless)
+      specialize leg (t) (by rw [Turn_fst_snd_step] ; exact ts)
+      unfold Game_World_wDraw.history_on_turn at hh
+      rw [hh]
+      rw [hc]
+      · rw [← g.sym_legal]
+        rw [zGame_World_wDraw.world_after_fst_fst_legal] at leg
+        convert leg using 1
+        dsimp [fst_strat_conditioned]
+        rw [dif_neg (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)]
+        rw [dif_pos (by rw [List.getLast_append] ; apply f_act_leg)]
+        rw [List.dropLast_append_of_ne_nil _ (show [f_act] ≠ [] from by apply List.cons_ne_nil)]
+        dsimp
+        rw [List.append_nil]
+        have := h_f_strat ((Game_World_wDraw.history_on_turn (world_after_fst g (fst_s g.init_game_state []) f_act_leg).toGame_World_wDraw
+                (f_strat [fst_s g.init_game_state []] ((by apply List.cons_ne_nil) : [fst_s g.init_game_state []] ≠ []) f_act_leg)
+                (snd_strat_conditioned fst_s (fst_s g.init_game_state []) g) t ++
+                [fst_s g.init_game_state []])) [f_act]
+                (by apply List.append_ne_nil_of_ne_nil_right ; apply List.cons_ne_nil)
+                (by apply List.cons_ne_nil)
+                (by rw [List.getLast_append] ; apply f_act_leg)
+                (by apply f_act_leg)
+                (by rw [List.getLast_append] ; dsimp)
+        unfold Game_World_wDraw.history_on_turn at this
+        rw [this]
+        rw [List.getLast_append]
+        rfl
+      · apply f_act_leg
 
 
 

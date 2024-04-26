@@ -1023,17 +1023,25 @@ lemma Game.History_Hist_legal (g : Game α β) (t : ℕ) :
 
 -- # Carelessness
 
-def careless (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
-  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) →
+def careless
+  (f_law s_law : α → List β → (β → Prop)) (ini : α)
+  (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
+  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) → Hist_legal f_law s_law ini prehist →
     obj ini (hist ++ prehist) = obj (swap ini prehist.tail (prehist.head h)) hist
 
-lemma careless_singleton (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless obj swap) :
-  ∀ ini : α , ∀ hist : List β, ∀ act : β, obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
+lemma careless_singleton
+  (f_law s_law : α → List β → (β → Prop)) (ini : α)
+  (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless f_law s_law ini obj swap) :
+  ∀ ini : α , ∀ hist : List β, ∀ act : β, f_law ini [] act → obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
   :=
   by
-  intro ini hist act
+  intro ini hist act q
   apply hc ini hist [act]
-  apply List.noConfusion
+  · apply List.noConfusion
+  · apply Hist_legal.cons
+    · rw [if_pos (by dsimp ; decide)]
+      exact q
+    · apply Hist_legal.nil
 
 
 -- # More
