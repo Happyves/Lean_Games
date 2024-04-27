@@ -131,7 +131,7 @@ lemma Symm_Game_World.History_of_predeco_len_prehist
 lemma Symm_Game_World.History_of_predeco_even
   (g: Symm_Game_World α β)
   (prehist: List β)
-  (hp : prehist.length % 2 = 0)
+  (hp : Turn_snd prehist.length)
   (f_strat s_strat : Strategy α β)
   (turn : ℕ):
   let fst_strat := strat_predeco f_strat prehist g
@@ -145,17 +145,84 @@ lemma Symm_Game_World.History_of_predeco_even
     rw [Nat.zero_add, g.History_of_predeco_len_prehist]
   · rw [Nat.succ_eq_add_one, add_assoc, (show 1 + prehist.length = prehist.length + 1 from by rw [add_comm]), ← add_assoc]
     dsimp [History_on_turn]
-    simp_rw [ih]
-    -- add lemmata on turn parity next
+    simp_rw [ih, strat_predeco_at_append_prehist]
+    by_cases q : Turn_fst (t + 1)
+    · rw [if_pos q]
+      replace q := Turn_add_fst_snd _ _ q hp
+      rw [if_pos (by convert q using 1 ; ring)]
+      rw [List.cons_append]
+    · rw [if_neg q]
+      rw [← Turn_fst_not_step] at q
+      replace q := Turn_add_fst_snd _ _ q hp
+      rw [Turn_fst_not_step] at q
+      rw [if_neg (by exact q)]
+      rw [List.cons_append]
+
+
+lemma Symm_Game_World.History_of_predeco_odd
+  (g: Symm_Game_World α β)
+  (prehist: List β)
+  (hp : Turn_fst prehist.length)
+  (f_strat s_strat : Strategy α β)
+  (turn : ℕ):
+  let fst_strat := strat_predeco f_strat prehist g
+  let snd_strat := strat_predeco s_strat prehist g
+  History_on_turn g.init_game_state fst_strat snd_strat (turn + prehist.length) =
+  (History_on_turn (g.world_after_preHist prehist).init_game_state s_strat f_strat turn) ++ prehist :=
+  by
+  intro fst_strat snd_strat
+  induction' turn with t ih
+  · dsimp [History_on_turn]
+    rw [Nat.zero_add, g.History_of_predeco_len_prehist]
+  · rw [Nat.succ_eq_add_one, add_assoc, (show 1 + prehist.length = prehist.length + 1 from by rw [add_comm]), ← add_assoc]
+    dsimp [History_on_turn]
+    simp_rw [ih, strat_predeco_at_append_prehist]
+    by_cases q : Turn_fst (t + 1)
+    · rw [if_pos q]
+      replace q := Turn_add_fst_fst _ _ q hp
+      rw [← Turn_not_fst_iff_snd] at q
+      rw [if_neg (by convert q using 1 ; ring)]
+      rw [List.cons_append]
+    · rw [if_neg q]
+      rw [← Turn_fst_not_step] at q
+      replace q := Turn_add_fst_fst _ _ q hp
+      rw [← Turn_not_fst_iff_snd] at q
+      rw [Turn_fst_not_step, not_not] at q
+      rw [if_pos (by exact q)]
+      rw [List.cons_append]
+
+--#exit
+
+
+
+lemma Symm_Game_World.State_of_predeco_len_prehist
+  (g: Symm_Game_World α β)
+  (prehist: List β)
+  (f_strat s_strat : Strategy α β)
+  :
+  let fst_strat := strat_predeco f_strat prehist g
+  let snd_strat := strat_predeco s_strat prehist g
+  (g.world_after_preHist prehist).init_game_state =
+  g.state_on_turn fst_strat snd_strat (prehist.length)  :=
+  by
+  cases' prehist with x l
+  · dsimp!
+  · dsimp!
+    split_ifs
+    · dsimp [history_on_turn]
 
 #exit
 
-
-lemma Symm_Game_World.state_world_after_preHist (g : Symm_Game_World α β)
-  (prehist : List β) (fst_strat snd_strat : Strategy α β) (t : ℕ) :
+lemma Symm_Game_World.state_world_after_preHist_even (g : Symm_Game_World α β)
+  (prehist : List β) (hp : Turn_snd prehist.length) (fst_strat snd_strat : Strategy α β) (t : ℕ) :
   (g.world_after_preHist prehist).state_on_turn fst_strat snd_strat t =
-  (g.state_on_turn (strat_predeco fst_strat) (strat_predeco snd_strat) t):=
+  (g.state_on_turn (strat_predeco fst_strat prehist g) (strat_predeco snd_strat prehist g) (t + prehist.length)):=
   by
+  cases' t with t
+  · dsimp!
+    rw [zero_add]
+  -- by_cases q : Turn_fst (t+1)
+  -- ·
 
 
 
@@ -196,7 +263,6 @@ def zSymm_Game_World.world_after_preHist {α β : Type u} (g : zSymm_Game_World 
                               apply g.playable
                                   }
 
-  --{g with init_game_state := g.transition g.init_game_state L last }
 
 def Stealing_condition (g : zSymm_Game_World α β)
   (f_act s_act : β)

@@ -479,6 +479,32 @@ lemma Turn_snd_not_step (turn : ℕ): Turn_snd turn ↔ ¬ Turn_snd (turn + 1) :
   apply Turn_snd_fst_step
 
 
+lemma Turn_add_fst_fst (a b : ℕ) : Turn_fst a → Turn_fst b → Turn_snd (a+b) :=
+  by
+  intro A B
+  dsimp [Turn_fst, Turn_snd] at *
+  rw [Nat.mod_two_ne_one, Nat.add_mod, A, B]
+  decide
+
+
+lemma Turn_add_fst_snd (a b : ℕ) : Turn_fst a → Turn_snd b → Turn_fst (a+b) :=
+  by
+  intro A B
+  dsimp [Turn_fst, Turn_snd] at *
+  rw [Nat.mod_two_ne_one] at B
+  rw [Nat.add_mod, A, B]
+  decide
+
+
+lemma Turn_add_snd_snd (a b : ℕ) : Turn_snd a → Turn_snd b → Turn_snd (a+b) :=
+  by
+  intro A B
+  dsimp [Turn_fst, Turn_snd] at *
+  rw [Nat.mod_two_ne_one] at *
+  rw [Nat.add_mod, A, B]
+  decide
+
+
 lemma History_on_turn_fst_to_snd (ini : α) (fst_strat snd_strat: Strategy α β) (turn : ℕ):
   let H := History_on_turn ini fst_strat snd_strat ;
   Turn_fst turn → H (turn + 1) = (snd_strat ini (H turn)) :: (H turn) :=

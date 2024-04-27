@@ -37,7 +37,6 @@ def Chomp_state (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) :=
   ini.filter (fun p => ∀ q ∈ hist, nondomi q p)
 
 
-
 lemma Chomp_state_sub (ini : Finset (ℕ × ℕ)) (l L :  List (ℕ × ℕ)) :
   Chomp_state ini (l ++ L) ⊆ Chomp_state ini l :=
   by
@@ -104,9 +103,10 @@ lemma chain_nondomi_sub' (l L :  List (ℕ × ℕ)) :
 structure Chomp_law (height length : ℕ) (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Prop where
   h : act.2 ≤ height
   l : act.1 ≤ length
-  nd : Chomp_state ini hist ≠ {(0,0)} → chain_nondomi hist
+  nd : Chomp_state ini hist ≠ {(0,0)} → chain_nondomi (act :: hist)
   nz_act : act ≠ (0,0)
   nz_hist : (0,0) ∉ hist
+  z_ini : (0,0) ∈ ini
 
 def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
   init_game_state := Comp_init height length
@@ -160,7 +160,34 @@ lemma Chomp_state_zero (hist : List (ℕ × ℕ)) (hh : (0,0) ∉ hist): Chomp_s
   · exact con.1.symm
   · exact con.2.symm
 
---#exit
+lemma Chomp_state_has_zero_iff_hist_has_zero
+  (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (hist : List (ℕ × ℕ)) :
+  (0,0) ∈ Chomp_state ini hist ↔ (0,0) ∉ hist :=
+  by
+  constructor
+  · intro c
+    dsimp [Chomp_state] at c
+    rw [Finset.mem_filter] at c
+    dsimp [nondomi, domi] at c
+    intro con
+    apply c.2 _ con
+    decide
+  · intro c
+    dsimp [Chomp_state]
+    rw [Finset.mem_filter]
+    constructor
+    · exact hini
+    · intro q qh
+      dsimp [nondomi, domi]
+      intro con
+      simp_all only [nonpos_iff_eq_zero]
+      unhygienic with_reducible aesop_destruct_products
+      simp_all only
+
+lemma Chomp_state_sub_ini (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × ℕ)) :
+  Chomp_state ini hist ⊆ ini := by dsimp [Chomp_state]; exact Finset.filter_subset (fun p => ∀ q ∈ hist, nondomi q p) ini
+
+
 lemma Chomp_law_careless (h_base : 0 < height ∧ 0 < length) :
   careless (Chomp_law height length) (Chomp_law height length) (Chomp_state (preChomp height length).init_game_state []) (preChomp height length).law (preChomp height length).transition :=
   by
@@ -175,7 +202,9 @@ lemma Chomp_law_careless (h_base : 0 < height ∧ 0 < length) :
     · intro H
       split_ifs at H with q
       · rw [List.cons_head_tail, Chomp_state_blind] at H
-        apply chain_nondomi_sub _ _ (c.nd H)
+        have := (c.nd H)
+        rw [← List.cons_append] at this
+        apply chain_nondomi_sub _ _ this
       · exfalso
         apply H
         apply Chomp_state_zero
@@ -186,6 +215,16 @@ lemma Chomp_law_careless (h_base : 0 < height ∧ 0 < length) :
     · intro con
       apply c.nz_hist
       exact List.mem_append_left prehist con
+    · split_ifs
+      · rw [List.cons_head_tail]
+        cases' prehist with x l
+        · contradiction
+        · cases' Hleg
+          rename_i Q
+          rw [ite_id] at Q
+
+
+
   · intro c
     constructor
     · exact c.h
@@ -196,12 +235,33 @@ lemma Chomp_law_careless (h_base : 0 < height ∧ 0 < length) :
         apply H
         rw [Finset.eq_singleton_iff_unique_mem]
         constructor
-        · sorry
+        · cases' prehist with x l
+          · contradiction
+          · cases' Hleg
+            dsimp at q
+            rename_i Q
+            rw [ite_id] at Q
+            rw [Chomp_state_has_zero_iff_hist_has_zero]
+            · intro con
+              rw [List.mem_append] at con
+              cases' con with k k
+              · exact c.nz_hist k
+              · rw [List.mem_cons] at k
+                cases' k with k k
+                · exact Q.nz_act k.symm
+                · exact Q.nz_hist k
+            · have := Chomp_state_sub_ini ini l
+              rw [q] at this
+              apply this
+              exact Finset.mem_singleton.mpr rfl
+
+
         · intro x xdef
           replace xdef := (Chomp_state_sub' ini _ _) xdef
           rw [← List.cons_head_tail _ Hpre, List.cons_eq_singleton_append ] at xdef
           replace xdef := (Chomp_state_sub' ini _ _) xdef
           rwa [q, Finset.mem_singleton] at xdef
+      ·
 
 
 
