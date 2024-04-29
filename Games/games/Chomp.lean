@@ -10,6 +10,177 @@ import Mathlib.Tactic
 import Mathlib.Data.List.ProdSigma
 
 
+
+
+def domi (p q : ℕ × ℕ) : Prop := p.1 ≤ q.1 ∧ p.2 ≤ q.2
+
+def nondomi (p q : ℕ × ℕ) : Prop := ¬ domi p q
+
+instance : DecidableRel domi :=
+  by
+  intro p q
+  rw [domi]
+  exact And.decidable
+
+instance : DecidableRel nondomi :=
+  by
+  intro p q
+  rw [nondomi]
+  exact Not.decidable
+
+instance (l : List (ℕ × ℕ)) : DecidablePred (fun p => ∀ q ∈ l, nondomi q p) :=
+  by
+  intro p
+  dsimp [nondomi,domi]
+  exact List.decidableBAll (fun x => ¬(x.1 ≤ p.1 ∧ x.2 ≤ p.2)) l
+
+
+def Chomp_state (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) :=
+  ini.filter (fun p => ∀ q ∈ hist, nondomi q p)
+
+
+lemma Chomp_state_sub (ini : Finset (ℕ × ℕ)) (l L :  List (ℕ × ℕ)) :
+  Chomp_state ini (l ++ L) ⊆ Chomp_state ini l :=
+  by
+  intro x xdef
+  dsimp [Chomp_state] at *
+  rw [Finset.mem_filter] at *
+  constructor
+  · apply xdef.1
+  · intro q ql
+    apply xdef.2
+    exact List.mem_append.mpr (Or.inl ql)
+
+lemma Chomp_state_sub' (ini : Finset (ℕ × ℕ)) (l L :  List (ℕ × ℕ)) :
+  Chomp_state ini (l ++ L) ⊆ Chomp_state ini L :=
+  by
+  intro x xdef
+  dsimp [Chomp_state] at *
+  rw [Finset.mem_filter] at *
+  constructor
+  · apply xdef.1
+  · intro q ql
+    apply xdef.2
+    exact List.mem_append_right l ql
+
+
+def Comp_init (height length : ℕ) := (Finset.range (length)) ×ˢ (Finset.range (height))
+
+lemma Chomp_state_blind (ini : Finset (ℕ × ℕ)) (hist prehist : List (ℕ × ℕ)) :
+  Chomp_state (Chomp_state ini prehist) hist = Chomp_state ini (hist ++ prehist) :=
+  by
+  ext x
+  constructor
+  · intro H
+    dsimp [Chomp_state] at *
+    simp_rw [Finset.mem_filter] at *
+    constructor
+    · exact H.1.1
+    · intro q qq
+      rw [List.mem_append] at qq
+      cases' qq with k k
+      · exact H.2 q k
+      · exact H.1.2 q k
+  · intro H
+    dsimp [Chomp_state] at *
+    simp_rw [Finset.mem_filter] at *
+    constructor
+    · constructor
+      · exact H.1
+      · intro q qh
+        apply H.2
+        exact List.mem_append_right hist qh
+    · intro q qh
+      apply H.2
+      exact List.mem_append.mpr (Or.inl qh)
+
+
+structure Chomp_law (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Prop where
+  act_mem : act ∈ ini
+  nd : ∀ q ∈ hist, nondomi q act
+  nz_act : act ≠ (0,0)
+
+
+def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
+  init_game_state := Comp_init height length
+  win_states := (fun state => state = {(0,0)})
+  transition := fun ini hist act => if Chomp_state ini hist ≠ {(0,0)}
+                                    then {(0,0)}
+                                    else (Chomp_state ini) (act :: hist)
+  law := fun ini hist act => if Chomp_state ini hist ≠ {(0,0)}
+                             then Chomp_law ini hist act
+                             else True
+
+
+lemma preChomp_law_careless (height length : ℕ) :
+  careless (preChomp height length).law (preChomp height length).law (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).transition :=
+  by
+  intro ini hist prehist pHne pHl
+  ext act
+  constructor
+  · intro c
+    dsimp [preChomp] at c
+    by_cases q1 : Chomp_state ini (hist ++ prehist) ≠ {(0,0)}
+    · rw [if_pos q1] at c
+      by_cases q2 : Chomp_state (Symm_Game_World.transition (preChomp height length) ini (List.tail prehist) (List.head prehist pHne)) (hist) ≠ {(0,0)}
+      · dsimp [preChomp] at *
+        rw [if_pos q2]
+        rw [List.cons_head_tail] at *
+        by_cases q3 : Chomp_state ini (List.tail prehist) ≠ {(0, 0)}
+        · rw [if_pos q3] at *
+          exfalso
+          dsimp [Chomp_state] at q2
+          rw [Finset.filter_singleton] at q2
+          split_ifs at q2
+          · contradiction
+          · rename_i h
+            dsimp [nondomi, domi] at h
+            push_neg at h
+            obtain ⟨e,e1,e2, e3⟩ := h
+            rw [Nat.le_zero] at *
+            have := c.nd e (by exact List.mem_append_left prehist e1)
+            dsimp [nondomi, domi] at this
+            rw [e2,e3] at this
+            simp_all only [ne_eq, ite_not, zero_le, and_self, not_true_eq_false]
+        · rw [if_neg q3] at *
+          constructor
+          · dsimp [Chomp_state]
+            rw [Finset.mem_filter]
+            constructor
+            · exact c.act_mem
+            · intro e eh
+              apply c.nd
+              exact List.mem_append_right hist eh
+          · intro e eh
+            apply c.nd
+            exact List.mem_append_left prehist eh
+          · exact c.nz_act
+      · dsimp [preChomp] at *
+        rw [if_neg q2]
+        trivial
+    · rw [if_neg q1] at c
+      by_cases q2 : Chomp_state (Symm_Game_World.transition (preChomp height length) ini (List.tail prehist) (List.head prehist pHne)) (hist) ≠ {(0,0)}
+      · dsimp [preChomp] at *
+        rw [if_pos q2]
+        rw [not_not] at q1
+        rw [List.cons_head_tail] at *
+        by_cases q3 : Chomp_state ini (List.tail prehist) ≠ {(0, 0)}
+        · rw [if_pos q3] at *
+          sorry
+        ·
+      · dsimp [preChomp] at *
+        rw [if_neg q2]
+        trivial
+
+
+
+
+
+
+-- # Second attempt
+
+#exit
+
 def domi (p q : ℕ × ℕ) : Prop := p.1 ≤ q.1 ∧ p.2 ≤ q.2
 
 def nondomi (p q : ℕ × ℕ) : Prop := ¬ domi p q
