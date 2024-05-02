@@ -495,6 +495,13 @@ lemma Turn_add_fst_snd (a b : ℕ) : Turn_fst a → Turn_snd b → Turn_fst (a+b
   rw [Nat.add_mod, A, B]
   decide
 
+lemma Turn_add_snd_fst (a b : ℕ) : Turn_snd a → Turn_fst b → Turn_fst (a+b) :=
+  by
+  intro A B
+  dsimp [Turn_fst, Turn_snd] at *
+  rw [Nat.mod_two_ne_one] at A
+  rw [Nat.add_mod, A, B]
+  decide
 
 lemma Turn_add_snd_snd (a b : ℕ) : Turn_snd a → Turn_snd b → Turn_snd (a+b) :=
   by

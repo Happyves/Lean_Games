@@ -351,27 +351,96 @@ lemma Symm_Game_World.State_of_predeco_len_prehist
       exact Nat.succ_pos (List.length l)
 
 
-#exit
+--#exit
 
 lemma Symm_Game_World.state_world_after_preHist_even (g : Symm_Game_World α β)
-  (prehist : List β) (hp : Turn_snd prehist.length) (fst_strat snd_strat : Strategy α β) (t : ℕ) :
+  (transition_careless : careless g.law g.law g.init_game_state g.transition g.transition)
+  (prehist : List β) (hpne : prehist ≠ [])  (hpl : Hist_legal g.law g.law g.init_game_state prehist) (hp : Turn_snd prehist.length)
+  (fst_strat snd_strat : Strategy α β) (t : ℕ) :
   (g.world_after_preHist prehist).state_on_turn fst_strat snd_strat t =
   (g.state_on_turn (strat_predeco fst_strat prehist g) (strat_predeco snd_strat prehist g) (t + prehist.length)):=
   by
   cases' t with t
   · dsimp!
     rw [zero_add]
-  -- by_cases q : Turn_fst (t+1)
-  -- ·
+    apply g.State_of_predeco_len_prehist
+  · rw [Nat.succ_add]
+    dsimp [state_on_turn]
+    by_cases q : Turn_fst (t+1)
+    · rw [if_pos q]
+      simp_rw [show t + prehist.length + 1 = t + 1 + prehist.length from by ring]
+      rw [if_pos (Turn_add_fst_snd _ _ q hp)]
+      dsimp [history_on_turn]
+      simp_rw [g.History_of_predeco_even prehist hp fst_strat snd_strat]
+      specialize transition_careless g.init_game_state (History_on_turn (world_after_preHist g prehist).init_game_state fst_strat snd_strat t) prehist hpne hpl
+      rw [transition_careless]
+      rw [strat_predeco_at_append_prehist]
+      cases' prehist with x l
+      · contradiction
+      · dsimp [world_after_preHist]
+    · rw [if_neg q]
+      rw [Turn_not_fst_iff_snd] at q
+      simp_rw [← Turn_not_snd_iff_fst]
+      simp_rw [show t + prehist.length + 1 = t + 1 + prehist.length from by ring]
+      rw [if_neg (by rw [not_not] ; apply Turn_add_snd_snd _ _ q hp)]
+      dsimp [history_on_turn]
+      simp_rw [g.History_of_predeco_even prehist hp fst_strat snd_strat]
+      specialize transition_careless g.init_game_state (History_on_turn (world_after_preHist g prehist).init_game_state fst_strat snd_strat t) prehist hpne hpl
+      rw [transition_careless]
+      rw [strat_predeco_at_append_prehist]
+      cases' prehist with x l
+      · contradiction
+      · dsimp [world_after_preHist]
 
 
 
+lemma Symm_Game_World.state_world_after_preHist_odd (g : Symm_Game_World α β)
+  (transition_careless : careless g.law g.law g.init_game_state g.transition g.transition)
+  (prehist : List β) (hpne : prehist ≠ [])  (hpl : Hist_legal g.law g.law g.init_game_state prehist) (hp : Turn_fst prehist.length)
+  (fst_strat snd_strat : Strategy α β) (t : ℕ) :
+  (g.world_after_preHist prehist).state_on_turn snd_strat fst_strat t =
+  (g.state_on_turn (strat_predeco fst_strat prehist g) (strat_predeco snd_strat prehist g) (t + prehist.length)):=
+  by
+  cases' t with t
+  · dsimp!
+    rw [zero_add]
+    apply g.State_of_predeco_len_prehist
+  · rw [Nat.succ_add]
+    dsimp [state_on_turn]
+    by_cases q : Turn_fst (t+1)
+    · rw [if_pos q]
+      simp_rw [← Turn_not_snd_iff_fst]
+      simp_rw [show t + prehist.length + 1 = t + 1 + prehist.length from by ring]
+      rw [if_neg (by rw [not_not] ; apply Turn_add_fst_fst _ _ q hp)]
+      dsimp [history_on_turn]
+      simp_rw [g.History_of_predeco_odd prehist hp fst_strat snd_strat]
+      specialize transition_careless g.init_game_state (History_on_turn (world_after_preHist g prehist).init_game_state snd_strat fst_strat t) prehist hpne hpl
+      rw [transition_careless]
+      rw [strat_predeco_at_append_prehist]
+      cases' prehist with x l
+      · contradiction
+      · dsimp [world_after_preHist]
+    · rw [if_neg q]
+      rw [Turn_not_fst_iff_snd] at q
+      simp_rw [show t + prehist.length + 1 = t + 1 + prehist.length from by ring]
+      rw [if_pos ( Turn_add_snd_fst _ _ q hp)]
+      dsimp [history_on_turn]
+      simp_rw [g.History_of_predeco_odd prehist hp fst_strat snd_strat]
+      specialize transition_careless g.init_game_state (History_on_turn (world_after_preHist g prehist).init_game_state snd_strat fst_strat t) prehist hpne hpl
+      rw [transition_careless]
+      rw [strat_predeco_at_append_prehist]
+      cases' prehist with x l
+      · contradiction
+      · dsimp [world_after_preHist]
 
-#exit
+
+
+--#exit
 
 def zSymm_Game_World.world_after_preHist {α β : Type u} (g : zSymm_Game_World α β)
-  (prehist : List β) : zSymm_Game_World α β := -- act not required to be legal
-  match prehist with
+  (prehist : List β) (hpne : prehist ≠ [])  (hpl : Hist_legal g.law g.law g.init_game_state prehist)
+  : zSymm_Game_World α β :=
+  match d : prehist with
   | [] => g
   | last :: L => {(g.toSymm_Game_World.world_after_preHist prehist) with
                       law_careless :=
@@ -392,8 +461,31 @@ def zSymm_Game_World.world_after_preHist {α β : Type u} (g : zSymm_Game_World 
                                   intro f_strat s_strat t
                                   intro fws
                                   dsimp at *
-                                  have := g.coherent
-                                  sorry
+                                  by_cases k : Turn_fst prehist.length
+                                  · rw [g.state_world_after_preHist_odd] at *
+                                    · simp_rw [← show t + prehist.length + 1 = t + 1 + prehist.length from by ring]
+                                      rw [Symm_Game_World.world_after_preHist_win_states] at *
+                                      apply g.coherent_end_all g.coherent _ _ _ _ fws
+                                    · apply g.transition_careless
+                                    · rw [d] ; apply hpne
+                                    · rw [d] ; apply hpl
+                                    · apply k
+                                    · apply g.transition_careless
+                                    · rw [d] ; apply hpne
+                                    · rw [d] ; apply hpl
+                                    · apply k
+                                  · rw [g.state_world_after_preHist_even] at *
+                                    · simp_rw [← show t + prehist.length + 1 = t + 1 + prehist.length from by ring]
+                                      rw [Symm_Game_World.world_after_preHist_win_states] at *
+                                      apply g.coherent_end_all g.coherent _ _ _ _ fws
+                                    · apply g.transition_careless
+                                    · rw [d] ; apply hpne
+                                    · rw [d] ; apply hpl
+                                    · apply k
+                                    · apply g.transition_careless
+                                    · rw [d] ; apply hpne
+                                    · rw [d] ; apply hpl
+                                    · apply k
                       playable :=
                             by
                             cases' prehist with ph
@@ -406,5 +498,7 @@ def zSymm_Game_World.world_after_preHist {α β : Type u} (g : zSymm_Game_World 
 
 def Stealing_condition (g : zSymm_Game_World α β)
   (f_act s_act : β)
-  (f_leg : g.law g.init_game_state [] f_act) (s_leg : g.law g.init_game_state [f_act] s_act):
-  Prop := ∃ f_steal : β, g.world_after_preHist [s_act, f_act] = g.world_after_fst f_act f_leg
+  (f_leg : g.law g.init_game_state [] f_act) (s_leg : g.law g.init_game_state [f_act] s_act) :
+  Prop := ∃ f_steal : β, ∃ fs_leg : g.law g.init_game_state [] f_steal, g.world_after_preHist [s_act, f_act] (by apply List.noConfusion)
+      (by apply Hist_legal.cons ; rw [if_neg (by dsimp ; decide)] ; exact s_leg ; apply Hist_legal.cons ; rw [if_pos (by dsimp ; decide)] ; exact f_leg ; apply Hist_legal.nil)
+      = g.world_after_fst f_steal fs_leg

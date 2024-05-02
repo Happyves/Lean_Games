@@ -48,6 +48,16 @@ def Symm_Game_World.coherent_end_aux
 def Symm_Game_World.coherent_end (g : Symm_Game_World α β) : Prop :=
   ∀ f_strat s_strat : Strategy α β, ∀ t : ℕ, g.coherent_end_aux f_strat s_strat t
 
+lemma Symm_Game_World.coherent_end_all (g : Symm_Game_World α β)  (h : g.coherent_end)
+  (f_strat s_strat : Strategy α β) (t n : ℕ) :
+  g.win_states (g.state_on_turn f_strat s_strat t) → g.win_states (g.state_on_turn f_strat s_strat (t+n)) :=
+  by
+  intro H
+  induction' n with n ih
+  · dsimp
+    exact H
+  · apply h
+    exact ih
 
 
 -- # Playability
@@ -252,6 +262,11 @@ def Symm_Game_World.world_after_preHist {α β : Type u} (g : Symm_Game_World α
   match prehist with
   | [] => g
   | last :: L => {g with init_game_state := g.transition g.init_game_state L last}
+
+
+lemma Symm_Game_World.world_after_preHist_win_states {α β : Type u} (g : Symm_Game_World α β)
+  (prehist : List β) : (g.world_after_preHist prehist).win_states = g.win_states :=
+  by cases' prehist <;> rfl
 
 
 
