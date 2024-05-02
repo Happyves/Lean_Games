@@ -109,7 +109,7 @@ def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ 
                                     else {(0,0)}
   law := fun ini hist act => if Chomp_state ini hist ≠ {(0,0)}
                              then Chomp_law ini hist act
-                             else True
+                             else act ≠ (0,0) -- saves ass in `preChomp_law_careless`
 
 
 
@@ -158,8 +158,30 @@ lemma Chomp_state_sub_ini (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × ℕ)
 lemma Chomp_state_hist_zero (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × ℕ)) (main : (0,0) ∈ hist) :
   Chomp_state ini hist = ∅ :=
   by
+  rw [Finset.eq_empty_iff_forall_not_mem]
+  intro x xdef
+  dsimp [Chomp_state] at xdef
+  rw [Finset.mem_filter] at xdef
+  apply xdef.2 _ main
+  dsimp [domi]
+  simp_all only [Prod.forall, zero_le, and_self]
 
-exit
+
+lemma Chomp_state_state_empty (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (hist : List (ℕ × ℕ)) (main : Chomp_state ini hist = ∅) :
+  (0,0) ∈ hist :=
+  by
+  dsimp [Chomp_state] at main
+  simp_rw [Finset.eq_empty_iff_forall_not_mem, Finset.mem_filter] at main
+  dsimp [nondomi, domi] at main
+  push_neg at main
+  specialize main _ hini
+  obtain ⟨q, qh, qz1, qz2⟩ := main
+  simp only [nonpos_iff_eq_zero] at *
+  convert qh <;> {rw [eq_comm] ; assumption}
+
+
+
+
 
 lemma preChomp_law_careless (height length : ℕ) :
   careless (preChomp height length).law (preChomp height length).law (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).transition :=
@@ -208,7 +230,7 @@ lemma preChomp_law_careless (height length : ℕ) :
           simp only [zero_le, and_self]
       · dsimp [preChomp] at *
         rw [if_neg q2]
-        trivial
+        apply c.nz_act
     · rw [if_neg q1] at c
       by_cases q2 : Chomp_state (Symm_Game_World.transition (preChomp height length) ini (List.tail prehist) (List.head prehist pHne)) (hist) ≠ {(0,0)}
       · dsimp [preChomp] at *
@@ -246,7 +268,7 @@ lemma preChomp_law_careless (height length : ℕ) :
           exact that
       · dsimp [preChomp] at *
         rw [if_neg q2]
-        trivial
+        apply c
   · intro c
     dsimp [preChomp] at *
     rw [List.cons_head_tail] at *
@@ -267,6 +289,7 @@ lemma preChomp_law_careless (height length : ℕ) :
             · cases' eh with k k
               · exact c.nd e k
               · exact this.2 e k
+          · exact c.nz_act
         · rw [if_neg q3] at c
           rw [not_not] at q3
           exfalso
@@ -284,9 +307,57 @@ lemma preChomp_law_careless (height length : ℕ) :
           exfalso
           have : (0,0) ∉ hist :=
             by
-          -- qs imply the head of prehist must be 0, which should contradict the nz_act from pHl
+            intro con
+            have := Chomp_state_hist_zero {(0,0)} hist con
+            rw [this] at q3
+            contradiction
+          have temp : hist ++ prehist = (hist ++ [prehist.head pHne]) ++ prehist.tail :=
+            by rw [List.append_assoc, List.singleton_append, List.cons_head_tail]
+          rw [temp] at q1
+          have that := Chomp_state_sub' ini (hist ++ [prehist.head pHne]) prehist.tail
+          rw [q2] at that
+          rw [Finset.subset_singleton_iff] at that
+          cases' that with k k
+          · have fact : (0,0) ∈ ini :=
+              by
+              apply Chomp_state_sub_ini _ prehist.tail
+              rw [q2]
+              exact Finset.mem_singleton.mpr rfl
+            have more := Chomp_state_state_empty _ fact _ k
+            have thut : (0,0) ∉ prehist.tail :=
+              by
+              intro con
+              have tmp := Chomp_state_hist_zero ini _ con
+              rw [tmp] at q2
+              contradiction
+            rw [List.mem_append] at more
+            cases' more with more more
+            · rw [List.mem_append] at more
+              cases' more with more more
+              · exact this more
+              · rw [List.mem_singleton] at more
+                cases' prehist with x l
+                · contradiction
+                · cases' pHl
+                  · rename_i uno dos
+                    by_cases last : Turn_fst (List.length l + 1)
+                    · rw [if_pos last, if_neg (by rw [not_not] ; apply q2)] at dos
+                      apply dos
+                      rw [more]
+                      rfl
+                    · rw [if_neg last, if_neg (by rw [not_not] ; apply q2)] at dos
+                      apply dos
+                      rw [more]
+                      rfl
+            · exact thut more
+          · exact q1 k
     · rw [if_neg q1]
-      trivial
+      split_ifs at c
+      · exact c
+      · apply c.nz_act
+      · exact c
+      · apply c.nz_act
+
 
 
 
