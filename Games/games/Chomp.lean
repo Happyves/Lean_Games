@@ -394,3 +394,4 @@ lemma preChomp_tranistion_careless (height length : ℕ) :
           by apply List.mem_cons_of_mem ; exact that
         rw [Chomp_state_hist_zero _ _ thut_r]
       · rw [if_neg q3, not_not] at *
+        -- fix carelessness
