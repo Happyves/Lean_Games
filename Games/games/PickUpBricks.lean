@@ -6,6 +6,7 @@ Author: Yves Jäckle.
 
 import Games.exLib.Nat
 import Games.gameLib.Basic
+import Games.gameLib.Termination
 import Mathlib.Tactic
 
 
@@ -42,8 +43,8 @@ lemma bricks_start_cons (ini : ℕ) (hist : List ℕ) (x : ℕ) :
 def PickUpBricks : Symm_Game_World ℕ ℕ where
   init_game_state := init_bricks
   win_states := (fun n => n = 0) -- won once no bricks left
-  transition := bricks_end_turn_from_ini_hist_act init_bricks
-  law := fun hist act => match M : (bricks_start_turn_from_ini_hist init_bricks hist) with
+  transition := fun ini => bricks_end_turn_from_ini_hist_act ini
+  law := fun ini hist act => match M : (bricks_start_turn_from_ini_hist ini hist) with
                              | 0 => act = 0 -- if no bricks there, then take none
                              | 1 => act = 1 -- if only one brick there, then take it
                              | _ => act = 1 ∨ act = 2 -- else, take one or two bricks
@@ -78,6 +79,7 @@ lemma PUB_state_bricks {g : Symm_Game ℕ ℕ} {n : ℕ} (h : g.toSymm_Game_Worl
       congr
       all_goals rw [h]
       all_goals rw [PickUpBricks]
+
 
 
 def pub_win_strat : List ℕ → ℕ  := -- for fst player ; (is strat ; remeber that init_bricks is section param)
@@ -146,20 +148,19 @@ lemma pub_win_strat_two (h : List ℕ)
 
 
 /--
-Given any other strategy, the (to be) winning stategy is  legal
+Given any other strategy, the (to be) winning stategy is legal
 wrt. PickUpBricks and this strategy as second stargegy
 -/
 lemma pub_win_strat_legal (s_strat : Strategy ℕ ℕ):
-  Strategy_legal
+  Strategy_legal_fst
     init_bricks
-    (fun _ : ℕ => (PickUpBricks init_bricks).law)
+    (fun ini : ℕ => (PickUpBricks init_bricks).law ini)
     pub_win_strat
     s_strat
-    pub_win_strat
     :=
   by
   dsimp [PickUpBricks, pub_win_strat]
-  intro hist
+  intro _ _
   split
   · rename_i h
     dsimp [pub_win_strat]
@@ -175,20 +176,20 @@ lemma pub_win_strat_legal (s_strat : Strategy ℕ ℕ):
     · apply h1
 
 
+
 def toy_strat : List ℕ → ℕ  := -- for demonstration purposes
   fun hist => if bricks_start_turn_from_ini_hist init_bricks hist = 0 then 0 else 1
 
 lemma toy_strat_legal (f_strat : Strategy ℕ ℕ):
-  Strategy_legal
+  Strategy_legal_snd
     init_bricks
-    (fun _ : ℕ => (PickUpBricks init_bricks).law)
+    (fun ini : ℕ => (PickUpBricks init_bricks).law ini)
     f_strat
-    toy_strat
     toy_strat
     :=
   by
   dsimp [PickUpBricks, pub_win_strat]
-  intro hist
+  intro  _ _
   split
   · rename_i h
     dsimp [toy_strat]
@@ -238,6 +239,8 @@ example : PickUpBricks_pubWin_vs_toy.fst_win :=
       all_goals {simp [Symm_Game.toGame, PickUpBricks_pubWin_vs_toy, PickUpBricks] ; decide}
 
 
+
+
 /--
 If there are 1 or 2 initial bricks mod 3, then for the game played with
 the winning startegy against any other one, the number of bricks after
@@ -246,7 +249,7 @@ the first players turns are always 0 mod 3.
 lemma loop_invariant
   (win_hyp : init_bricks % 3 = 1 ∨ init_bricks % 3 = 2)
   (s_strat : Strategy ℕ ℕ)
-  (s_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) pub_win_strat s_strat s_strat) :
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) pub_win_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := pub_win_strat
                              fst_lawful := pub_win_strat_legal init_bricks s_strat
@@ -287,8 +290,10 @@ lemma loop_invariant
           rw [← Turn_fst_step] at tf
           rw [Turn_not_snd_iff_fst]
           exact tf
-        · dsimp [Strategy_legal] at s_law
+        · dsimp [Strategy_legal_snd] at s_law
           specialize s_law t
+          rw [← Turn_snd_fst_step] at tf
+          specialize s_law tf
           dsimp [PickUpBricks] at s_law
           dsimp [PickUpBricks]
           rw [bricks_start_end]
@@ -338,48 +343,64 @@ lemma loop_invariant
                 · contradiction
                 · contradiction
 
+
+
 lemma acts_le_bricks
   (f_strat s_strat : Strategy ℕ ℕ)
-  (f_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat f_strat)
-  (s_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat s_strat) :
+  (f_law : Strategy_legal_fst init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat)
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              fst_lawful := f_law
                              snd_strat := s_strat
                              snd_lawful := s_law } ;
-   ∀ turn : ℕ,
+  ∀ turn : ℕ,
   let H := History_on_turn init_bricks f_strat s_strat turn ;
-  (f_strat init_bricks H ≤ bricks_start_turn_from_ini_hist init_bricks H)
-    ∧ (s_strat init_bricks H ≤ bricks_start_turn_from_ini_hist init_bricks H) :=
+  (Turn_fst (turn +1) → f_strat init_bricks H ≤ bricks_start_turn_from_ini_hist init_bricks H)
+    ∧ (Turn_snd (turn +1) → s_strat init_bricks H ≤ bricks_start_turn_from_ini_hist init_bricks H) :=
   by
   intro g t H
-  rw [Strategy_legal, PickUpBricks] at f_law s_law
+  rw [Strategy_legal_fst, PickUpBricks] at f_law
+  rw [Strategy_legal_snd, PickUpBricks] at s_law
   specialize f_law t
   specialize s_law t
   dsimp at f_law s_law
   split at f_law
   · rename_i zero
-    dsimp [H]
-    rw [zero, f_law]
-    rw [zero] at s_law
-    dsimp at s_law
-    rw [s_law]
-    decide
+    constructor
+    · intro tf
+      specialize f_law tf
+      dsimp [H]
+      rw [f_law]
+      apply Nat.zero_le
+    · intro ts
+      specialize s_law ts
+      dsimp [H]
+      rw [zero] at s_law
+      dsimp at s_law
+      rw [s_law]
+      apply Nat.zero_le
   · rename_i one
-    dsimp [H]
-    rw [one, f_law]
-    rw [one] at s_law
-    dsimp at s_law
-    rw [s_law]
-    decide
+    constructor
+    · intro tf
+      rw [f_law tf, one]
+    · intro ts
+      specialize s_law ts
+      rw [one] at s_law
+      dsimp at s_law
+      rw [s_law, one]
   · rename_i noZero noOne
     constructor
-    · have : 2 ≤ bricks_start_turn_from_ini_hist init_bricks H :=
+    · intro tf
+      specialize f_law tf
+      have : 2 ≤ bricks_start_turn_from_ini_hist init_bricks H :=
         by
         rw [Nat.two_le_iff]
         exact ⟨noZero,noOne⟩
       cases' f_law with c c <;> {rw [c] ; linarith}
-    · split at s_law
+    · intro ts
+      specialize s_law ts
+      split at s_law
       · rename_i zero
         rw [zero, s_law]
       · rename_i one
@@ -391,10 +412,12 @@ lemma acts_le_bricks
         cases' s_law with c c <;> {rw [c] ; linarith}
 
 
+
+
 lemma acts_pos_condition
   (f_strat s_strat : Strategy ℕ ℕ)
-  (f_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat f_strat)
-  (s_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat s_strat) :
+  (f_law : Strategy_legal_fst init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat)
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              fst_lawful := f_law
@@ -403,10 +426,10 @@ lemma acts_pos_condition
    ∀ turn : ℕ,
   let S := g.state_on_turn ;
   let H := History_on_turn init_bricks f_strat s_strat turn ;
-  S (turn + 1) ≠ 0 → (f_strat init_bricks H ≠ 0 ∧ s_strat init_bricks H ≠ 0) :=
+  S (turn + 1) ≠ 0 → (Turn_fst (turn + 1) → f_strat init_bricks H ≠ 0) ∧ ((Turn_snd (turn + 1) → s_strat init_bricks H ≠ 0)) :=
   by
   intro g t S H Snz
-  rw [Strategy_legal, PickUpBricks] at f_law s_law
+  rw [PickUpBricks] at f_law s_law
   specialize f_law t
   specialize s_law t
   dsimp at f_law s_law
@@ -424,22 +447,27 @@ lemma acts_pos_condition
   · rename_i one
     rw [one] at s_law
     dsimp at s_law
-    rw [f_law,s_law]
-    decide
+    constructor
+    · intro tf
+      rw [f_law tf]
+      decide
+    · intro tf
+      rw [s_law tf]
+      decide
   · rename_i noZ noO
     constructor
-    · cases' f_law with c c <;> {rw [c] ; decide}
+    · intro tf ; cases' f_law tf with c c <;> {rw [c] ; decide}
     · split at s_law
       · rename_i no ; exfalso ; exact noZ no
       · rename_i no ; exfalso ; exact noO no
-      · cases' s_law with c c <;> {rw [c] ; decide}
+      · intro ts ; cases' s_law ts with c c <;> {rw [c] ; decide}
 
 
 
 lemma loop_invariant'
   (win_hyp : init_bricks % 3 = 1 ∨ init_bricks % 3 = 2)
   (s_strat : Strategy ℕ ℕ)
-  (s_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) pub_win_strat s_strat s_strat) :
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) pub_win_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := pub_win_strat
                              fst_lawful := pub_win_strat_legal init_bricks s_strat
@@ -494,11 +522,10 @@ lemma loop_invariant'
 
 
 
-
 lemma termination_pre
   (f_strat s_strat : Strategy ℕ ℕ)
-  (f_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat f_strat)
-  (s_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat s_strat) :
+  (f_law : Strategy_legal_fst init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat)
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              fst_lawful := f_law
@@ -519,9 +546,9 @@ lemma termination_pre
     apply Nat.sub_lt_self
     · rw [Nat.pos_iff_ne_zero]
       have := acts_pos_condition init_bricks f_strat s_strat f_law s_law turn non_zero
-      exact this.1
+      exact this.1 q
     · have := acts_le_bricks init_bricks f_strat s_strat f_law s_law turn
-      exact this.1
+      exact this.1 q
   · rw [g.state_on_turn_snd_to_fst turn q]
     have : g.toSymm_Game_World = PickUpBricks init_bricks := by rfl
     rw [← PUB_state_bricks this turn]
@@ -530,9 +557,10 @@ lemma termination_pre
     apply Nat.sub_lt_self
     · rw [Nat.pos_iff_ne_zero]
       have := acts_pos_condition init_bricks f_strat s_strat f_law s_law turn non_zero
-      exact this.2
+      exact this.2 q
     · have := acts_le_bricks init_bricks f_strat s_strat f_law s_law turn
-      exact this.2
+      exact this.2 q
+
 
 
 /--
@@ -541,8 +569,8 @@ reach a turn where there are no bricks left.
 -/
 lemma termination
   (fst_strat snd_strat : Strategy ℕ ℕ )
-  (f_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat f_strat)
-  (s_law : Strategy_legal init_bricks (fun _ : ℕ => (PickUpBricks init_bricks).law) f_strat s_strat s_strat) :
+  (f_law : Strategy_legal_fst init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat)
+  (s_law : Strategy_legal_snd init_bricks (fun ini : ℕ => (PickUpBricks init_bricks).law ini) f_strat s_strat) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              fst_lawful := f_law
@@ -566,18 +594,16 @@ theorem Main_Thm
   (PickUpBricks init_bricks).is_fst_win :=
   by
   use pub_win_strat
-  intro s_strat
-  use (pub_win_strat_legal init_bricks s_strat)
-  intro s_law
+  intro s_strat f_leg s_leg
   have wf : _ := Nat.lt_wfRel.wf
   rw [WellFounded.wellFounded_iff_has_min] at wf
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := pub_win_strat
                              fst_lawful := pub_win_strat_legal init_bricks s_strat
                              snd_strat := s_strat
-                             snd_lawful := s_law }
+                             snd_lawful := s_leg }
   specialize wf (fun x : ℕ => g.state_on_turn x = 0)
-  specialize wf (termination init_bricks pub_win_strat s_strat (pub_win_strat_legal init_bricks s_strat) s_law)
+  specialize wf (termination init_bricks pub_win_strat s_strat (pub_win_strat_legal init_bricks s_strat) s_leg)
   obtain ⟨end_turn, end_turn_z, end_turn_prop⟩ := wf
   dsimp only [Membership.mem, Set.Mem] at *
   use end_turn
@@ -604,15 +630,15 @@ theorem Main_Thm
     rw [Nat.sub_eq_zero_iff_le] at end_turn_z
     have up : s_strat init_bricks (History_on_turn init_bricks g.fst_strat g.snd_strat (end_turn - 1)) < 3 :=
       by
-      dsimp [Strategy_legal, PickUpBricks] at s_law
-      specialize s_law  (end_turn - 1)
-      split at s_law
-      · rw [s_law] ; decide
-      · rw [s_law] ; decide
-      · cases' s_law with s_law s_law ; rw [s_law] ; decide ; rw [s_law] ; decide
+      dsimp [Strategy_legal_snd, PickUpBricks] at s_leg
+      specialize s_leg  (end_turn - 1)
+      split at s_leg
+      · rw [s_leg ((Turn_not_fst_iff_snd (end_turn - 1 + 1)).mp con)] ; decide
+      · rw [s_leg ((Turn_not_fst_iff_snd (end_turn - 1 + 1)).mp con)] ; decide
+      · cases' s_leg ((Turn_not_fst_iff_snd (end_turn - 1 + 1)).mp con) with s_leg s_leg ; rw [s_leg] ; decide ; rw [s_leg] ; decide
     have Up := le_trans end_turn_z (le_of_lt up)
     rw [Turn_not_fst_iff_snd, ← Turn_fst_snd_step] at con
-    have inv := loop_invariant init_bricks win_hyp s_strat s_law (end_turn - 1) con
+    have inv := loop_invariant init_bricks win_hyp s_strat s_leg (end_turn - 1) con
     rw [← PUB_state_bricks] at inv
     interval_cases (bricks_start_turn_from_ini_hist init_bricks (History_on_turn init_bricks g.fst_strat g.snd_strat (end_turn - 1)))
     · contradiction

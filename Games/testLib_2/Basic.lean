@@ -122,13 +122,7 @@ lemma Symm_Game_World.toGame_World_snd_legal {α β : Type u} (g : Symm_Game_Wor
 
 
 
-/--
-The list of actions represents the history of actions taken
-by both players. From the history and initial state (first input),
-one may deduce the current state, which may be used to define
-startegies. The output is the action to be played.
--/
-abbrev Strategy (α β : Type u) := α → List β → β
+
 
 
 
@@ -142,23 +136,101 @@ Turn of the decond player.
 Turn 0 represents initial state, then turns represent the state after the action-/
 def Turn_snd (turn : ℕ): Prop := ¬ (turn % 2 = 1)
 
+
 instance : DecidablePred Turn_fst :=
   fun turn => by rw [Turn_fst] ; exact Nat.decEq (turn % 2) 1
 
 instance : DecidablePred Turn_snd :=
   fun turn => by rw [Turn_snd] ; exact Not.decidable
 
+
+
+inductive Hist_legal (f_law s_law : α → List β → (β → Prop)) (ini : α) : List β → Prop
+| nil : Hist_legal f_law s_law ini []
+| cons (l : List β) (act : β) : (if Turn_fst (l.length + 1)
+                                then f_law ini l act
+                                else s_law ini l act) → Hist_legal f_law s_law ini l →  Hist_legal f_law s_law ini (act :: l)
+
+
+/--
+The list of actions represents the history of actions taken
+by both players. From the history and initial state (first input),
+one may deduce the current state, which may be used to define
+startegies. The output is the action to be played.
+-/
+abbrev fStrategy {α β : Type _}
+  (ini : α) (f_law s_law : α → List β → (β → Prop)) :=
+  (hist : List β) → (hist_leg : Hist_legal f_law s_law ini hist) →
+  (tf : Turn_fst (hist.length + 1)) → β
+
+abbrev sStrategy {α β : Type _}
+  (ini : α) (f_law s_law : α → List β → (β → Prop)) :=
+  (hist : List β) → (hist_leg : Hist_legal f_law s_law ini hist) →
+  (tf : Turn_snd (hist.length + 1)) → β
+
+
+
 /-- The turn given the history-/
 abbrev Turn_from_hist {β : Type u} (hist : List β) := hist.length
 
-/-- The history of actions, given an initial state and the two startegies-/
+-- /--
+-- FIX ME
+
+-- Given a law that returns a predicate on actions to determine legal actions,
+-- when provided an initial state and a history of actions on which the law may
+-- depend on, we define the notion of a strategy being legal (given another startegy).
+-- A strategy is legal if for all turns, the action for the history on that turn
+-- is legal wrt. the law at that history.
+-- -/
+-- def Strategy_legal_fst {α β : Type u}
+--   (ini : α) (f_law s_law: α → List β → (β → Prop)) (fst_strat: fStrategy ini f_law s_law) (snd_strat: sStrategy ini f_law s_law): Prop :=
+--   ∀ turn : ℕ, Turn_fst (turn + 1) → f_law ini (History_on_turn ini f_strat s_strat turn) (f_strat ini (History_on_turn ini f_strat s_strat turn))
+--       -- recall : turn is after the action
+
+-- /--
+-- FIX ME
+-- -/
+-- def Strategy_legal_snd {α β : Type u}
+--   (ini : α) (s_law : α → List β → (β → Prop)) (f_strat s_strat : Strategy α β): Prop :=
+--   ∀ turn : ℕ, Turn_snd (turn +1) → s_law ini (History_on_turn ini f_strat s_strat turn) (s_strat ini (History_on_turn ini f_strat s_strat turn))
+--       -- recall : turn is after the action
+
+--#exit
+
+-- Note to self: try mutual def ??
+
 def History_on_turn {α β : Type u}
-    (ini : α) (fst_strat snd_strat: Strategy α β) : ℕ → List β
+    (ini : α) (f_law s_law : α → List β → (β → Prop))
+    (fst_strat: fStrategy ini f_law s_law) (snd_strat: sStrategy ini f_law s_law) :
+    ℕ → (List β × (Hist_legal f_law s_law ini))
 | 0 => []
-| n+1 => let h := History_on_turn ini fst_strat snd_strat n
+| n+1 => let h := History_on_turn ini f_law s_law fst_strat snd_strat n
          if Turn_fst (n+1)
-         then (fst_strat ini h) :: h
+         then (fst_strat h) :: h
          else (snd_strat ini h) :: h
+
+
+lemma Game_World.History_Hist_legal (g : Game_World α β)
+  (f_strat s_strat: Strategy α β)
+  (fst_lawful : Strategy_legal_fst g.init_game_state g.fst_legal f_strat s_strat)
+  (snd_lawful : Strategy_legal_snd g.init_game_state g.snd_legal f_strat s_strat)
+  (t : ℕ) :
+  Hist_legal g.fst_legal g.snd_legal g.init_game_state (History_on_turn g.init_game_state f_strat s_strat t) :=
+  by
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs
+    all_goals apply Hist_legal.cons _ _ _ ih
+    all_goals rename_i c
+    all_goals rw [History_on_turn_length]
+    · rw [if_pos c]
+      exact fst_lawful t c
+    · rw [if_neg c]
+      exact snd_lawful t c
+
+#exit
 
 lemma History_on_turn_length {α β : Type u}
     (ini : α) (fst_strat snd_strat: Strategy α β) (t : Nat) :
@@ -169,28 +241,9 @@ lemma History_on_turn_length {α β : Type u}
   · dsimp [History_on_turn]
     split_ifs <;> {rw [List.length_cons, ih]}
 
+#exit
 
-/--
-FIX ME
 
-Given a law that returns a predicate on actions to determine legal actions,
-when provided an initial state and a history of actions on which the law may
-depend on, we define the notion of a strategy being legal (given another startegy).
-A strategy is legal if for all turns, the action for the history on that turn
-is legal wrt. the law at that history.
--/
-def Strategy_legal_fst {α β : Type u}
-  (ini : α) (f_law : α → List β → (β → Prop)) (f_strat s_strat : Strategy α β): Prop :=
-  ∀ turn : ℕ, Turn_fst (turn + 1) → f_law ini (History_on_turn ini f_strat s_strat turn) (f_strat ini (History_on_turn ini f_strat s_strat turn))
-      -- recall : turn is after the action
-
-/--
-FIX ME
--/
-def Strategy_legal_snd {α β : Type u}
-  (ini : α) (s_law : α → List β → (β → Prop)) (f_strat s_strat : Strategy α β): Prop :=
-  ∀ turn : ℕ, Turn_snd (turn +1) → s_law ini (History_on_turn ini f_strat s_strat turn) (s_strat ini (History_on_turn ini f_strat s_strat turn))
-      -- recall : turn is after the action
 
 
 /--
@@ -477,39 +530,6 @@ lemma Turn_snd_not_step (turn : ℕ): Turn_snd turn ↔ ¬ Turn_snd (turn + 1) :
   by
   rw [Turn_not_snd_iff_fst]
   apply Turn_snd_fst_step
-
-
-lemma Turn_add_fst_fst (a b : ℕ) : Turn_fst a → Turn_fst b → Turn_snd (a+b) :=
-  by
-  intro A B
-  dsimp [Turn_fst, Turn_snd] at *
-  rw [Nat.mod_two_ne_one, Nat.add_mod, A, B]
-  decide
-
-
-lemma Turn_add_fst_snd (a b : ℕ) : Turn_fst a → Turn_snd b → Turn_fst (a+b) :=
-  by
-  intro A B
-  dsimp [Turn_fst, Turn_snd] at *
-  rw [Nat.mod_two_ne_one] at B
-  rw [Nat.add_mod, A, B]
-  decide
-
-lemma Turn_add_snd_fst (a b : ℕ) : Turn_snd a → Turn_fst b → Turn_fst (a+b) :=
-  by
-  intro A B
-  dsimp [Turn_fst, Turn_snd] at *
-  rw [Nat.mod_two_ne_one] at A
-  rw [Nat.add_mod, A, B]
-  decide
-
-lemma Turn_add_snd_snd (a b : ℕ) : Turn_snd a → Turn_snd b → Turn_snd (a+b) :=
-  by
-  intro A B
-  dsimp [Turn_fst, Turn_snd] at *
-  rw [Nat.mod_two_ne_one] at *
-  rw [Nat.add_mod, A, B]
-  decide
 
 
 lemma History_on_turn_fst_to_snd (ini : α) (fst_strat snd_strat: Strategy α β) (turn : ℕ):
@@ -1016,11 +1036,6 @@ lemma History_on_turn_getLast_fst_act (ini : α) (f_strat s_strat: Strategy α �
 
 
 
-inductive Hist_legal (f_law s_law : α → List β → (β → Prop)) (ini : α) : List β → Prop
-| nil : Hist_legal f_law s_law ini []
-| cons (l : List β) (act : β) : (if Turn_fst (l.length + 1)
-                                then f_law ini l act
-                                else s_law ini l act) → Hist_legal f_law s_law ini l →  Hist_legal f_law s_law ini (act :: l)
 
 
 lemma Game_World.History_Hist_legal (g : Game_World α β)
@@ -1056,80 +1071,14 @@ lemma Game.History_Hist_legal (g : Game α β) (t : ℕ) :
 
 -- # Carelessness
 
-def careless
-  (f_law s_law : α → List β → (β → Prop)) (ini : α)
-  (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
-  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) → Hist_legal f_law s_law ini prehist →
+def careless (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
+  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) →
     obj ini (hist ++ prehist) = obj (swap ini prehist.tail (prehist.head h)) hist
 
-lemma careless_singleton
-  (f_law s_law : α → List β → (β → Prop)) (ini : α)
-  (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless f_law s_law ini obj swap) :
-  ∀ ini : α , ∀ hist : List β, ∀ act : β, f_law ini [] act → obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
+lemma careless_singleton (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless obj swap) :
+  ∀ ini : α , ∀ hist : List β, ∀ act : β, obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
   :=
   by
-  intro ini hist act q
+  intro ini hist act
   apply hc ini hist [act]
-  · apply List.noConfusion
-  · apply Hist_legal.cons
-    · rw [if_pos (by dsimp ; decide)]
-      exact q
-    · apply Hist_legal.nil
-
-
--- # More
-
-lemma History_eq_of_strat_strong_eq
-  (ini : α) (f_strat s_strat F_strat S_strat : Strategy α β)
-  (T : Nat)
-  (hf : ∀ hist : List β, hist.length ≤ T → f_strat ini hist = F_strat ini hist)
-  (hs : ∀ hist : List β, hist.length ≤ T → s_strat ini hist = S_strat ini hist) :
-  ∀ t ≤ (T+1), History_on_turn ini f_strat s_strat t = History_on_turn ini F_strat S_strat t :=
-  by
-  intro t tle
-  induction' t with t ih
-  · dsimp [History_on_turn]
-  · dsimp [History_on_turn]
-    by_cases q : Turn_fst (t + 1)
-    · rw [if_pos q, if_pos q]
-      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
-      rw [ih]
-      congr
-      apply hf
-      rw [History_on_turn_length]
-      exact Nat.lt_succ.mp tle
-    · rw [if_neg q, if_neg q]
-      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
-      rw [ih]
-      congr
-      apply hs
-      rw [History_on_turn_length]
-      exact Nat.lt_succ.mp tle
-
-
-lemma History_eq_of_strat_strong_eq'
-  (ini : α) (f_strat s_strat F_strat S_strat : Strategy α β)
-  (T : Nat)
-  (hf : ∀ hist : List β, hist.length < T → f_strat ini hist = F_strat ini hist)
-  (hs : ∀ hist : List β, hist.length < T → s_strat ini hist = S_strat ini hist) :
-  ∀ t ≤ (T), History_on_turn ini f_strat s_strat t = History_on_turn ini F_strat S_strat t :=
-  by
-  intro t tle
-  induction' t with t ih
-  · dsimp [History_on_turn]
-  · dsimp [History_on_turn]
-    by_cases q : Turn_fst (t + 1)
-    · rw [if_pos q, if_pos q]
-      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
-      rw [ih]
-      congr
-      apply hf
-      rw [History_on_turn_length]
-      exact tle
-    · rw [if_neg q, if_neg q]
-      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
-      rw [ih]
-      congr
-      apply hs
-      rw [History_on_turn_length]
-      exact tle
+  apply List.noConfusion

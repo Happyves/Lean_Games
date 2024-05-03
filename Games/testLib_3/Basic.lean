@@ -8,46 +8,20 @@ Author: Yves Jäckle.
 import Mathlib.Tactic
 import Games.exLib.Nat
 
--- should contain game structures, turn manipulations, history and state lemmas
+
+-- Testing conditioned startegies wrt. length and winning states
 
 
 -- # Environments
 
 
 
-/--
-The game world for state type α and action type β.
--/
-structure Game_World (α β : Type u) where
-  /-- Inital state-/
-  init_game_state : α
-  /-- A predicate that decides in which states the game is won for the first player-/
-  fst_win_states : α → Prop
-  /-- A predicate that decides in which states the game is won for the second player-/
-  snd_win_states : α → Prop
-  /-- Given the initial state and the history, return a predicate
-  that determines the legal actions for the first player-/
-  fst_legal : α → List β → (β → Prop)
-  /-- Given the initial state and the history, return a predicate
-  that determines the legal actions for the second player-/
-  snd_legal : α → List β → (β → Prop)
-  /-- Given the initial state, the history, and an action of the frist player,
-  , and return next state-/
-  fst_transition : α → List β → β → α
-  /-- Given the initial state, the history, and an action of the second player,
-   and return next state-/
-  snd_transition : α → List β → β → α
-
-
-/-- `Game_World` with addtional drawing states, given by a predicate on states-/
-structure Game_World_wDraw (α β : Type u) extends Game_World α β where
-  draw_states : α → Prop
 
 
 /--
 The game world for state type α and action type β, where players aren't discerened.
 -/
-structure Symm_Game_World (α β : Type u) where
+structure Symm_Game_World (α : Type _) (β : Type _) where
   /-- Inital state-/
   init_game_state : α
   /-- A predicate that decides in which states the game is won for the players-/
@@ -57,78 +31,7 @@ structure Symm_Game_World (α β : Type u) where
   /-- A predicate that decides in which states the game is won for the players-/
   law : α → List β → (β → Prop)
 
-/-- `Symm_Game_World` with addtional drawing states, given by a predicate on states-/
-structure Symm_Game_World_wDraw (α β : Type u) extends Symm_Game_World α β where
-  draw_states : α → Prop
 
-/--
-Produce a `Game_World` from a `Symm_Game_World`.
--/
-def Symm_Game_World.toGame_World {α β : Type u} (g : Symm_Game_World α β) : Game_World α β :=
-  {init_game_state := g.init_game_state
-   fst_win_states := g.win_states
-   fst_transition := g.transition
-   fst_legal := g.law
-   snd_win_states := g.win_states
-   snd_transition := g.transition
-   snd_legal := g.law
-   }
-
-
-instance {α β : Type u} : Coe (Symm_Game_World α β) (Game_World α β) where
-  coe := Symm_Game_World.toGame_World
-
-@[simp]
-lemma Symm_Game_World.toGame_World_ini {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.init_game_state = g.init_game_state :=
-  by
-  rfl
-
-@[simp]
-lemma Symm_Game_World.toGame_World_fst_win {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.fst_win_states = g.win_states :=
-  by
-  rfl
-
-@[simp]
-lemma Symm_Game_World.toGame_World_snd_win {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.snd_win_states = g.win_states :=
-  by
-  rfl
-
-@[simp]
-lemma Symm_Game_World.toGame_World_fst_trans {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.fst_transition = g.transition :=
-  by
-  rfl
-
-@[simp]
-lemma Symm_Game_World.toGame_World_snd_trans {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.snd_transition = g.transition :=
-  by
-  rfl
-
-@[simp]
-lemma Symm_Game_World.toGame_World_fst_legal {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.fst_legal = g.law :=
-  by
-  rfl
-
-@[simp]
-lemma Symm_Game_World.toGame_World_snd_legal {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.snd_legal = g.law :=
-  by
-  rfl
-
-
-
-/--
-The list of actions represents the history of actions taken
-by both players. From the history and initial state (first input),
-one may deduce the current state, which may be used to define
-startegies. The output is the action to be played.
--/
-abbrev Strategy (α β : Type u) := α → List β → β
 
 
 
@@ -147,6 +50,38 @@ instance : DecidablePred Turn_fst :=
 
 instance : DecidablePred Turn_snd :=
   fun turn => by rw [Turn_snd] ; exact Not.decidable
+
+
+
+def Symm_Game_World.state_from_hist (g : Symm_Game_World α β) : List β → α
+| [] => g.init_game_state
+| x :: l => g.transition g.init_game_state l x
+  -- if Turn.fst (x :: l).length then -- for asym context
+
+
+structure Symm_Game_World.legal_move (g : Symm_Game_World α β) where
+  act : β
+  leg : g.law g.init_game_state hist act
+
+def Symm_Game_World.strategy_fst (g : Symm_Game_World α β) :=
+  (hist : List β) → (tf : Turn_fst hist.length) → (nto : ¬ g.win_states (g.state_from_hist hist)) →
+    --(act : β) × (g.law g.init_game_state hist act) -- universe error
+    g.legal_move
+
+
+structure Symm_Game_World.strategy_fst' (g : Symm_Game_World α β) :=
+  val : (hist : List β) → (tf : Turn_fst hist.length) → (nto : ¬ g.win_states (g.state_from_hist hist)) → β
+  prop : (hist : List β) → (tf : Turn_fst hist.length) → (nto : ¬ g.win_states (g.state_from_hist hist)) →  g.law g.init_game_state hist (val hist tf nto)
+
+
+
+
+
+
+
+
+
+#exit
 
 /-- The turn given the history-/
 abbrev Turn_from_hist {β : Type u} (hist : List β) := hist.length
@@ -191,6 +126,8 @@ def Strategy_legal_snd {α β : Type u}
   (ini : α) (s_law : α → List β → (β → Prop)) (f_strat s_strat : Strategy α β): Prop :=
   ∀ turn : ℕ, Turn_snd (turn +1) → s_law ini (History_on_turn ini f_strat s_strat turn) (s_strat ini (History_on_turn ini f_strat s_strat turn))
       -- recall : turn is after the action
+
+#exit
 
 
 /--
@@ -477,39 +414,6 @@ lemma Turn_snd_not_step (turn : ℕ): Turn_snd turn ↔ ¬ Turn_snd (turn + 1) :
   by
   rw [Turn_not_snd_iff_fst]
   apply Turn_snd_fst_step
-
-
-lemma Turn_add_fst_fst (a b : ℕ) : Turn_fst a → Turn_fst b → Turn_snd (a+b) :=
-  by
-  intro A B
-  dsimp [Turn_fst, Turn_snd] at *
-  rw [Nat.mod_two_ne_one, Nat.add_mod, A, B]
-  decide
-
-
-lemma Turn_add_fst_snd (a b : ℕ) : Turn_fst a → Turn_snd b → Turn_fst (a+b) :=
-  by
-  intro A B
-  dsimp [Turn_fst, Turn_snd] at *
-  rw [Nat.mod_two_ne_one] at B
-  rw [Nat.add_mod, A, B]
-  decide
-
-lemma Turn_add_snd_fst (a b : ℕ) : Turn_snd a → Turn_fst b → Turn_fst (a+b) :=
-  by
-  intro A B
-  dsimp [Turn_fst, Turn_snd] at *
-  rw [Nat.mod_two_ne_one] at A
-  rw [Nat.add_mod, A, B]
-  decide
-
-lemma Turn_add_snd_snd (a b : ℕ) : Turn_snd a → Turn_snd b → Turn_snd (a+b) :=
-  by
-  intro A B
-  dsimp [Turn_fst, Turn_snd] at *
-  rw [Nat.mod_two_ne_one] at *
-  rw [Nat.add_mod, A, B]
-  decide
 
 
 lemma History_on_turn_fst_to_snd (ini : α) (fst_strat snd_strat: Strategy α β) (turn : ℕ):
@@ -1056,80 +960,14 @@ lemma Game.History_Hist_legal (g : Game α β) (t : ℕ) :
 
 -- # Carelessness
 
-def careless
-  (f_law s_law : α → List β → (β → Prop)) (ini : α)
-  (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
-  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) → Hist_legal f_law s_law ini prehist →
+def careless (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
+  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) →
     obj ini (hist ++ prehist) = obj (swap ini prehist.tail (prehist.head h)) hist
 
-lemma careless_singleton
-  (f_law s_law : α → List β → (β → Prop)) (ini : α)
-  (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless f_law s_law ini obj swap) :
-  ∀ ini : α , ∀ hist : List β, ∀ act : β, f_law ini [] act → obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
+lemma careless_singleton (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless obj swap) :
+  ∀ ini : α , ∀ hist : List β, ∀ act : β, obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
   :=
   by
-  intro ini hist act q
+  intro ini hist act
   apply hc ini hist [act]
-  · apply List.noConfusion
-  · apply Hist_legal.cons
-    · rw [if_pos (by dsimp ; decide)]
-      exact q
-    · apply Hist_legal.nil
-
-
--- # More
-
-lemma History_eq_of_strat_strong_eq
-  (ini : α) (f_strat s_strat F_strat S_strat : Strategy α β)
-  (T : Nat)
-  (hf : ∀ hist : List β, hist.length ≤ T → f_strat ini hist = F_strat ini hist)
-  (hs : ∀ hist : List β, hist.length ≤ T → s_strat ini hist = S_strat ini hist) :
-  ∀ t ≤ (T+1), History_on_turn ini f_strat s_strat t = History_on_turn ini F_strat S_strat t :=
-  by
-  intro t tle
-  induction' t with t ih
-  · dsimp [History_on_turn]
-  · dsimp [History_on_turn]
-    by_cases q : Turn_fst (t + 1)
-    · rw [if_pos q, if_pos q]
-      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
-      rw [ih]
-      congr
-      apply hf
-      rw [History_on_turn_length]
-      exact Nat.lt_succ.mp tle
-    · rw [if_neg q, if_neg q]
-      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
-      rw [ih]
-      congr
-      apply hs
-      rw [History_on_turn_length]
-      exact Nat.lt_succ.mp tle
-
-
-lemma History_eq_of_strat_strong_eq'
-  (ini : α) (f_strat s_strat F_strat S_strat : Strategy α β)
-  (T : Nat)
-  (hf : ∀ hist : List β, hist.length < T → f_strat ini hist = F_strat ini hist)
-  (hs : ∀ hist : List β, hist.length < T → s_strat ini hist = S_strat ini hist) :
-  ∀ t ≤ (T), History_on_turn ini f_strat s_strat t = History_on_turn ini F_strat S_strat t :=
-  by
-  intro t tle
-  induction' t with t ih
-  · dsimp [History_on_turn]
-  · dsimp [History_on_turn]
-    by_cases q : Turn_fst (t + 1)
-    · rw [if_pos q, if_pos q]
-      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
-      rw [ih]
-      congr
-      apply hf
-      rw [History_on_turn_length]
-      exact tle
-    · rw [if_neg q, if_neg q]
-      specialize ih (by apply le_trans _ tle ; exact Nat.le.step Nat.le.refl)
-      rw [ih]
-      congr
-      apply hs
-      rw [History_on_turn_length]
-      exact tle
+  apply List.noConfusion
