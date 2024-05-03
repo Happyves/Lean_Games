@@ -496,9 +496,38 @@ def zSymm_Game_World.world_after_preHist {α β : Type u} (g : zSymm_Game_World 
                                   }
 
 
-def Stealing_condition (g : zSymm_Game_World α β)
+def Stealing_condition_pre (g : zSymm_Game_World α β)
   (f_act s_act : β)
   (f_leg : g.law g.init_game_state [] f_act) (s_leg : g.law g.init_game_state [f_act] s_act) :
   Prop := ∃ f_steal : β, ∃ fs_leg : g.law g.init_game_state [] f_steal, g.world_after_preHist [s_act, f_act] (by apply List.noConfusion)
       (by apply Hist_legal.cons ; rw [if_neg (by dsimp ; decide)] ; exact s_leg ; apply Hist_legal.cons ; rw [if_pos (by dsimp ; decide)] ; exact f_leg ; apply Hist_legal.nil)
       = g.world_after_fst f_steal fs_leg
+
+
+def Stealing_condition (g : zSymm_Game_World α β) : Prop :=
+  ∀ (f_act s_act : β),
+  (f_leg : g.law g.init_game_state [] f_act) →
+  (s_leg : g.law g.init_game_state [f_act] s_act) →
+  Stealing_condition_pre g f_act s_act f_leg s_leg
+
+noncomputable
+def stolen_strat [Inhabited β] (g : zSymm_Game_World α β) (hgs : Stealing_condition g)
+  (s_strat : Strategy α β)
+  (hfa :  g.law g.init_game_state [] default)
+  (hsa : g.law g.init_game_state [default] (s_strat g.init_game_state [default])) : Strategy α β :=
+  fun ini hist =>
+    if hist = []
+    then Classical.choose (hgs default (s_strat g.init_game_state [default]) hfa hsa)
+    else s_strat ini (hist.dropLast ++ [(s_strat g.init_game_state [default]), default])
+
+
+
+lemma Strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
+  {T : ℕ} (hg : g.isWL_wBound T) (hgs : Stealing_condition g)
+  (akward : g.law g.init_game_state [] default): g.is_fst_win :=
+  by
+  cases' (g.Zermelo hg) with F S
+  · exact F
+  · obtain ⟨ws, ws_prop⟩ := S
+    use (stolen_strat g hgs ws akward (by ))
+    -- todo: use playbility (and the powerful `law_nonprohibitive`) to get a playable first strat that extends a first move
