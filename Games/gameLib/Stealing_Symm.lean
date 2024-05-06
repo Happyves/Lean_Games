@@ -511,23 +511,31 @@ def Stealing_condition (g : zSymm_Game_World α β) : Prop :=
   Stealing_condition_pre g f_act s_act f_leg s_leg
 
 noncomputable
-def stolen_strat [Inhabited β] (g : zSymm_Game_World α β) (hgs : Stealing_condition g)
+def zSymm_Game_World.zdefault (g : zSymm_Game_World α β) : β :=
+  Classical.choose (g.playable g.init_game_state [])
+
+
+lemma zSymm_Game_World.zdefault_prop (g : zSymm_Game_World α β) : g.law g.init_game_state [] g.zdefault :=
+  Classical.choose_spec (g.playable g.init_game_state [])
+
+noncomputable
+def stolen_strat (g : zSymm_Game_World α β) (hgs : Stealing_condition g)
   (s_strat : Strategy α β)
-  (hfa :  g.law g.init_game_state [] default)
-  (hsa : g.law g.init_game_state [default] (s_strat g.init_game_state [default])) : Strategy α β :=
+  (hfa :  g.law g.init_game_state [] g.zdefault)
+  (hsa : g.law g.init_game_state [g.zdefault] (s_strat g.init_game_state [g.zdefault])) : Strategy α β :=
   fun ini hist =>
     if hist = []
-    then Classical.choose (hgs default (s_strat g.init_game_state [default]) hfa hsa)
-    else s_strat ini (hist.dropLast ++ [(s_strat g.init_game_state [default]), default])
+    then Classical.choose (hgs g.zdefault (s_strat g.init_game_state [g.zdefault]) hfa hsa)
+    else s_strat ini (hist.dropLast ++ [(s_strat g.init_game_state [g.zdefault]), g.zdefault])
 
 
 
 lemma Strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
-  {T : ℕ} (hg : g.isWL_wBound T) (hgs : Stealing_condition g)
-  (akward : g.law g.init_game_state [] default): g.is_fst_win :=
+  {T : ℕ} (hg : g.isWL_wBound T) (hgs : Stealing_condition g) : g.is_fst_win :=
   by
   cases' (g.Zermelo hg) with F S
   · exact F
   · obtain ⟨ws, ws_prop⟩ := S
-    use (stolen_strat g hgs ws akward (by ))
+    -- cases on 2nd move legal ? if not still get fst win by a strat that isn't legal... this would be a massive hack
+    use (stolen_strat g hgs ws g.zdefault_prop (by ))
     -- todo: use playbility (and the powerful `law_nonprohibitive`) to get a playable first strat that extends a first move

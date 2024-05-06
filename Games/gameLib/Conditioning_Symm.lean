@@ -69,7 +69,7 @@ play dummy values, in our formalism (and coherent end assures certain props)
 The ∀ initial states may seem to strong, but its necessary for world_after_fst
 and is also explain by playing dummy vals, in a a priori impossible initial state
 
-NOTE : this should be used instead of the inhabited instances!!
+NOTE : this should be used instead of the inhabited instances for zermelo !!
 -/
 def law_nonprohibitive (law : α → List β → β → Prop) : Prop :=
   ∀ ini : α, ∀ hist : List β, ∃ act : β, law ini hist act

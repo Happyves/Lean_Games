@@ -394,4 +394,85 @@ lemma preChomp_tranistion_careless (height length : ℕ) :
           by apply List.mem_cons_of_mem ; exact that
         rw [Chomp_state_hist_zero _ _ thut_r]
       · rw [if_neg q3, not_not] at *
-        -- fix carelessness
+        exfalso
+        have : (0,0) ∉ hist :=
+            by
+            intro con
+            have := Chomp_state_hist_zero {(0,0)} hist con
+            rw [this] at q3
+            contradiction
+        have temp : hist ++ prehist = (hist ++ [prehist.head pHne]) ++ prehist.tail :=
+          by rw [List.append_assoc, List.singleton_append, List.cons_head_tail]
+        rw [temp] at q1
+        have that := Chomp_state_sub' ini (hist ++ [prehist.head pHne]) prehist.tail
+        rw [q2] at that
+        rw [Finset.subset_singleton_iff] at that
+        cases' that with k k
+        · have fact : (0,0) ∈ ini :=
+            by
+            apply Chomp_state_sub_ini _ prehist.tail
+            rw [q2]
+            exact Finset.mem_singleton.mpr rfl
+          have more := Chomp_state_state_empty _ fact _ k
+          have thut : (0,0) ∉ prehist.tail :=
+            by
+            intro con
+            have tmp := Chomp_state_hist_zero ini _ con
+            rw [tmp] at q2
+            contradiction
+          simp_rw [List.mem_append] at more
+          cases' more with more more
+          · cases' more with more more
+            · exact this more
+            · rw [List.mem_singleton] at more
+              cases' prehist with x l
+              · contradiction
+              · dsimp at *
+                cases' pHl
+                rename_i main
+                split_ifs at main
+                all_goals {dsimp [preChomp] at main ; rw [if_neg (by rw [not_not] ; exact q2)] at main ; exact main more.symm}
+          · exact thut more
+        · exact q1 k
+  · rw [if_neg q1] at *
+    by_cases q2 : Chomp_state ini (List.tail prehist) ≠ {(0, 0)}
+    · simp_rw [if_pos q2, List.cons_head_tail, Chomp_state_blind] at *
+      rw [if_neg q1]
+    · simp_rw [if_neg q2] at *
+      by_cases q3 : Chomp_state {(0, 0)} hist ≠ {(0, 0)}
+      · exfalso
+        rw [not_not] at *
+        apply q3
+        apply Chomp_state_ini_zero hist
+        intro con
+        have := Chomp_state_hist_zero ini _ con
+        have that := Chomp_state_sub ini hist prehist
+        simp_all only [ne_eq, Finset.singleton_subset_iff, Finset.not_mem_empty]
+      · rw [not_not] at *
+        rw [if_neg (by rw [not_not] ; exact q3)]
+
+
+lemma Chomp
+
+--#exit
+
+lemma preChomp_coherent (height length : ℕ) : (preChomp height length).coherent_end :=
+  by
+  intro f_strat s_strat t main
+  dsimp [preChomp] at *
+  by_cases q1 : Turn_fst (t + 1)
+  · rw [Symm_Game_World.state_on_turn_fst_to_snd _ _ _ _ q1]
+    dsimp [preChomp]
+    rw [if_neg]
+    rw [not_not]
+    cases' t with t
+    · dsimp [Symm_Game_World.state_on_turn, Symm_Game_World.history_on_turn, History_on_turn] at *
+      simp_all only [zero_add]
+      rfl
+    · dsimp [Symm_Game_World.state_on_turn, Symm_Game_World.history_on_turn, History_on_turn] at main
+      rw [if_neg (by contrapose q1 ; rw [not_not] at q1 ; rw [← Turn_fst_not_step] ; exact q1)] at main
+      split_ifs at main with main
+      · dsimp [History_on_turn]
+        split_ifs
+        all_goals {}
+        -- probably need legal startegies to ensure that that action isn't 0
