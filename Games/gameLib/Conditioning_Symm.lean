@@ -101,6 +101,22 @@ lemma Symm_Game_World.playable_has_strat (g : Symm_Game_World α β)
     apply ps
 
 
+lemma Symm_Game_World.playable_has_Fst_strat (g : Symm_Game_World α β)
+  (hg : g.playable) (s_strat : Strategy α β) :
+  ∃ f_strat : Strategy α β,
+  Strategy_legal_fst g.init_game_state g.law f_strat s_strat :=
+  by
+  classical
+  use (fun ini hist => Classical.choose (hg ini hist))
+  intro t _
+  set hist := (History_on_turn g.init_game_state
+  (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act))
+  (s_strat) t)
+  have pf := Classical.choose_spec (hg g.init_game_state hist)
+  apply pf
+
+
+
 
 -- # Easy termination
 
