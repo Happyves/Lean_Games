@@ -43,8 +43,15 @@ def Symm_Game_World.is_snd_win_ALT_1  {α β : Type u} (g : Symm_Game_World α �
   ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Symm_Game α β).snd_win
 
 
-example : ∀ g : Symm_Game_World α β, (∃ hist : List β, ∃ act : β, ¬ g.law g.init_game_state hist act) →  ¬ g.is_snd_win_ALT_1 :=
+example : ∀ g : Symm_Game_World α β, (∃ hist : List β, ∃ act : β, (Turn_fst hist.length) ∧  ¬ g.law g.init_game_state hist act) →  ¬ g.is_snd_win_ALT_1 :=
   by
   intro g plausible con
-  obtain ⟨Hist, Act, plausible⟩ := plausible
-  -- use List.exists_min_length_list_of_exists_list
+  obtain ⟨Hist, Act, k, plausible⟩ := plausible
+  obtain ⟨ws, ws_prop⟩ := con
+  -- let f_strat :=
+  --   fun ini hist => sorry
+
+  -- use `strat_predeco` from Stealing_Symm with s_strat constant to Act
+  -- `plausible` should constradict `fst_leg` from `ws_prop`, when
+  -- evaled in `Hist.length`
+  sorry

@@ -27,13 +27,26 @@ def stolen_strat (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g
     else s_strat ini (hist.dropLast ++ [(s_strat g.init_game_state [f_act]), f_act])
 
 
+def pre_stolen_strat (ws s_strat : Strategy α β) (f_act : β) : Strategy α β :=
+  fun ini hist => if hist = [] then f_act else s_strat ini (hist.dropLast ++ [ws ini []])
+
+lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
+  {T : ℕ} (hg : g.isWL_wBound T) (hgs : Strong_stealing_condition g) : g.is_fst_win :=
+  by
+  cases' (g.Zermelo hg) with F S
+  · exact F
+  · obtain ⟨ws, ws_prop⟩ := S
+    use (stolen_strat g hgs ws default)
+    intro s_strat ws_leg f_leg
+    specialize ws_prop (pre_stolen_strat ws s_strat default)
+    --show legality next
 
 
 
 
 
 -- # First attempt
--- KEEP !!!
+-- KEEP !!! Should be used in counterexample, for example...
 #exit
 
 def strat_predeco (strat : Strategy α β) (prehist : List β) (g : Symm_Game_World α β) : Strategy α β :=
