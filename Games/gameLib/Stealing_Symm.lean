@@ -12,24 +12,24 @@ import Games.exLib.List
 
 
 
+
 def Strong_stealing_condition (g : zSymm_Game_World α β) : Prop :=
-  ∀ (f_act s_act : β), ∃ f_steal : β, g.transition g.init_game_state [] f_steal
-    = g.transition g.init_game_state [f_act] s_act
+  ∃ (f_act : β), (g.law g.init_game_state [] f_act) ∧
+    ∀ s_act : β, (g.law g.init_game_state [f_act] s_act) →
+    g.transition g.init_game_state [] s_act = g.transition g.init_game_state [f_act] s_act
 
 
 noncomputable
 def stolen_strat (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
-  (s_strat : Strategy α β)
-  (f_act : β) : Strategy α β :=
+  (ws : Strategy α β) : Strategy α β :=
   fun ini hist =>
     if hist = []
-    then Classical.choose (hgs f_act (s_strat g.init_game_state [f_act]))
-    else s_strat ini (hist.dropLast ++ [(s_strat g.init_game_state [f_act]), f_act])
+    then ws ini [Classical.choose hgs]
+    else ws ini (hist.dropLast ++ [ws ini [Classical.choose hgs] ,Classical.choose hgs])
 
 
-def pre_stolen_strat (ws s_strat : Strategy α β) (f_act : β) : Strategy α β :=
-  fun ini hist => if hist = [] then f_act else s_strat ini (hist.dropLast ++ [ws ini []])
 
+#exit
 lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
   {T : ℕ} (hg : g.isWL_wBound T) (hgs : Strong_stealing_condition g) : g.is_fst_win :=
   by
@@ -40,6 +40,11 @@ lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
     intro s_strat ws_leg f_leg
     specialize ws_prop (pre_stolen_strat ws s_strat default)
     --show legality next
+
+
+
+
+
 
 
 
@@ -534,6 +539,20 @@ def zSymm_Game_World.world_after_preHist {α β : Type u} (g : zSymm_Game_World 
                               apply g.playable
                                   }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Maybe this part is obsolete
 
 def Stealing_condition_pre (g : zSymm_Game_World α β)
   (f_act s_act : β)
