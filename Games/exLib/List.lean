@@ -14,6 +14,7 @@ def List.minimum! [Preorder α] [@DecidableRel α (· < ·)] (l : List α) (h : 
   | x :: y :: L => let m := (y :: L).minimum! (by exact cons_ne_nil y L)
                    if x < m then x else m
 
+#check List.minimum_of_length_pos -- damit
 
 lemma List.ne_empty_iff_exists_mem (L : List α) : L ≠ [] ↔ ∃ a, a ∈ L :=
   by
@@ -62,3 +63,28 @@ lemma List.cons_head_tail (l : List α) (hl : l ≠ []) : (l.head hl) :: l.tail 
 
 
 lemma List.cons_eq_singleton_append (l : List α) (x : α) : x :: l = [x] ++ l := by exact rfl
+
+
+lemma List.exists_min_length_list_of_exists_list {P : List α → Prop} (h : ∃ l : List α, P l) :
+  ∃ l : List α, P l ∧ (∀ L : List α, P L → l.length ≤ L.length) :=
+  by
+  classical
+  let S := {n : ℕ | ∃ l : List α, P l ∧ n = l.length}
+  have S_ne : S.Nonempty :=
+    by
+    use (Classical.choose h).length
+    dsimp
+    use (Classical.choose h)
+    constructor
+    · exact (Classical.choose_spec h)
+    · rfl
+  obtain ⟨m,mS,ml⟩ := (@WellFounded.wellFounded_iff_has_min _ Nat.lt).mp (Nat.lt_wfRel.wf) S S_ne
+  obtain ⟨l,pl,lm⟩ := mS
+  use l
+  constructor
+  · exact pl
+  · intro L pL
+    specialize ml L.length (by use L)
+    rw [lm] at ml
+    rw [← Nat.not_lt]
+    apply ml

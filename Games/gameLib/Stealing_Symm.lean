@@ -10,6 +10,161 @@ import Games.gameLib.Zermelo_Symm
 import Games.exLib.List
 
 
+
+
+
+def Strong_stealing_condition (g : zSymm_Game_World α β) : Prop :=
+  ∃ (f_act : β), (g.law g.init_game_state [] f_act) ∧
+    ∀ s_act : β,
+    s_act ≠ f_act → g.law g.init_game_state [] s_act →  -- akward and way to strong ...
+    (g.law g.init_game_state [f_act] s_act) ∧
+    g.transition g.init_game_state [] s_act = g.transition g.init_game_state [f_act] s_act
+
+
+
+noncomputable
+def stolen_strat (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
+  (ws : Strategy α β) : Strategy α β :=
+  fun ini hist =>
+    if hist = []
+    then ws ini [Classical.choose hgs]
+    else ws ini (hist.dropLast ++ [ws ini [Classical.choose hgs] ,Classical.choose hgs])
+
+
+noncomputable
+def pre_stolen_strat (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
+  (s_strat : Strategy α β) : Strategy α β :=
+  fun ini hist =>
+    if hist = []
+    then Classical.choose hgs
+    else s_strat ini (hist.dropLast)
+
+lemma History_on_turn_stolen_getLast  (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
+  (ws s_strat : Strategy α β) (t : ℕ) :
+  (History_on_turn g.init_game_state (stolen_strat g hgs ws) s_strat (t+1)).getLast (by apply History_on_turn_nonempty_of_succ) = ws g.init_game_state [Classical.choose hgs] :=
+  by
+  induction' t with t ih
+  · dsimp!
+    unfold stolen_strat
+    rw [if_pos (by rfl)]
+  · dsimp [History_on_turn] at *
+    by_cases q : Turn_fst (Nat.succ t + 1)
+    · simp_rw [if_pos q]
+      rw [List.getLast_cons, ih]
+    · simp_rw [if_neg q]
+      rw [List.getLast_cons, ih]
+
+
+lemma History_on_turn_stolen_pre_stolen (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
+  (ws s_strat : Strategy α β) (t : ℕ) :
+  (History_on_turn g.init_game_state (stolen_strat g hgs ws) s_strat t) ++ [Classical.choose hgs] =
+  History_on_turn g.init_game_state (pre_stolen_strat g hgs s_strat) ws (t+1) :=
+  by
+  induction' t with t ih
+  · dsimp [History_on_turn, stolen_strat, pre_stolen_strat]
+    rw [if_pos (by decide), if_pos (by rfl)]
+  · dsimp [History_on_turn]
+    by_cases q : Turn_fst (t + 1)
+    · simp_rw [if_pos q]
+      rw [Turn_fst_not_step] at q
+      rw [if_neg q]
+      rw [List.cons_append, ih]
+      dsimp [History_on_turn]
+      rw [← Turn_fst_not_step] at q
+      rw [if_pos q]
+      congr
+      cases' t with t
+      · dsimp [History_on_turn, stolen_strat, pre_stolen_strat]
+        rw [if_pos (by rfl), if_pos (by rfl)]
+      · unfold stolen_strat
+        rw [if_neg (by apply History_on_turn_nonempty_of_succ)]
+        rw [show [ws g.init_game_state [Classical.choose hgs], Classical.choose hgs] = [ws g.init_game_state [Classical.choose hgs]] ++ [Classical.choose hgs] from (by simp only [List.singleton_append]) ]
+        rw [← List.append_assoc]
+        have := History_on_turn_stolen_getLast g hgs ws s_strat (t)
+        have that := @List.dropLast_append_getLast _ (History_on_turn g.init_game_state (stolen_strat g hgs ws) s_strat (t + 1)) (by apply History_on_turn_nonempty_of_succ)
+        rw [← this]
+        unfold stolen_strat at *
+        rw [that]
+        rw [ih]
+        congr
+        dsimp [History_on_turn]
+        simp_rw [if_pos q]
+    · simp_rw [if_neg q]
+      rw [Turn_fst_not_step, not_not] at q
+      rw [if_pos q]
+      rw [List.cons_append, ih]
+      dsimp [History_on_turn] at *
+      rw [← @not_not (Turn_fst (t + 1 + 1)), ← Turn_fst_not_step] at q
+      simp_rw [if_neg q] at *
+      congr
+      rw [← ih]
+      rw [List.dropLast_append_cons]
+      dsimp
+      rw [List.append_nil]
+
+
+
+lemma pre_stolen_strat_legal_fst (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
+  (ws s_strat : Strategy α β)
+  (ws_leg : Strategy_legal_fst g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
+  (f_leg : Strategy_legal_snd g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
+  : Strategy_legal_fst g.init_game_state g.law (pre_stolen_strat g hgs s_strat) ws :=
+  by
+  intro t tf
+  cases' t with t
+  · dsimp!
+    unfold pre_stolen_strat
+    rw [if_pos (by rfl)]
+    apply (Classical.choose_spec hgs).1
+  ·
+
+
+
+lemma pre_stolen_strat_legal_snd (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
+  (ws s_strat : Strategy α β)
+  (ws_leg : Strategy_legal_fst g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
+  (f_leg : Strategy_legal_snd g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
+  : Strategy_legal_snd g.init_game_state g.law (pre_stolen_strat g hgs s_strat) ws :=
+  by
+  intro t ts
+  cases' t with t
+  · contradiction
+  · rw [← History_on_turn_stolen_pre_stolen g hgs]
+    specialize ws_leg t (by rw [Turn_fst_snd_step] ; exact ts)
+    cases' t with t
+    · dsimp! at *
+      unfold stolen_strat at ws_leg
+      rw [if_pos (by rfl)] at ws_leg
+      refine' ((Classical.choose_spec hgs).2 (ws g.init_game_state [Classical.choose hgs]) _ ws_leg).1
+
+  -- use ws_leg
+
+
+--#exit
+lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
+  {T : ℕ} (hg : g.isWL_wBound T) (hgs : Strong_stealing_condition g) : g.is_fst_win :=
+  by
+  cases' (g.Zermelo hg) with F S
+  · exact F
+  · obtain ⟨ws, ws_prop⟩ := S
+    use (stolen_strat g hgs ws)
+    intro s_strat ws_leg f_leg
+    specialize ws_prop (pre_stolen_strat g hgs  s_strat)
+    --show legality next
+
+
+
+
+
+
+
+
+
+
+-- # First attempt
+-- KEEP !!! Should be used in counterexample, for example...
+#exit
+
 def strat_predeco (strat : Strategy α β) (prehist : List β) (g : Symm_Game_World α β) : Strategy α β :=
   (fun _ hist => if s : hist.length < prehist.length then prehist.reverse.get ⟨hist.length, (by rw [List.length_reverse] ; exact s)⟩  else strat (g.world_after_preHist prehist).init_game_state (hist.rdrop prehist.length))
 
@@ -496,6 +651,20 @@ def zSymm_Game_World.world_after_preHist {α β : Type u} (g : zSymm_Game_World 
                                   }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+-- Maybe this part is obsolete
+
 def Stealing_condition_pre (g : zSymm_Game_World α β)
   (f_act s_act : β)
   (f_leg : g.law g.init_game_state [] f_act) (s_leg : g.law g.init_game_state [f_act] s_act) :
@@ -511,23 +680,57 @@ def Stealing_condition (g : zSymm_Game_World α β) : Prop :=
   Stealing_condition_pre g f_act s_act f_leg s_leg
 
 noncomputable
-def stolen_strat [Inhabited β] (g : zSymm_Game_World α β) (hgs : Stealing_condition g)
+def zSymm_Game_World.zdefault (g : zSymm_Game_World α β) : β :=
+  Classical.choose (g.playable g.init_game_state [])
+
+
+lemma zSymm_Game_World.zdefault_prop (g : zSymm_Game_World α β) : g.law g.init_game_state [] g.zdefault :=
+  Classical.choose_spec (g.playable g.init_game_state [])
+
+noncomputable
+def default_stolen_strat (g : zSymm_Game_World α β) (hgs : Stealing_condition g)
   (s_strat : Strategy α β)
-  (hfa :  g.law g.init_game_state [] default)
-  (hsa : g.law g.init_game_state [default] (s_strat g.init_game_state [default])) : Strategy α β :=
+  (hsa : g.law g.init_game_state [g.zdefault] (s_strat g.init_game_state [g.zdefault])) : Strategy α β :=
   fun ini hist =>
     if hist = []
-    then Classical.choose (hgs default (s_strat g.init_game_state [default]) hfa hsa)
-    else s_strat ini (hist.dropLast ++ [(s_strat g.init_game_state [default]), default])
+    then Classical.choose (hgs g.zdefault (s_strat g.init_game_state [g.zdefault]) (g.zdefault_prop) hsa)
+    else s_strat ini (hist.dropLast ++ [(s_strat g.init_game_state [g.zdefault]), g.zdefault])
 
+noncomputable
+def stolen_strat (g : zSymm_Game_World α β) (hgs : Stealing_condition g)
+  (s_strat : Strategy α β)
+  (f_act : β) (f_leg : g.law g.init_game_state [] f_act)
+  (s_leg : g.law g.init_game_state [f_act] (s_strat g.init_game_state [f_act])) : Strategy α β :=
+  fun ini hist =>
+    if hist = []
+    then Classical.choose (hgs f_act (s_strat g.init_game_state [f_act]) f_leg s_leg)
+    else s_strat ini (hist.dropLast ++ [(s_strat g.init_game_state [f_act]), f_act])
+
+def strat_playable_fst (ini : α) (f_law s_law : α → List β → β → Prop) (f_strat : Strategy α β) : Prop :=
+  ∃ s_strat : Strategy α β, Strategy_legal_fst ini f_law f_strat s_strat ∧ Strategy_legal_snd ini s_law f_strat s_strat
+
+
+def strat_playable_snd (ini : α) (f_law s_law : α → List β → β → Prop) (s_strat : Strategy α β) : Prop :=
+  ∃ f_strat : Strategy α β, Strategy_legal_fst ini f_law f_strat s_strat ∧ Strategy_legal_snd ini s_law f_strat s_strat
 
 
 lemma Strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
-  {T : ℕ} (hg : g.isWL_wBound T) (hgs : Stealing_condition g)
-  (akward : g.law g.init_game_state [] default): g.is_fst_win :=
+  {T : ℕ} (hg : g.isWL_wBound T) (hgs : Stealing_condition g) : g.is_fst_win :=
   by
   cases' (g.Zermelo hg) with F S
   · exact F
   · obtain ⟨ws, ws_prop⟩ := S
-    use (stolen_strat g hgs ws akward (by ))
-    -- todo: use playbility (and the powerful `law_nonprohibitive`) to get a playable first strat that extends a first move
+    by_cases K : strat_playable_snd g.init_game_state g.law g.law ws
+    · obtain ⟨f_strat, leg_f, leg_s⟩  := K
+      use (stolen_strat g hgs ws (f_strat g.init_game_state [])
+        (by
+         specialize leg_f 0 (by decide)
+         apply leg_f)
+        (by
+         specialize leg_s 1 (by decide)
+         apply leg_s))
+      sorry
+    · dsimp [strat_playable_snd] at K
+      push_neg at K
+      obtain ⟨f_strat, f_leg⟩ := g.playable_has_Fst_strat g.playable ws
+      use f_strat

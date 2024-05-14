@@ -809,6 +809,25 @@ lemma Game.state_on_turn_snd_to_fst
   rw [← Turn_not_fst_iff_snd] at t
   rw [if_neg t]
 
+lemma Symm_Game_World.state_on_turn_fst_to_snd
+  {α β : Type u} (g : Symm_Game_World α β) (f_strat s_strat : Strategy α β) (turn : ℕ):
+  let S := g.state_on_turn f_strat s_strat   ;
+  let H := History_on_turn g.init_game_state f_strat s_strat turn ;
+  Turn_fst (turn + 1) → S (turn + 1) = g.transition g.init_game_state H  (f_strat g.init_game_state H) :=
+  by
+  intro S H t
+  dsimp [Symm_Game_World.state_on_turn, Symm_Game_World.history_on_turn]
+  rw [if_pos t]
+
+lemma Symm_Game_World.state_on_turn_snd_to_fst
+  {α β : Type u} (g : Symm_Game_World α β) (f_strat s_strat : Strategy α β) (turn : ℕ):
+  let S := g.state_on_turn f_strat s_strat   ;
+  let H := History_on_turn g.init_game_state f_strat s_strat turn ;
+  Turn_snd (turn + 1) → S (turn + 1) = g.transition g.init_game_state H  (s_strat g.init_game_state H) :=
+  by
+  intro S H t
+  dsimp [Symm_Game_World.state_on_turn, Symm_Game_World.history_on_turn]
+  rw [if_neg (by exact t)]
 
 
 
