@@ -15,9 +15,11 @@ import Games.exLib.List
 
 def Strong_stealing_condition (g : zSymm_Game_World α β) : Prop :=
   ∃ (f_act : β), (g.law g.init_game_state [] f_act) ∧
-    ∀ s_act : β, (g.law g.init_game_state [f_act] s_act) →
-    -- add that s_act is leagl as first act ??
+    ∀ s_act : β,
+    s_act ≠ f_act → g.law g.init_game_state [] s_act →  -- akward and way to strong ...
+    (g.law g.init_game_state [f_act] s_act) ∧
     g.transition g.init_game_state [] s_act = g.transition g.init_game_state [f_act] s_act
+
 
 
 noncomputable
@@ -133,11 +135,7 @@ lemma pre_stolen_strat_legal_snd (g : zSymm_Game_World α β) (hgs : Strong_stea
     · dsimp! at *
       unfold stolen_strat at ws_leg
       rw [if_pos (by rfl)] at ws_leg
-      specialize f_leg 1 (by decide)
-      dsimp [History_on_turn] at f_leg
-      rw [if_pos (by decide)] at f_leg
-      unfold stolen_strat at f_leg
-      rw [if_pos (by rfl)] at f_leg
+      refine' ((Classical.choose_spec hgs).2 (ws g.init_game_state [Classical.choose hgs]) _ ws_leg).1
 
   -- use ws_leg
 
