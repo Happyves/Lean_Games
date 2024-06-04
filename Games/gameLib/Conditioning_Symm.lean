@@ -116,6 +116,36 @@ lemma Symm_Game_World.playable_has_Fst_strat (g : Symm_Game_World α β)
   apply pf
 
 
+lemma Symm_Game_World.playable_has_strong_fst_strat (g : Symm_Game_World α β)
+  (hg : g.playable) :
+  ∃ f_strat : Strategy α β, ∀ (s_strat : Strategy α β),
+  Strategy_legal_snd g.init_game_state g.law f_strat s_strat → -- isn't needed ...
+  Strategy_legal_fst g.init_game_state g.law f_strat s_strat :=
+  by
+  classical
+  use (fun ini hist => Classical.choose (hg ini hist))
+  intro s_strat _
+  intro t _
+  let hist := History_on_turn g.init_game_state (fun ini hist => Classical.choose (hg ini hist : ∃ act, law g ini hist act)) s_strat t
+  have pf := Classical.choose_spec (hg g.init_game_state hist)
+  apply pf
+
+lemma Symm_Game_World.playable_has_strong_snd_strat (g : Symm_Game_World α β)
+  (hg : g.playable) :
+  ∃ s_strat : Strategy α β, ∀ (f_strat : Strategy α β),
+  Strategy_legal_fst g.init_game_state g.law f_strat s_strat → -- isn't needed ...
+  Strategy_legal_snd g.init_game_state g.law f_strat s_strat :=
+  by
+  classical
+  use (fun ini hist => Classical.choose (hg ini hist))
+  intro f_strat _
+  intro t _
+  let hist := History_on_turn g.init_game_state f_strat (fun ini hist => Classical.choose (hg ini hist : ∃ act, law g ini hist act)) t
+  have pf := Classical.choose_spec (hg g.init_game_state hist)
+  apply pf
+
+
+
 lemma Symm_Game_World.playable_extensible (g : Symm_Game_World α β)
   (hg : g.playable) (f_act : β) (f_act_leg : g.law g.init_game_state [] f_act) :
   ∃ f_strat : Strategy α β , ∃ s_strat : Strategy α β,
@@ -185,27 +215,27 @@ inductive Symm_Game_World.has_WL (g : Symm_Game_World α β) : Prop where
 | ws : g.is_snd_win → g.has_WL
 
 
-lemma Symm_Game_World.has_WL_init_end
-  (g : Symm_Game_World α β)
-  (hg : g.playable)
-  (P : Prop)
-  (hp : P)
-  (h : (P ∧ (¬ g.win_states g.init_game_state)) → g.has_WL) :
-  g.has_WL :=
-  by
-  obtain ⟨fs,ss,_,_⟩ := g.playable_has_strat hg
-  by_cases q2 : g.win_states g.init_game_state
-  · apply Symm_Game_World.has_WL.ws
-    use fs
-    intro _ _ _
-    use 0
-    constructor
-    · decide
-    · constructor
-      · apply q2
-      · intro t no
-        contradiction
-  · exact h ⟨hp, q2⟩
+-- lemma Symm_Game_World.has_WL_init_end
+--   (g : Symm_Game_World α β)
+--   (hg : g.playable)
+--   (P : Prop)
+--   (hp : P)
+--   (h : (P ∧ (¬ g.win_states g.init_game_state)) → g.has_WL) :
+--   g.has_WL :=
+--   by
+--   obtain ⟨fs,ss,_,_⟩ := g.playable_has_strat hg
+--   by_cases q2 : g.win_states g.init_game_state
+--   · apply Symm_Game_World.has_WL.ws
+--     use fs
+--     intro _ _ _
+--     use 0
+--     constructor
+--     · decide
+--     · constructor
+--       · apply q2
+--       · intro t no
+--         contradiction
+--   · exact h ⟨hp, q2⟩
 
 
 
@@ -905,16 +935,16 @@ def zSymm_Game.snd_win  {α β : Type u} (g : zSymm_Game α β) : Prop :=
 def zSymm_Game_World.is_fst_win  {α β : Type u} (g : zSymm_Game_World α β) : Prop :=
   ∃ ws : Strategy α β, --g.Strategy_blind_fst ws ∧
   ∀ snd_s : Strategy α β, --g.Strategy_blind_fst snd_s →
-   (ws_leg : Strategy_legal_fst g.init_game_state g.law ws snd_s) →
    (snd_leg : Strategy_legal_snd g.init_game_state g.law ws snd_s) →
+   ∃ (ws_leg : Strategy_legal_fst g.init_game_state g.law ws snd_s),
   ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Symm_Game α β).fst_win
 
 
 def zSymm_Game_World.is_snd_win  {α β : Type u} (g : zSymm_Game_World α β) : Prop :=
   ∃ ws : Strategy α β, -- g.Strategy_blind_snd ws ∧
   ∀ fst_s : Strategy α β, --g.Strategy_blind_snd fst_s →
-   (ws_leg : Strategy_legal_snd g.init_game_state g.law fst_s ws) →
    (fst_leg : Strategy_legal_fst g.init_game_state g.law fst_s ws) →
+   ∃ (ws_leg : Strategy_legal_snd g.init_game_state g.law fst_s ws),
   ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Symm_Game α β).snd_win
 
 
@@ -931,21 +961,25 @@ lemma zSymm_Game_World.has_WL_init_end
   (h : (P ∧ (¬ g.win_states g.init_game_state)) → g.has_WL) :
   g.has_WL :=
   by
-  obtain ⟨fs,ss,_,_⟩ := g.playable_has_strat g.playable
+  obtain ⟨ss,ss_prop⟩ := g.playable_has_strong_snd_strat g.playable
   by_cases q2 : g.win_states g.init_game_state
   · apply zSymm_Game_World.has_WL.ws
-    use fs
-    intro _ _ _
-    use 0
+    use ss
+    intro fs fs_leg
     constructor
-    · decide
-    · constructor
-      · apply q2
-      · intro t no
-        contradiction
+    · use 0
+      constructor
+      · decide
+      · constructor
+        · apply q2
+        · intro t no
+          contradiction
+    · exact ss_prop fs fs_leg
   · exact h ⟨hp, q2⟩
 
---#exit
+
+
+
 
 -- # More conditioining
 
