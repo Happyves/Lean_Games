@@ -111,13 +111,17 @@ lemma zGame_World.conditioning_WL
   · obtain ⟨f_act, f_act_leg, ws, ws_prop⟩ := qws
     apply zGame_World.has_WL.wf
     use (g.snd_strat_reconditioned ws f_act f_act_leg)
-    intro snd_s ws_leg snd_leg
+    intro snd_s snd_leg
     specialize ws_prop (g.fst_strat_reconditioned snd_s f_act)
-    specialize ws_prop (by apply zGame_World.snd_reconditioned_legal ; exact ws_leg)
+    --specialize ws_prop (by apply zSymm_Game_World.snd_reconditioned_legal ; exact ws_leg)
     specialize ws_prop (by apply g.fst_reconditioned_legal f_act f_act_leg snd_s ws ; exact snd_leg )
-    apply g.reCondition_win
-    · exact wlg
-    · exact ws_prop
+    obtain ⟨ws_leg, ws_prop⟩ := ws_prop
+    constructor
+    · apply g.reCondition_win
+      · exact wlg
+      · exact ws_prop
+    · apply zGame_World.snd_reconditioned_legal'
+      exact ws_leg
   · push_neg at qws
     apply zGame_World.has_WL.ws
     let ws_aux (hi : List β) (hne : hi ≠ [])  (hil : g.fst_legal g.init_game_state [] (hi.getLast hne)) :=
@@ -136,7 +140,7 @@ lemma zGame_World.conditioning_WL
                                           (g.fst_transition g.init_game_state [] f_act) hist.dropLast -- is it ? since ref to history in current game
                                     else default
     use ws
-    intro f_strat ws_leg f_leg
+    intro f_strat f_leg
     let f_act := f_strat g.init_game_state []
     have f_act_leg := f_leg 0 (by decide)
     dsimp [History_on_turn] at f_act_leg
@@ -149,33 +153,13 @@ lemma zGame_World.conditioning_WL
       intro h H hne Hne hl Hl main
       dsimp [ws_aux]
       simp_rw [main]
-
     have proof := ((g.world_after_fst f_act f_act_leg).conditioning_WL_helper
-                                    (h f_act f_act_leg)
-                                    (qws f_act f_act_leg)
-                                    --(qd f_act f_act_leg)
-                                    )
+                                      (h f_act f_act_leg)
+                                      (qws f_act f_act_leg)
+                                      --(qd f_act f_act_leg)
+                                      )
     have da_prop := Classical.choose_spec proof
     specialize da_prop (g.snd_strat_conditioned f_strat f_act)
-    specialize da_prop (by
-                        have := g.conditioned_legal_snd f_strat ws_aux fix f_act_leg
-                        dsimp [ws_aux] at this
-                        simp_rw [zGame_World.world_after_fst_fst_legal]
-                        rw [← this]
-                        apply Strategy_legal_snd_eq_strats_snd g f_strat ws (g.fst_strat_conditioned ws_aux)
-                        · intro t ts
-                          cases' t with t
-                          · contradiction
-                          · dsimp [ws, fst_strat_conditioned]
-                            rw [dif_neg (by apply History_on_turn_nonempty_of_succ)]
-                            rw [History_on_turn_getLast_fst_act]
-                            rw [dif_pos f_act_leg]
-                            rw [dif_neg (by apply History_on_turn_nonempty_of_succ)]
-                            rw [History_on_turn_getLast_fst_act]
-                            rw [dif_pos f_act_leg]
-                            rfl
-                        · exact ws_leg
-                        )
     specialize da_prop (by
                         have := g.conditioned_legal_fst f_strat ws_aux fix f_act_leg
                         dsimp [ws_aux] at this
@@ -195,17 +179,24 @@ lemma zGame_World.conditioning_WL
                             rfl
                         · exact f_leg
                         )
-    apply Conditioning_win
-    · exact wlg
-    · apply da_prop
-    · exact fix
+    obtain ⟨ws_leg, da_prop⟩ := da_prop
+    constructor
+    · apply Conditioning_win
+      · exact wlg
+      · apply da_prop
+      · exact fix
+    · have := g.conditioned_legal_snd f_strat ws_aux fix f_act_leg
+      dsimp [ws_aux, fst_strat_conditioned] at this
+      dsimp [ws]
+      rw [g.fst_strat_conditioned_get_rw_to_work _] at this
+      rw [ this]
+      apply ws_leg
 
 
 
 
 
-
-lemma zGame_World.Zermelo
+lemma zSymm_Game_World.Zermelo
   [Inhabited β]
   (g : zGame_World α β)
   {T : ℕ} (hg : g.isWL_wBound T)
@@ -215,21 +206,25 @@ lemma zGame_World.Zermelo
   induction' T with t ih
   · intro g t0
     dsimp [Game_World.isWL_wBound] at t0
-    obtain ⟨f_strat, s_strat, f_leg, s_leg⟩ := g.playable_has_strat g.playable
+    obtain ⟨s_strat, s_prop⟩ := g.playable_has_strong_snd_strat g.playable
+    obtain ⟨ f_strat, f_leg⟩ := g.playable_has_Fst_strat g.playable s_strat
+    let s_leg := s_prop f_strat f_leg
     obtain ⟨t, tl0, t_end⟩ := t0 f_strat s_strat f_leg s_leg
     rw [Nat.le_zero] at tl0
     rw [tl0] at t_end
     replace t_end := g.init_WL_of_turn_zero_WL f_strat s_strat t_end
     apply zGame_World.has_WL.ws
-    use (fun _ _ => default)
-    intro f_strat' leg f_leg'
-    use 0
+    use s_strat
+    intro f_strat' f_leg'
     constructor
-    · decide
-    · constructor
-      · dsimp [Game.state_on_turn]
-        exact t_end
-      · intro t ahhh ; contradiction
+    · use 0
+      constructor
+      · decide
+      · constructor
+        · dsimp [Game.state_on_turn]
+          exact t_end
+        · intro t ahhh ; contradiction
+    · exact s_prop f_strat' f_leg'
   · intro g bd
     apply zGame_World.conditioning_WL
     intro f_act f_leg

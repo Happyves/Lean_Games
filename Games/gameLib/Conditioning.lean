@@ -103,6 +103,21 @@ lemma Game_World.playable_has_strat (g : Game_World α β)
     apply ps
 
 
+lemma Game_World.playable_has_strong_snd_strat (g : Game_World α β)
+  (hg : g.playable) :
+  ∃ s_strat : Strategy α β, ∀ (f_strat : Strategy α β),
+  Strategy_legal_fst g.init_game_state g.fst_legal f_strat s_strat → -- isn't needed ...
+  Strategy_legal_snd g.init_game_state g.snd_legal f_strat s_strat :=
+  by
+  classical
+  use (fun ini hist => Classical.choose (hg.2 ini hist))
+  intro f_strat _
+  intro t _
+  let hist := History_on_turn g.init_game_state f_strat (fun ini hist => Classical.choose (hg.2 ini hist)) t
+  have pf := Classical.choose_spec (hg.2 g.init_game_state hist)
+  apply pf
+
+
 
 -- # Easy termination
 
@@ -112,27 +127,27 @@ inductive Game_World.has_WL (g : Game_World α β) : Prop where
 | ws : g.is_snd_win → g.has_WL
 
 
-lemma Game_World.has_WL_init_end
-  (g : Game_World α β)
-  (hg : g.playable)
-  (P : Prop)
-  (hp : P)
-  (h : (P ∧ (¬ g.snd_win_states g.init_game_state)) → g.has_WL) :
-  g.has_WL :=
-  by
-  obtain ⟨fs,ss,_,_⟩ := g.playable_has_strat hg
-  by_cases q2 : g.snd_win_states g.init_game_state
-  · apply Game_World.has_WL.ws
-    use fs
-    intro _ _ _
-    use 0
-    constructor
-    · decide
-    · constructor
-      · apply q2
-      · intro t no
-        contradiction
-  · exact h ⟨hp, q2⟩
+-- lemma Game_World.has_WL_init_end
+--   (g : Game_World α β)
+--   (hg : g.playable)
+--   (P : Prop)
+--   (hp : P)
+--   (h : (P ∧ (¬ g.snd_win_states g.init_game_state)) → g.has_WL) :
+--   g.has_WL :=
+--   by
+--   obtain ⟨fs,ss,_,_⟩ := g.playable_has_strat hg
+--   by_cases q2 : g.snd_win_states g.init_game_state
+--   · apply Game_World.has_WL.ws
+--     use fs
+--     intro _ _ _
+--     use 0
+--     constructor
+--     · decide
+--     · constructor
+--       · apply q2
+--       · intro t no
+--         contradiction
+--   · exact h ⟨hp, q2⟩
 
 
 
@@ -878,16 +893,16 @@ def zGame.snd_win  {α β : Type u} (g : zGame α β) : Prop :=
 def zGame_World.is_fst_win  {α β : Type u} (g : zGame_World α β) : Prop :=
   ∃ ws : Strategy α β, --g.Strategy_blind_fst ws ∧
   ∀ snd_s : Strategy α β, --g.Strategy_blind_fst snd_s →
-   (ws_leg : Strategy_legal_fst g.init_game_state g.fst_legal ws snd_s) →
    (snd_leg : Strategy_legal_snd g.init_game_state g.snd_legal ws snd_s) →
+   ∃ (ws_leg : Strategy_legal_fst g.init_game_state g.fst_legal ws snd_s),
   ({g with fst_strat := ws, fst_lawful := ws_leg, snd_strat := snd_s, snd_lawful := snd_leg} : Game α β).fst_win
 
 
 def zGame_World.is_snd_win  {α β : Type u} (g : zGame_World α β) : Prop :=
   ∃ ws : Strategy α β, -- g.Strategy_blind_snd ws ∧
   ∀ fst_s : Strategy α β, --g.Strategy_blind_snd fst_s →
-   (ws_leg : Strategy_legal_snd g.init_game_state g.snd_legal fst_s ws) →
    (fst_leg : Strategy_legal_fst g.init_game_state g.fst_legal fst_s ws) →
+   ∃ (ws_leg : Strategy_legal_snd g.init_game_state g.snd_legal fst_s ws),
   ({g with fst_strat := fst_s, fst_lawful := fst_leg, snd_strat := ws, snd_lawful := ws_leg} : Game α β).snd_win
 
 
@@ -904,18 +919,20 @@ lemma zGame_World.has_WL_init_end
   (h : (P ∧ (¬ g.snd_win_states g.init_game_state)) → g.has_WL) :
   g.has_WL :=
   by
-  obtain ⟨fs,ss,_,_⟩ := g.playable_has_strat g.playable
+  obtain ⟨ss,ss_prop⟩ := g.playable_has_strong_snd_strat g.playable
   by_cases q2 : g.snd_win_states g.init_game_state
   · apply zGame_World.has_WL.ws
-    use fs
-    intro _ _ _
-    use 0
+    use ss
+    intro fs fs_leg
     constructor
-    · decide
-    · constructor
-      · apply q2
-      · intro t no
-        contradiction
+    · use 0
+      constructor
+      · decide
+      · constructor
+        · apply q2
+        · intro t no
+          contradiction
+    · exact ss_prop fs fs_leg
   · exact h ⟨hp, q2⟩
 
 --#exit
@@ -938,6 +955,36 @@ def zGame_World.fst_strat_conditioned [Inhabited β] (g : zGame_World α β)
          if H : g.fst_legal g.init_game_state [] f_act-- should be the cases ?!?
          then (f_strat hist hh H) (g.fst_transition g.init_game_state [] f_act) hist.dropLast -- is it ? since ref to history in current game
          else default
+
+lemma zGame_World.fst_strat_conditioned_get_rw_to_work [Inhabited β] (g : zGame_World α β)
+  (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.fst_legal g.init_game_state [] (h.getLast hne)) → Strategy α β) :
+  g.fst_strat_conditioned f_strat =
+  fun (_ : α) hist  =>
+    if hh : hist = [] -- shouldn't happen, as snd strat
+    then default -- dummy
+    else let f_act := List.getLast hist hh
+         if H : g.fst_legal g.init_game_state [] f_act-- should be the cases ?!?
+         then (f_strat hist hh H) (g.fst_transition g.init_game_state [] f_act) hist.dropLast -- is it ? since ref to history in current game
+         else default
+  :=
+  by
+  rfl
+
+
+lemma Game_World.playable_has_Fst_strat (g : Game_World α β)
+  (hg : g.playable) (s_strat : Strategy α β) :
+  ∃ f_strat : Strategy α β,
+  Strategy_legal_fst g.init_game_state g.fst_legal f_strat s_strat :=
+  by
+  classical
+  use (fun ini hist => Classical.choose (hg.1 ini hist))
+  intro t _
+  set hist := (History_on_turn g.init_game_state
+  (fun ini hist => Classical.choose (_ : ∃ act, Game_World.fst_legal g ini hist act))
+  (s_strat) t)
+  have pf := Classical.choose_spec (hg.1 g.init_game_state hist)
+  apply pf
+
 
 lemma zGame_World.history_on_turn_conditioned
   [Inhabited β] (g : zGame_World α β) (fst_s: Strategy α β)
@@ -1407,6 +1454,39 @@ lemma zGame_World.fst_reconditioned_legal
   convert hs using 1
   apply f_act_leg
 
+
+
+lemma zGame_World.snd_reconditioned_legal'
+  (g : zGame_World α β) (f_act : β) (f_act_leg : g.fst_legal g.init_game_state [] f_act)
+  (snd_s ws : Strategy α β)
+  (hf : Strategy_legal_snd (world_after_fst g f_act f_act_leg).toGame_World.init_game_state
+      (world_after_fst g f_act f_act_leg).toGame_World.snd_legal (fst_strat_reconditioned snd_s f_act g) ws)
+  : Strategy_legal_fst g.init_game_state g.fst_legal (snd_strat_reconditioned ws f_act g f_act_leg) snd_s
+  :=
+  by
+  intro t tf
+  cases' t with t
+  · dsimp [History_on_turn, snd_strat_reconditioned]
+    rw [if_pos (by rfl)]
+    exact f_act_leg
+  · specialize hf t (by rw [Turn_snd_fst_step] ; exact tf)
+    rw [g.history_reconditioned]
+    have := (g.hyper_legal_blind_toStrong g.is_hyper_legal_blind).2
+    dsimp [Game_World.strong_legal_blind_snd] at this
+    rw [g.sym_legal]
+    rw [← this]
+    clear this
+    rw [g.sym_legal]
+    rw [zGame_World.world_after_fst_snd_legal] at hf
+    convert hf using 1
+    · dsimp [snd_strat_reconditioned]
+      rw [if_neg (by apply List.append_ne_nil_of_ne_nil_right ; exact List.cons_ne_nil f_act [])]
+      congr
+      rw [List.dropLast_append_of_ne_nil]
+      · dsimp
+        rw [List.append_nil]
+      · apply List.cons_ne_nil
+    · apply f_act_leg
 
 
 lemma zGame_World.state_reconditioned

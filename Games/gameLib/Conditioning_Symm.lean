@@ -1000,6 +1000,24 @@ def zSymm_Game_World.fst_strat_conditioned [Inhabited β] (g : zSymm_Game_World 
          then (f_strat hist hh H) (g.transition g.init_game_state [] f_act) hist.dropLast -- is it ? since ref to history in current game
          else default
 
+
+lemma zSymm_Game_World.fst_strat_conditioned_get_rw_to_work [Inhabited β] (g : zSymm_Game_World α β)
+  (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.law g.init_game_state [] (h.getLast hne)) → Strategy α β) :
+  g.fst_strat_conditioned f_strat =
+  fun (_ : α) hist  =>
+    if hh : hist = [] -- shouldn't happen, as snd strat
+    then default -- dummy
+    else let f_act := List.getLast hist hh
+         if H : g.law g.init_game_state [] f_act-- should be the cases ?!?
+         then (f_strat hist hh H) (g.transition g.init_game_state [] f_act) hist.dropLast -- is it ? since ref to history in current game
+         else default
+  :=
+  by
+  rfl
+
+
+
+
 lemma zSymm_Game_World.history_on_turn_conditioned
   [Inhabited β] (g : zSymm_Game_World α β) (fst_s: Strategy α β)
   (f_strat : (h : List β) → (hne : h ≠ []) → (hl : g.law g.init_game_state [] (h.getLast hne)) → Strategy α β)
@@ -1435,6 +1453,38 @@ lemma zSymm_Game_World.snd_reconditioned_legal
       rw [List.append_nil]
     · apply List.cons_ne_nil
   · apply f_act_leg
+
+lemma zSymm_Game_World.snd_reconditioned_legal'
+  (g : zSymm_Game_World α β) (f_act : β) (f_act_leg : g.law g.init_game_state [] f_act)
+  (snd_s ws : Strategy α β)
+  (hf : Strategy_legal_snd (world_after_fst g f_act f_act_leg).toSymm_Game_World.init_game_state
+      (world_after_fst g f_act f_act_leg).toSymm_Game_World.law (fst_strat_reconditioned snd_s f_act g) ws)
+  : Strategy_legal_fst g.init_game_state g.law (snd_strat_reconditioned ws f_act g f_act_leg) snd_s
+  :=
+  by
+  intro t tf
+  cases' t with t
+  · dsimp [History_on_turn, snd_strat_reconditioned]
+    rw [if_pos (by rfl)]
+    exact f_act_leg
+  · specialize hf t (by rw [Turn_snd_fst_step] ; exact tf)
+    rw [g.history_reconditioned]
+    have := (g.hyper_legal_blind_toStrong g.is_hyper_legal_blind).2
+    dsimp [Symm_Game_World.strong_legal_blind_snd] at this
+    rw [← this]
+    clear this
+    rw [zSymm_Game_World.world_after_fst_law] at hf
+    convert hf using 1
+    · dsimp [snd_strat_reconditioned]
+      rw [if_neg (by apply List.append_ne_nil_of_ne_nil_right ; exact List.cons_ne_nil f_act [])]
+      congr
+      rw [List.dropLast_append_of_ne_nil]
+      · dsimp
+        rw [List.append_nil]
+      · apply List.cons_ne_nil
+    · apply f_act_leg
+
+
 
 lemma zSymm_Game_World.fst_reconditioned_legal
   (g : zSymm_Game_World α β) (f_act : β) (f_act_leg : g.law g.init_game_state [] f_act)
