@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Yves Jäckle.
 -/
 
-import Games.gameLib.Conditioning_wDraw
+import Games.gameLib.Conditioning_Symm
 
 
 
@@ -16,19 +16,15 @@ def transition (ini : ℕ) (hist : List ℕ) (_ : ℕ): ℕ :=
   else hist.sum + 1
 
 
-def G : Game_World_wDraw ℕ ℕ :=
+def G : Symm_Game_World ℕ ℕ :=
   {init_game_state := 0
-   fst_win_states := fun n => n = 42
-   snd_win_states := fun n => n = 42
-   fst_legal := fun _ _ _ => True
-   snd_legal := fun _ _ _ => True
-   fst_transition := transition
-   snd_transition := transition
-   draw_states := fun n => n = 42
+   win_states := fun n => n = 42
+   law := fun _ _ _ => True
+   transition := transition
    }
 
 theorem strong_not_hyper :
-  ∃ g : Game_World_wDraw ℕ ℕ, g.strong_transition_blind ∧ (¬ g.hyper_transition_blind) :=
+  ∃ g : Symm_Game_World ℕ ℕ, g.strong_transition_blind ∧ (¬ g.hyper_transition_blind) :=
   by
   use G
   constructor
@@ -45,7 +41,7 @@ theorem strong_not_hyper :
       rw [if_pos (show 0 = 0 from by rfl)]
       rw [if_neg (show 0+1 ≠ 0 from by decide)]
       rw [List.dropLast_concat]
-  · dsimp [Game_World_wDraw.hyper_transition_blind, Game_World_wDraw.hyper_transition_blind_fst, Game_World_wDraw.hyper_transition_blind_snd]
+  · dsimp [Symm_Game_World.hyper_transition_blind, Symm_Game_World.hyper_transition_blind_fst, Symm_Game_World.hyper_transition_blind_snd]
     push_neg
     intro _
     use [1,2]
@@ -61,7 +57,7 @@ theorem strong_not_hyper :
         · apply Hist_legal.nil
     · use []
       use 42
-      dsimp [G, transition, Game_World_wDraw.world_after_preHist]
+      dsimp [G, transition, Symm_Game_World.world_after_preHist]
       rw [if_pos (show 0 = 0 from by rfl)]
       rw [if_pos (show 0 = 0 from by rfl)]
       rw [if_neg (show 0+1 ≠ 0 from by decide)]

@@ -9,7 +9,6 @@ import Games.gameLib.Termination
 import Mathlib.Tactic
 
 
--- use 1-dim version for ease of expo
 
 def G : Game_World_wDraw (List ℕ) ℕ where
   init_game_state := []

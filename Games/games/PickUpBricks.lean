@@ -594,7 +594,7 @@ theorem Main_Thm
   (PickUpBricks init_bricks).is_fst_win :=
   by
   use pub_win_strat
-  intro s_strat f_leg s_leg
+  intro s_strat s_leg
   have wf : _ := Nat.lt_wfRel.wf
   rw [WellFounded.wellFounded_iff_has_min] at wf
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
@@ -606,53 +606,54 @@ theorem Main_Thm
   specialize wf (termination init_bricks pub_win_strat s_strat (pub_win_strat_legal init_bricks s_strat) s_leg)
   obtain ⟨end_turn, end_turn_z, end_turn_prop⟩ := wf
   dsimp only [Membership.mem, Set.Mem] at *
-  use end_turn
   constructor
-  · by_contra con
-    have fact : 1 ≤ end_turn :=
-      by
-      rw [Nat.one_le_iff_ne_zero]
-      intro con2
-      rw [con2] at end_turn_z
-      dsimp [Symm_Game.state_on_turn, PickUpBricks] at end_turn_z
-      rw [end_turn_z] at win_hyp
-      contradiction
-    specialize end_turn_prop (end_turn - 1)
-    rw [← not_imp_not, not_not] at end_turn_prop
-    specialize end_turn_prop (Nat.sub_lt_self (by decide) fact)
-    rw [show end_turn = end_turn - 1 + 1 from by exact Nat.eq_add_of_sub_eq fact rfl] at end_turn_z con
-    dsimp [Symm_Game.state_on_turn] at end_turn_z
-    rw [if_neg con] at end_turn_z
-    dsimp [PickUpBricks] at end_turn_z
-    rw [bricks_start_end] at end_turn_z
-    have : g.toSymm_Game_World = PickUpBricks init_bricks := by rfl
-    rw [← ne_eq, ← Nat.one_le_iff_ne_zero, ← PUB_state_bricks this] at end_turn_prop
-    rw [Nat.sub_eq_zero_iff_le] at end_turn_z
-    have up : s_strat init_bricks (History_on_turn init_bricks g.fst_strat g.snd_strat (end_turn - 1)) < 3 :=
-      by
-      dsimp [Strategy_legal_snd, PickUpBricks] at s_leg
-      specialize s_leg  (end_turn - 1)
-      split at s_leg
-      · rw [s_leg ((Turn_not_fst_iff_snd (end_turn - 1 + 1)).mp con)] ; decide
-      · rw [s_leg ((Turn_not_fst_iff_snd (end_turn - 1 + 1)).mp con)] ; decide
-      · cases' s_leg ((Turn_not_fst_iff_snd (end_turn - 1 + 1)).mp con) with s_leg s_leg ; rw [s_leg] ; decide ; rw [s_leg] ; decide
-    have Up := le_trans end_turn_z (le_of_lt up)
-    rw [Turn_not_fst_iff_snd, ← Turn_fst_snd_step] at con
-    have inv := loop_invariant init_bricks win_hyp s_strat s_leg (end_turn - 1) con
-    rw [← PUB_state_bricks] at inv
-    interval_cases (bricks_start_turn_from_ini_hist init_bricks (History_on_turn init_bricks g.fst_strat g.snd_strat (end_turn - 1)))
-    · contradiction
-    · contradiction
-    · have no := lt_of_le_of_lt end_turn_z up
-      exact (lt_irrefl 3) no
-    · rfl
-  · constructor
-    · dsimp [PickUpBricks]
-      exact end_turn_z
-    · intro t t_lt_end
-      rw [Symm_Game.state_on_turn_neutral]
-      split_ifs
-      all_goals dsimp [PickUpBricks]
-      all_goals intro con
-      all_goals apply end_turn_prop t con
-      all_goals exact t_lt_end
+  · use end_turn
+    constructor
+    · by_contra con
+      have fact : 1 ≤ end_turn :=
+        by
+        rw [Nat.one_le_iff_ne_zero]
+        intro con2
+        rw [con2] at end_turn_z
+        dsimp [Symm_Game.state_on_turn, PickUpBricks] at end_turn_z
+        rw [end_turn_z] at win_hyp
+        contradiction
+      specialize end_turn_prop (end_turn - 1)
+      rw [← not_imp_not, not_not] at end_turn_prop
+      specialize end_turn_prop (Nat.sub_lt_self (by decide) fact)
+      rw [show end_turn = end_turn - 1 + 1 from by exact Nat.eq_add_of_sub_eq fact rfl] at end_turn_z con
+      dsimp [Symm_Game.state_on_turn] at end_turn_z
+      rw [if_neg con] at end_turn_z
+      dsimp [PickUpBricks] at end_turn_z
+      rw [bricks_start_end] at end_turn_z
+      have : g.toSymm_Game_World = PickUpBricks init_bricks := by rfl
+      rw [← ne_eq, ← Nat.one_le_iff_ne_zero, ← PUB_state_bricks this] at end_turn_prop
+      rw [Nat.sub_eq_zero_iff_le] at end_turn_z
+      have up : s_strat init_bricks (History_on_turn init_bricks g.fst_strat g.snd_strat (end_turn - 1)) < 3 :=
+        by
+        dsimp [Strategy_legal_snd, PickUpBricks] at s_leg
+        specialize s_leg  (end_turn - 1)
+        split at s_leg
+        · rw [s_leg ((Turn_not_fst_iff_snd (end_turn - 1 + 1)).mp con)] ; decide
+        · rw [s_leg ((Turn_not_fst_iff_snd (end_turn - 1 + 1)).mp con)] ; decide
+        · cases' s_leg ((Turn_not_fst_iff_snd (end_turn - 1 + 1)).mp con) with s_leg s_leg ; rw [s_leg] ; decide ; rw [s_leg] ; decide
+      have Up := le_trans end_turn_z (le_of_lt up)
+      rw [Turn_not_fst_iff_snd, ← Turn_fst_snd_step] at con
+      have inv := loop_invariant init_bricks win_hyp s_strat s_leg (end_turn - 1) con
+      rw [← PUB_state_bricks] at inv
+      interval_cases (bricks_start_turn_from_ini_hist init_bricks (History_on_turn init_bricks g.fst_strat g.snd_strat (end_turn - 1)))
+      · contradiction
+      · contradiction
+      · have no := lt_of_le_of_lt end_turn_z up
+        exact (lt_irrefl 3) no
+      · rfl
+    · constructor
+      · dsimp [PickUpBricks]
+        exact end_turn_z
+      · intro t t_lt_end
+        rw [Symm_Game.state_on_turn_neutral]
+        split_ifs
+        all_goals dsimp [PickUpBricks]
+        all_goals intro con
+        all_goals apply end_turn_prop t con
+        all_goals exact t_lt_end
