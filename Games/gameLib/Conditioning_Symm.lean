@@ -46,18 +46,23 @@ def Symm_Game_World.coherent_end_aux
 
 
 def Symm_Game_World.coherent_end (g : Symm_Game_World α β) : Prop :=
-  ∀ f_strat s_strat : Strategy α β, ∀ t : ℕ, g.coherent_end_aux f_strat s_strat t
+  ∀ f_strat s_strat : Strategy α β, Strategy_legal_fst g.init_game_state g.law f_strat s_strat →
+  Strategy_legal_snd g.init_game_state g.law f_strat s_strat → ∀ t : ℕ, g.coherent_end_aux f_strat s_strat t
+  -- ADD LEGALITY IN NON SYMM CONTEXT TOO ??? (only needed by chomp)
+
 
 lemma Symm_Game_World.coherent_end_all (g : Symm_Game_World α β)  (h : g.coherent_end)
-  (f_strat s_strat : Strategy α β) (t n : ℕ) :
+  (f_strat s_strat : Strategy α β) (h₁ : Strategy_legal_fst g.init_game_state g.law f_strat s_strat)
+  (h₂ : Strategy_legal_snd g.init_game_state g.law f_strat s_strat) (t n : ℕ) :
   g.win_states (g.state_on_turn f_strat s_strat t) → g.win_states (g.state_on_turn f_strat s_strat (t+n)) :=
   by
   intro H
   induction' n with n ih
   · dsimp
     exact H
-  · apply h
+  · apply h _ _ h₁ h₂
     exact ih
+
 
 
 -- # Playability
@@ -539,54 +544,6 @@ lemma zSymm_Game_World.State_of_deconditioned
 
 
 
-def zSymm_Game_World.world_after_fst {α β : Type u} (g : zSymm_Game_World α β)
-  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) : zSymm_Game_World α β :=
-  {(g.toSymm_Game_World.world_after_fst fst_act) with
-      law_careless := by dsimp ; apply g.law_careless
-      transition_careless := by dsimp ; apply g.transition_careless
-      coherent := by
-                  intro f_strat s_strat t
-                  intro fws
-                  dsimp at *
-                  have := g.State_of_deconditioned fst_act fst_act_legal f_strat s_strat
-                  dsimp [Symm_Game_World.world_after_fst] at this
-                  rw [← this] at *
-                  clear this
-                  have := (g.coherent (fst_strat_deconditioned s_strat fst_act g.toSymm_Game_World) (snd_strat_deconditioned f_strat fst_act g.toSymm_Game_World) (t+1))
-                  exact this fws
-      playable := by apply g.playable
-                  }
-
-
-
-
-lemma zSymm_Game_World.world_after_fst_init (g : zSymm_Game_World α β)
-  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) :
-  (g.world_after_fst fst_act fst_act_legal).init_game_state = g.transition g.init_game_state [] fst_act :=
-  by
-  rfl
-
-
-@[simp]
-lemma zSymm_Game_World.world_after_fst_law {α β : Type u} (g : zSymm_Game_World α β)
-  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) :
-  (g.world_after_fst fst_act fst_act_legal).law = g.law :=
-  by rfl
-
-
-@[simp]
-lemma zSymm_Game_World.world_after_fst_win_states {α β : Type u} (g : zSymm_Game_World α β)
-  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) :
-  (g.world_after_fst fst_act fst_act_legal).win_states = g.win_states :=
-  by rfl
-
-
-
-@[simp]
-lemma zSymm_Game_World.world_after_fst_transition {α β : Type u} (g : zSymm_Game_World α β)
-  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) :
-  (g.world_after_fst fst_act fst_act_legal).transition = g.transition :=
-  by rfl
 
 
 
@@ -901,6 +858,62 @@ lemma Symm_Game_World.law_deconditioned_snd
       rw [Turn_fst_snd_step]
       exact tf
     · exact fst_act_legal
+
+
+
+def zSymm_Game_World.world_after_fst {α β : Type u} (g : zSymm_Game_World α β)
+  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) : zSymm_Game_World α β :=
+  {(g.toSymm_Game_World.world_after_fst fst_act) with
+      law_careless := by dsimp ; apply g.law_careless
+      transition_careless := by dsimp ; apply g.transition_careless
+      coherent := by
+                  intro f_strat s_strat f_leg s_leg t
+                  intro fws
+                  dsimp at *
+                  have := g.State_of_deconditioned fst_act fst_act_legal f_strat s_strat
+                  dsimp [Symm_Game_World.world_after_fst] at this
+                  rw [← this] at *
+                  clear this
+                  have := (g.coherent (fst_strat_deconditioned s_strat fst_act g.toSymm_Game_World) (snd_strat_deconditioned f_strat fst_act g.toSymm_Game_World)
+                      (by apply g.law_deconditioned_fst fst_act fst_act_legal _ _ s_leg  (g.strong_legal_blind_toWeak (g.hyper_legal_blind_toStrong g.is_hyper_legal_blind)).1)
+                      (by apply g.law_deconditioned_snd fst_act fst_act_legal _ _ f_leg  (g.strong_legal_blind_toWeak (g.hyper_legal_blind_toStrong g.is_hyper_legal_blind)).2)
+                      (t+1))
+                  exact this fws
+      playable := by apply g.playable
+                  }
+
+
+
+lemma zSymm_Game_World.world_after_fst_init (g : zSymm_Game_World α β)
+  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) :
+  (g.world_after_fst fst_act fst_act_legal).init_game_state = g.transition g.init_game_state [] fst_act :=
+  by
+  rfl
+
+
+@[simp]
+lemma zSymm_Game_World.world_after_fst_law {α β : Type u} (g : zSymm_Game_World α β)
+  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) :
+  (g.world_after_fst fst_act fst_act_legal).law = g.law :=
+  by rfl
+
+
+@[simp]
+lemma zSymm_Game_World.world_after_fst_win_states {α β : Type u} (g : zSymm_Game_World α β)
+  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) :
+  (g.world_after_fst fst_act fst_act_legal).win_states = g.win_states :=
+  by rfl
+
+
+
+@[simp]
+lemma zSymm_Game_World.world_after_fst_transition {α β : Type u} (g : zSymm_Game_World α β)
+  (fst_act : β) (fst_act_legal: g.law g.init_game_state [] fst_act) :
+  (g.world_after_fst fst_act fst_act_legal).transition = g.transition :=
+  by rfl
+
+
+
 
 
 def zSymm_Game.history_on_turn {α β : Type u} (g : zSymm_Game α β) : ℕ → List β :=

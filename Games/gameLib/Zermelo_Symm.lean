@@ -36,30 +36,30 @@ lemma zSymm_Game_World.conditioning_bound
   intro f_strat s_strat f_leg s_leg
   let fst_strat : Strategy α β := fst_strat_deconditioned s_strat fst_act g.toSymm_Game_World
   let snd_strat : Strategy α β := snd_strat_deconditioned f_strat fst_act g.toSymm_Game_World
-  specialize hg fst_strat snd_strat _ _
-  · apply g.law_deconditioned_fst fst_act leg  f_strat s_strat s_leg b.1
-  · apply g.law_deconditioned_snd fst_act leg  f_strat s_strat f_leg b.2
-  · obtain ⟨t, t_bd, t_prop⟩ := hg
-    cases' t with t
-    · use 0
-      constructor
-      · exact Nat.zero_le T
-      · dsimp [Symm_Game_World.Turn_isWL] at *
-        dsimp [Symm_Game_World.state_on_turn]
-        have := (nt fst_strat snd_strat 0) t_prop
-        dsimp [Symm_Game_World.state_on_turn] at this
-        dsimp [Symm_Game_World.history_on_turn, History_on_turn, fst_strat_deconditioned] at this
-        rw [if_pos (by rfl)] at this
-        exact this
-    · rw [Nat.succ_le_succ_iff] at t_bd
-      use t
-      constructor
-      · exact t_bd
-      · dsimp [Symm_Game_World.Turn_isWL] at *
-        rw [← Symm_Game_World.State_of_deconditioned]
-        · apply t_prop
-        · exact tb
-        · exact leg
+  have fst_leg :=  g.law_deconditioned_fst fst_act leg  f_strat s_strat s_leg b.1
+  have snd_leg := g.law_deconditioned_snd fst_act leg  f_strat s_strat f_leg b.2
+  specialize hg fst_strat snd_strat fst_leg snd_leg
+  obtain ⟨t, t_bd, t_prop⟩ := hg
+  cases' t with t
+  · use 0
+    constructor
+    · exact Nat.zero_le T
+    · dsimp [Symm_Game_World.Turn_isWL] at *
+      dsimp [Symm_Game_World.state_on_turn]
+      have := (nt fst_strat snd_strat fst_leg snd_leg 0) t_prop
+      dsimp [Symm_Game_World.state_on_turn] at this
+      dsimp [Symm_Game_World.history_on_turn, History_on_turn, fst_strat_deconditioned] at this
+      rw [if_pos (by rfl)] at this
+      exact this
+  · rw [Nat.succ_le_succ_iff] at t_bd
+    use t
+    constructor
+    · exact t_bd
+    · dsimp [Symm_Game_World.Turn_isWL] at *
+      rw [← Symm_Game_World.State_of_deconditioned]
+      · apply t_prop
+      · exact tb
+      · exact leg
 
 
 

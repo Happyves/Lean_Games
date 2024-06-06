@@ -148,7 +148,7 @@ lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
   · exact F
   · obtain ⟨ws, ws_prop⟩ := S
     use (stolen_strat g hgs ws)
-    intro s_strat ws_leg f_leg
+    intro s_strat f_leg
     specialize ws_prop (pre_stolen_strat g hgs  s_strat)
     --show legality next
 
