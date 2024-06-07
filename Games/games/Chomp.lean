@@ -537,4 +537,59 @@ lemma preChomp_coherent (height length : ℕ) (hmain : height > 0 ∧ length > 0
           · exact Chomp_init_has_zero _ _ hmain
           · exact k
           · exact this
-      · sorry
+      · dsimp [History_on_turn]
+        rw [if_neg (by rw [Turn_fst_not_step, not_not] ; exact q1)]
+        exact main
+  · rw [Turn_not_fst_iff_snd] at q1
+    rw [Symm_Game_World.state_on_turn_snd_to_fst _ _ _ _ q1]
+    dsimp [preChomp]
+    rw [if_neg]
+    rw [not_not]
+    cases' t with t
+    · dsimp [Symm_Game_World.state_on_turn, Symm_Game_World.history_on_turn, History_on_turn] at *
+      simp_all only [zero_add]
+      rfl
+    · dsimp [Symm_Game_World.state_on_turn, Symm_Game_World.history_on_turn, History_on_turn] at main
+      rw [if_pos (by contrapose q1 ; rw [← Turn_snd_not_step, ← Turn_not_fst_iff_snd] ; exact q1)] at main
+      split_ifs at main with k
+      · dsimp [History_on_turn]
+        split_ifs with tu
+        · have : f_strat (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) ≠ (0, 0) :=
+            by
+            specialize f_leg t tu
+            by_cases split_ifs_is_wierd : ¬Chomp_state (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) = {(0, 0)}
+            · rw [if_pos (split_ifs_is_wierd)] at f_leg
+              exact f_leg.nz_act
+            · rw [if_neg (split_ifs_is_wierd)] at f_leg
+              exact f_leg
+          apply Chomp_state_zero_act_non_zero
+          · exact Chomp_init_has_zero _ _ hmain
+          · exact k
+          · exact this
+        · have : s_strat (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) ≠ (0, 0) :=
+            by
+            specialize s_leg t tu
+            by_cases split_ifs_is_wierd : ¬Chomp_state (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) = {(0, 0)}
+            · rw [if_pos (split_ifs_is_wierd)] at s_leg
+              exact s_leg.nz_act
+            · rw [if_neg (split_ifs_is_wierd)] at s_leg
+              exact s_leg
+          apply Chomp_state_zero_act_non_zero
+          · exact Chomp_init_has_zero _ _ hmain
+          · exact k
+          · exact this
+      · dsimp [History_on_turn]
+        rw [if_pos (by rw [Turn_fst_not_step] ; exact q1)]
+        exact main
+
+
+lemma preChomp_playable (height length : ℕ) (hmain : height > 0 ∧ length > 0) : (preChomp height length).playable :=
+  by
+  intro ini hist
+  dsimp [preChomp]
+  by_cases q : ¬Chomp_state ini hist = {(0, 0)}
+  · simp_rw [if_pos q]
+    sorry
+  · simp_rw [if_neg q]
+    use (1,0)
+    decide
