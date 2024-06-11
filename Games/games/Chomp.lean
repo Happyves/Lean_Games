@@ -690,3 +690,10 @@ def Chomp (height length : ℕ) (hmain : height > 0 ∧ length > 0) : zSymm_Game
   transition_careless := preChomp_tranistion_careless height length
   coherent := preChomp_coherent height length hmain
   playable := preChomp_playable height length
+
+
+lemma preChomp_law_prop (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (act : ℕ × ℕ) (hist : List (ℕ × ℕ)) (h_hist : hist ≠ []) :
+  (preChomp height length).law ini hist act ↔
+  (preChomp height length).law ((preChomp height length).transition ini (hist.tail) (hist.head h_hist)) [] act :=
+  by sorry
+  -- isn't even relevant

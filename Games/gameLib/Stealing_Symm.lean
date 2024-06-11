@@ -104,9 +104,22 @@ lemma History_on_turn_stolen_pre_stolen (g : zSymm_Game_World α β) (hgs : Stro
 
 
 
+lemma zSymm_Game_World.law_toInitState (g : zSymm_Game_World α β) :
+  ∀ hist : List β, Hist_legal g.law g.law g.init_game_state hist →
+  ∀ act : β, g.law (g.world_after_preHist hist).init_game_state [] act
+    = g.law g.init_game_state hist act :=
+  by
+  intro hist histLeg
+  apply g.is_hyper_legal_blind.1 _ histLeg
+
+
+
+
+--#exit
+
+
 lemma pre_stolen_strat_legal_fst (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
   (ws s_strat : Strategy α β)
-  (ws_leg : Strategy_legal_fst g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
   (f_leg : Strategy_legal_snd g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
   : Strategy_legal_fst g.init_game_state g.law (pre_stolen_strat g hgs s_strat) ws :=
   by
@@ -116,31 +129,33 @@ lemma pre_stolen_strat_legal_fst (g : zSymm_Game_World α β) (hgs : Strong_stea
     unfold pre_stolen_strat
     rw [if_pos (by rfl)]
     apply (Classical.choose_spec hgs).1
-  ·
+  · rw [← History_on_turn_stolen_pre_stolen]
+    simp only [ne_eq, pre_stolen_strat, List.append_eq_nil, and_false, List.dropLast_concat, ite_false]
+    specialize f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
+    rw [← (Symm_Game_World.hyper_legal_blind_toStrong _ g.is_hyper_legal_blind).1]
+    swap
+    · apply (Classical.choose_spec hgs).1
+    · dsimp [Symm_Game_World.world_after_fst]
+      --revert tf
+      induction' t with t ih
+      · intro no ; contradiction
+      · intro tf
+
+
+    -- show law corresponds to empty hist and same "init" state
+
+    -- dsimp [History_on_turn]
+    -- rw [if_neg (by rw [Turn_fst_not_step, not_not] ; exact tf)]
+    -- dsimp [pre_stolen_strat]
+    -- rw [if_neg (by apply List.noConfusion)]
+    -- specialize f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
 
 
 
-lemma pre_stolen_strat_legal_snd (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
-  (ws s_strat : Strategy α β)
-  (ws_leg : Strategy_legal_fst g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
-  (f_leg : Strategy_legal_snd g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
-  : Strategy_legal_snd g.init_game_state g.law (pre_stolen_strat g hgs s_strat) ws :=
-  by
-  intro t ts
-  cases' t with t
-  · contradiction
-  · rw [← History_on_turn_stolen_pre_stolen g hgs]
-    specialize ws_leg t (by rw [Turn_fst_snd_step] ; exact ts)
-    cases' t with t
-    · dsimp! at *
-      unfold stolen_strat at ws_leg
-      rw [if_pos (by rfl)] at ws_leg
-      refine' ((Classical.choose_spec hgs).2 (ws g.init_game_state [Classical.choose hgs]) _ ws_leg).1
-
-  -- use ws_leg
 
 
---#exit
+
+#exit
 lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
   {T : ℕ} (hg : g.isWL_wBound T) (hgs : Strong_stealing_condition g) : g.is_fst_win :=
   by
@@ -148,7 +163,7 @@ lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
   · exact F
   · obtain ⟨ws, ws_prop⟩ := S
     use (stolen_strat g hgs ws)
-    intro s_strat f_leg
+    intro s_strat s_leg
     specialize ws_prop (pre_stolen_strat g hgs  s_strat)
     --show legality next
 
