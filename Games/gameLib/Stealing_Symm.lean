@@ -13,9 +13,9 @@ import Games.exLib.List
 
 def Strong_stealing_condition (g : zSymm_Game_World α β) : Prop :=
   ∃ (f_act : β), (g.law g.init_game_state [] f_act) ∧
-    ∀ s_act : β, ∀ hist : List β,
-    g.transition g.init_game_state hist s_act = g.transition g.init_game_state (hist ++ [f_act]) s_act -- not used so far
-    ∧ (g.law g.init_game_state hist s_act ↔ g.law g.init_game_state (hist ++ [f_act]) s_act)
+    ∀ act : β, ∀ hist : List β,
+    g.transition g.init_game_state hist act = g.transition g.init_game_state (hist ++ [f_act]) act -- not used so far
+    ∧ (g.law g.init_game_state hist act ↔ g.law g.init_game_state (hist ++ [f_act]) act)
 
 
 
@@ -145,7 +145,7 @@ lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
   · obtain ⟨ws, ws_prop⟩ := S
     use (stolen_strat g hgs ws)
     intro s_strat s_leg
-    specialize ws_prop (pre_stolen_strat g hgs  s_strat)
+    obtain ⟨ws_leg, ws_win⟩ := ws_prop (pre_stolen_strat g hgs  s_strat) (pre_stolen_strat_legal_fst g hgs ws s_strat s_leg)
     --show legality next
 
 

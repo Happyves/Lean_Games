@@ -694,7 +694,7 @@ def Chomp (height length : ℕ) : zSymm_Game_World (Finset (ℕ × ℕ)) (ℕ ×
 
 
 
-lemma Chomp_state_ini_not_zero (height length : ℕ)  : ¬Chomp_state (Chomp_init height length) [] = {(0, 0)} :=
+lemma Chomp_state_ini_not_zero (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0)  : ¬Chomp_state (Chomp_init height length) [] = {(0, 0)} :=
   by
   dsimp [Chomp_state, Chomp_init]
   apply ne_of_not_subset
@@ -705,11 +705,29 @@ lemma Chomp_state_ini_not_zero (height length : ℕ)  : ¬Chomp_state (Chomp_ini
         · simp_rw [Finset.mem_product, Finset.mem_range]
           constructor <;> {exact Nat.le.refl}
         · intro q no ; contradiction)
+  simp only [Finset.mem_singleton, Prod.mk.injEq] at con
+  cases' h with h h
+  · exact h con.2
+  · exact h con.1
 
 
-lemma preChomp_law_prop (height length : ℕ)  : Strong_stealing_condition (Chomp height length ) :=
+
+lemma preChomp_law_prop (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) : Strong_stealing_condition (Chomp height length ) :=
   by
-  use (height, length)
+  use (length, height)
   constructor
   · dsimp [Chomp, preChomp]
     rw [if_pos ⟨Chomp_init_has_zero height length , (by apply List.not_mem_nil)⟩]
+    rw [if_pos (Chomp_state_ini_not_zero _ _ h)]
+    dsimp [Chomp_init]
+    constructor
+    · simp only [Finset.mem_product, Finset.mem_range, lt_add_iff_pos_right, zero_lt_one, and_self]
+    · intro q no ; contradiction
+    · simp_all only [ne_eq, Prod.mk.injEq, not_and]
+      intro a
+      aesop_subst a
+      simp_all only [not_true_eq_false, or_false, not_false_eq_true]
+  · intro act hist
+    constructor
+    ·
+    ·
