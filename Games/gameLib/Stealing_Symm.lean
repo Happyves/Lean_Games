@@ -11,14 +11,11 @@ import Games.exLib.List
 
 
 
-
-
 def Strong_stealing_condition (g : zSymm_Game_World α β) : Prop :=
   ∃ (f_act : β), (g.law g.init_game_state [] f_act) ∧
-    ∀ s_act : β,
-    s_act ≠ f_act → g.law g.init_game_state [] s_act →  -- akward and way to strong ...
-    (g.law g.init_game_state [f_act] s_act) ∧
-    g.transition g.init_game_state [] s_act = g.transition g.init_game_state [f_act] s_act
+    ∀ s_act : β, ∀ hist : List β,
+    g.transition g.init_game_state hist s_act = g.transition g.init_game_state (hist ++ [f_act]) s_act -- not used so far
+    ∧ (g.law g.init_game_state hist s_act ↔ g.law g.init_game_state (hist ++ [f_act]) s_act)
 
 
 
@@ -115,8 +112,6 @@ lemma zSymm_Game_World.law_toInitState (g : zSymm_Game_World α β) :
 
 
 
---#exit
-
 
 lemma pre_stolen_strat_legal_fst (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
   (ws s_strat : Strategy α β)
@@ -132,23 +127,9 @@ lemma pre_stolen_strat_legal_fst (g : zSymm_Game_World α β) (hgs : Strong_stea
   · rw [← History_on_turn_stolen_pre_stolen]
     simp only [ne_eq, pre_stolen_strat, List.append_eq_nil, and_false, List.dropLast_concat, ite_false]
     specialize f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
-    rw [← (Symm_Game_World.hyper_legal_blind_toStrong _ g.is_hyper_legal_blind).1]
-    swap
-    · apply (Classical.choose_spec hgs).1
-    · dsimp [Symm_Game_World.world_after_fst]
-      --revert tf
-      induction' t with t ih
-      · intro no ; contradiction
-      · intro tf
+    rw [((Classical.choose_spec hgs).2 _ _).2] at f_leg
+    exact f_leg
 
-
-    -- show law corresponds to empty hist and same "init" state
-
-    -- dsimp [History_on_turn]
-    -- rw [if_neg (by rw [Turn_fst_not_step, not_not] ; exact tf)]
-    -- dsimp [pre_stolen_strat]
-    -- rw [if_neg (by apply List.noConfusion)]
-    -- specialize f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
 
 
 
