@@ -793,7 +793,14 @@ lemma preChomp_law_prop (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0
                 ext
                 · exact con.1
                 · exact con.2
-              · -- use q3 and qdef
-        · sorry
+              · rw [Finset.ext_iff] at q3
+                replace q3 := (q3 (0,0)).mpr (by apply Finset.mem_singleton_self)
+                rw [Finset.mem_filter] at q3
+                exact q3.2 _ qdef
+        · rw [if_neg q2] at *
+          rw [not_not] at q2
+          split_ifs with H
+          · rfl
+          · -- shold require h = 0 and l = 0 so true by exfalso
       · sorry
     · sorry
