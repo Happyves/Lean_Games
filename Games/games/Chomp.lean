@@ -811,7 +811,7 @@ lemma preChomp_law_prop_transition (height length : ℕ) (h : height ≠ 0 ∨ l
 
 
 
-lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (act : ℕ × ℕ) (hist : List (ℕ × ℕ))
+lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (act : ℕ × ℕ) (hist : List (ℕ × ℕ)) (hh : hist ≠ [])
   (leg : Symm_Game_World.law (Chomp height length).toSymm_Game_World (Chomp height length).toSymm_Game_World.init_game_state hist act) :
   Symm_Game_World.law (Chomp height length).toSymm_Game_World (Chomp height length).toSymm_Game_World.init_game_state
   (hist ++ [(length, height)]) act :=
@@ -841,18 +841,20 @@ lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length �
             · rw [List.mem_singleton] at qdef
               rw [qdef]
               dsimp [nondomi, domi]
-              replace leg := leg.act_mem
-              dsimp [Chomp_init] at leg
-              simp_rw [Finset.mem_product, Finset.mem_range, Nat.lt_add_one_iff] at leg
-              push_neg
-              intro no
-              exfalso
-              -- fuck
+              induction' hist with x hist ih
+              · contradiction
+              · have leg1 := leg.act_mem
+                dsimp [Chomp_init] at leg1
+                simp_rw [Finset.mem_product, Finset.mem_range, Nat.lt_add_one_iff] at leg1
+                have leg2 := leg.nd x (List.mem_cons_self x hist)
+
           · exact leg.nz_act
         · rw [if_neg q2]
           exact leg.nz_act
       · rw [if_neg q1] at leg
 
+
+#check Hist_legal
 
 #exit
 
@@ -871,7 +873,7 @@ lemma preChomp_law_prop (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0
       intro a
       aesop_subst a
       simp_all only [not_true_eq_false, or_false, not_false_eq_true]
-  · intro act hist leg
+  · intro act hist leg hh
     constructor
     · exact preChomp_law_prop_transition height length h act hist leg
     · sorry
