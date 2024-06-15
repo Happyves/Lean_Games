@@ -103,7 +103,7 @@ structure Chomp_law (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act 
   nd : ∀ q ∈ hist, nondomi q act
   nz_act : act ≠ (0,0)
 
---@[mk_iff]
+@[mk_iff]
 structure partiality_condition (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Prop where
   zero_ini : (0,0) ∈ ini
   zero_hist : (0,0) ∉ hist
@@ -111,36 +111,37 @@ structure partiality_condition (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × 
   state : Chomp_state ini hist ≠ {(0,0)}
 
 
--- instance (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Decidable (partiality_condition ini hist) :=
---   by
---   apply decidable_of_iff'
-
--- #exit
-
 instance (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Decidable (partiality_condition ini hist) :=
   by
-  have one : Decidable ((0,0) ∈ ini) := by exact Finset.decidableMem (0, 0) ini
-  have two : Decidable ((0,0) ∉ hist) := by exact Not.decidable
-  have three : Decidable (∀ a ∈ hist, a ∈ ini) := by exact List.decidableBAll (fun x => x ∈ ini) hist
-  have four : Decidable (Chomp_state ini hist ≠ {(0,0)}) := by exact Not.decidable
-  cases' one with one one
-  · apply Decidable.isFalse
-    intro con
-    exact one con.zero_ini
-  · cases' two with two two
-    · apply Decidable.isFalse
-      intro con
-      exact two con.zero_hist
-    · cases' three with three three
-      · apply Decidable.isFalse
-        intro con
-        exact three con.hist_ini
-      · cases' four with four four
-        · apply Decidable.isFalse
-          intro con
-          exact four con.state
-        · apply Decidable.isTrue
-          exact ⟨one, two,three, four⟩
+  rw [partiality_condition_iff]
+  exact And.decidable
+
+--#exit
+
+-- instance (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Decidable (partiality_condition ini hist) :=
+--   by
+--   have one : Decidable ((0,0) ∈ ini) := by exact Finset.decidableMem (0, 0) ini
+--   have two : Decidable ((0,0) ∉ hist) := by exact Not.decidable
+--   have three : Decidable (∀ a ∈ hist, a ∈ ini) := by exact List.decidableBAll (fun x => x ∈ ini) hist
+--   have four : Decidable (Chomp_state ini hist ≠ {(0,0)}) := by exact Not.decidable
+--   cases' one with one one
+--   · apply Decidable.isFalse
+--     intro con
+--     exact one con.zero_ini
+--   · cases' two with two two
+--     · apply Decidable.isFalse
+--       intro con
+--       exact two con.zero_hist
+--     · cases' three with three three
+--       · apply Decidable.isFalse
+--         intro con
+--         exact three con.hist_ini
+--       · cases' four with four four
+--         · apply Decidable.isFalse
+--           intro con
+--           exact four con.state
+--         · apply Decidable.isTrue
+--           exact ⟨one, two,three, four⟩
 
 
 
