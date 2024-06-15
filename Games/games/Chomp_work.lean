@@ -103,6 +103,46 @@ structure Chomp_law (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act 
   nd : ∀ q ∈ hist, nondomi q act
   nz_act : act ≠ (0,0)
 
+--@[mk_iff]
+structure partiality_condition (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Prop where
+  zero_ini : (0,0) ∈ ini
+  zero_hist : (0,0) ∉ hist
+  hist_ini : ∀ a ∈ hist, a ∈ ini
+  state : Chomp_state ini hist ≠ {(0,0)}
+
+
+-- instance (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Decidable (partiality_condition ini hist) :=
+--   by
+--   apply decidable_of_iff'
+
+-- #exit
+
+instance (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Decidable (partiality_condition ini hist) :=
+  by
+  have one : Decidable ((0,0) ∈ ini) := by exact Finset.decidableMem (0, 0) ini
+  have two : Decidable ((0,0) ∉ hist) := by exact Not.decidable
+  have three : Decidable (∀ a ∈ hist, a ∈ ini) := by exact List.decidableBAll (fun x => x ∈ ini) hist
+  have four : Decidable (Chomp_state ini hist ≠ {(0,0)}) := by exact Not.decidable
+  cases' one with one one
+  · apply Decidable.isFalse
+    intro con
+    exact one con.zero_ini
+  · cases' two with two two
+    · apply Decidable.isFalse
+      intro con
+      exact two con.zero_hist
+    · cases' three with three three
+      · apply Decidable.isFalse
+        intro con
+        exact three con.hist_ini
+      · cases' four with four four
+        · apply Decidable.isFalse
+          intro con
+          exact four con.state
+        · apply Decidable.isTrue
+          exact ⟨one, two,three, four⟩
+
+
 
 def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
   init_game_state := Chomp_init height length
@@ -110,7 +150,7 @@ def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ 
   transition := fun ini hist act => if Chomp_state ini hist ≠ {(0,0)}
                                     then (Chomp_state ini) (act :: hist)
                                     else {(0,0)}
-  law := fun ini hist act => if (0,0) ∈ ini ∧ (0,0) ∉ hist
+  law := fun ini hist act => if partiality_condition ini hist
                              then
                               if Chomp_state ini hist ≠ {(0,0)}
                               then Chomp_law ini hist act
@@ -185,37 +225,65 @@ lemma Chomp_state_state_empty (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini
   simp only [nonpos_iff_eq_zero] at *
   convert qh <;> {rw [eq_comm] ; assumption}
 
+--#exit
 
-lemma Chomp_hist_no_zero_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (prehist : List (ℕ × ℕ))
-  (main : Hist_legal (preChomp height length).law (preChomp height length).law ini prehist) : (0,0) ∉ prehist :=
+lemma Chomp_hist_ini_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (prehist : List (ℕ × ℕ))
+  (main : Hist_legal (preChomp height length).law (preChomp height length).law ini prehist) : ∀ a ∈ prehist, a ∈ ini :=
   by
   induction' prehist with x l ih
-  · decide
+  · intro a no ; contradiction
   · cases' main
     rename_i sofar now
-    apply List.not_mem_cons_of_ne_of_not_mem
     · split_ifs at now
       all_goals { dsimp [preChomp] at now
-                  rw [if_pos ⟨hini, ih sofar⟩ ] at now
-                  split_ifs at now
-                  · contrapose! now
-                    apply now.symm
-                  · rw [ne_comm]
-                    apply now.nz_act}
-    · exact ih sofar
+                  rw [if_pos (⟨ hini, , ⟩ : partiality_condition ini l) ] at now
+                }
 
 
+--#exit
+
+lemma Chomp_hist_no_zero_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (prehist : List (ℕ × ℕ))
+  (main : Hist_legal (preChomp height length).law (preChomp height length).law ini prehist) : (0,0) ∉ prehist ∧ (∀ a ∈ prehist, a ∈ ini) :=
+  by
+  induction' prehist with x l ih
+  · constructor
+    · decide
+    · intro a no ; contradiction
+  · cases' main
+    rename_i sofar now
+    constructor
+    · apply List.not_mem_cons_of_ne_of_not_mem
+      · split_ifs at now
+        all_goals { dsimp [preChomp] at now
+                    rw [if_pos ⟨hini, (ih sofar).1, (ih sofar).2⟩ ] at now
+                    split_ifs at now
+                    · contrapose! now
+                      apply now.symm
+                    · rw [ne_comm]
+                      apply now.nz_act}
+      · exact (ih sofar).1
+    · intro a adef
+      rw [List.mem_cons] at adef
+      cases' adef with adef adef
+      · rw [adef]
+        split_ifs at now
+        all_goals { dsimp [preChomp] at now
+                    rw [if_pos ⟨hini, (ih sofar).1, (ih sofar).2⟩ ] at now
+                    split_ifs at now
+        }
+
+#exit
 
 lemma preChomp_law_careless (height length : ℕ) :
   careless (preChomp height length).law (preChomp height length).law (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).transition :=
   by
   intro ini hist prehist pHne pHl
   ext act
-  by_cases fix : (0,0) ∈ ini ∧ (0, 0) ∉ hist
+  by_cases fix : partiality_condition ini hist
   · constructor
     · intro c
       dsimp [preChomp] at c
-      rw [if_pos ⟨fix.1, (by apply List.not_mem_append fix.2 ; exact Chomp_hist_no_zero_of_Hist_legal height length ini fix.1 prehist pHl)⟩ ] at c
+      rw [if_pos ⟨fix.zero_ini, (by apply List.not_mem_append fix.zero_hist ; exact Chomp_hist_no_zero_of_Hist_legal height length ini fix.zero_ini prehist pHl) , _⟩ ] at c
       by_cases q1 : Chomp_state ini (hist ++ prehist) ≠ {(0,0)}
       · rw [if_pos q1] at c
         by_cases q2 : Chomp_state (Symm_Game_World.transition (preChomp height length) ini (List.tail prehist) (List.head prehist pHne)) (hist) ≠ {(0,0)}
@@ -413,7 +481,7 @@ lemma preChomp_law_careless (height length : ℕ) :
     · rename_i a b c
       exact False.elim (by apply fix ; constructor ; apply Chomp_state_sub_ini ; apply b.1 ; apply b.2)
 
-
+#exit
 
 
 lemma preChomp_tranistion_careless (height length : ℕ) :
