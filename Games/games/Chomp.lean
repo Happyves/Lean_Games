@@ -186,6 +186,27 @@ lemma Chomp_state_state_empty (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini
   convert qh <;> {rw [eq_comm] ; assumption}
 
 
+
+lemma Chomp_law_state_mem (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) (leg : Chomp_law ini hist act) :
+  act ∈ Chomp_state ini hist :=
+  by
+  dsimp [Chomp_state]
+  rw [Finset.mem_filter]
+  constructor
+  · exact leg.act_mem
+  · exact leg.nd
+
+
+lemma Chomp_law_sub (ini : Finset (ℕ × ℕ) ) (l L : List (ℕ × ℕ)) (act : ℕ × ℕ) (leg : Chomp_law ini (l ++ L) act) :
+  Chomp_law ini L act :=
+  by
+  refine' ⟨leg.act_mem, _ , leg.nz_act⟩
+  intro q qdef
+  apply leg.nd
+  exact List.mem_append_right l qdef
+
+
+
 lemma Chomp_hist_no_zero_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (prehist : List (ℕ × ℕ))
   (main : Hist_legal (preChomp height length).law (preChomp height length).law ini prehist) : (0,0) ∉ prehist :=
   by
@@ -853,6 +874,53 @@ lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length �
           exact leg.nz_act
       · rw [if_neg q1] at leg
 
+
+
+
+
+lemma preChomp_law_prop_law' (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (act : ℕ × ℕ) (hist : List (ℕ × ℕ)) (hh : hist ≠ [])
+  (leg : Symm_Game_World.law (Chomp height length).toSymm_Game_World (Chomp height length).toSymm_Game_World.init_game_state hist act) :
+  Symm_Game_World.law (Chomp height length).toSymm_Game_World (Chomp height length).toSymm_Game_World.init_game_state
+  (hist ++ [(length, height)]) act :=
+  by
+  dsimp [Chomp, preChomp] at *
+  by_cases q0 : (0, 0) ∉ hist
+  · rw [if_pos ⟨Chomp_init_has_zero height length, q0 ⟩ ] at leg
+    rw [if_pos _]
+    swap
+    · refine' ⟨Chomp_init_has_zero height length, _⟩
+      apply List.not_mem_append q0
+      intro con
+      rw [List.mem_singleton, Prod.eq_iff_fst_eq_snd_eq] at con
+      cases' h with h h
+      · exact False.elim (h con.2.symm)
+      · exact False.elim (h con.1.symm)
+    · by_cases q1 : ¬Chomp_state (Chomp_init height length) hist = {(0, 0)}
+      · rw [if_pos q1] at leg
+        by_cases q2 : ¬Chomp_state (Chomp_init height length) (hist ++ [(length, height)]) = {(0, 0)}
+        · rw [if_pos q2]
+          constructor
+          · exact leg.act_mem
+          · intro q qdef
+            rw [List.mem_append] at qdef
+            cases' qdef with qdef qdef
+            · exact leg.nd _ qdef
+            · rw [List.mem_singleton] at qdef
+              rw [qdef]
+              dsimp [nondomi, domi]
+              induction' hist with x hist ih
+              · contradiction
+              · have leg1 := leg.act_mem
+                dsimp [Chomp_init] at leg1
+                simp_rw [Finset.mem_product, Finset.mem_range, Nat.lt_add_one_iff] at leg1
+                have leg2 := leg.nd x (List.mem_cons_self x hist)
+
+          · exact leg.nz_act
+        · rw [if_neg q2]
+          exact leg.nz_act
+      · rw [if_neg q1] at leg
+  · rw [if_neg (show ¬ ((0, 0) ∈ Chomp_init height length ∧ (0, 0) ∉ hist ++ [(length, height)]) from (by intro con ; apply con.2 ; apply List.mem_append_left ;  rw [not_not] at q0 ; apply q0 ))]
+    trivial
 
 
 #exit

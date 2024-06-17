@@ -13,8 +13,10 @@ import Games.exLib.List
 
 def Strong_stealing_condition (g : zSymm_Game_World α β) : Prop :=
   ∃ (f_act : β), (g.law g.init_game_state [] f_act) ∧
-    ∀ act : β, ∀ hist : List β, g.law g.init_game_state hist act →
+    ∀ act : β, ∀ hist : List β,
+    g.law g.init_game_state hist act →
     hist ≠ [] →
+    Hist_legal g.law g.law g.init_game_state hist →
     g.transition g.init_game_state hist act = g.transition g.init_game_state (hist ++ [f_act]) act -- not used so far
     ∧ ( g.law g.init_game_state (hist ++ [f_act]) act)
 
@@ -112,6 +114,8 @@ lemma zSymm_Game_World.law_toInitState (g : zSymm_Game_World α β) :
 
 
 
+#check Strategy_legal_fst
+
 
 
 lemma pre_stolen_strat_legal_fst (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
@@ -120,25 +124,53 @@ lemma pre_stolen_strat_legal_fst (g : zSymm_Game_World α β) (hgs : Strong_stea
   : Strategy_legal_fst g.init_game_state g.law (pre_stolen_strat g hgs s_strat) ws :=
   by
   intro t tf
-  cases' t with t
+  induction' t with t ih
   · dsimp!
     unfold pre_stolen_strat
     rw [if_pos (by rfl)]
     apply (Classical.choose_spec hgs).1
   · rw [← History_on_turn_stolen_pre_stolen]
     simp only [ne_eq, pre_stolen_strat, List.append_eq_nil, and_false, List.dropLast_concat, ite_false]
-    specialize f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
+    have f_leg' := f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
     cases' t with t
     · contradiction
-    · exact ((Classical.choose_spec hgs).2 _ _ f_leg (by apply History_on_turn_nonempty_of_succ)).2
+    · -- have ih' : (Strategy_legal_fst g.init_game_state g.law (pre_stolen_strat g hgs s_strat) ws) (t+1) := by  sorry -- lean is so brocken
+
+      exact ((Classical.choose_spec hgs).2 _ _ f_leg' (by apply History_on_turn_nonempty_of_succ)
+          (by
+           apply Symm_Game_World.History_Hist_legal
+           · dsimp [pre_stolen_strat] at ih
+             rw [if_neg (by apply History_on_turn_nonempty_of_succ)] at ih
+             rw [← History_on_turn_stolen_pre_stolen, List.dropLast_append_of_ne_nil _ (by exact List.cons_ne_nil (Classical.choose hgs) [])] at ih
+             sorry
+           · exact f_leg)).2
 
 
 
+#check Hist_legal
 
 
 
+lemma pre_stolen_strat_legal_fst' (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
+  (ws s_strat : Strategy α β)
+  (f_leg : Strategy_legal_snd g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
+  : Strategy_legal_fst g.init_game_state g.law (pre_stolen_strat g hgs s_strat) ws :=
+  by
+  intro t tf
+  apply @Nat.strong_induction_on (fun t => Symm_Game_World.law g.toSymm_Game_World g.init_game_state (History_on_turn g.init_game_state (pre_stolen_strat g hgs s_strat) ws t)
+    (pre_stolen_strat g hgs s_strat g.init_game_state
+      (History_on_turn g.init_game_state (pre_stolen_strat g hgs s_strat) ws t)))
+  intro n ih
+  cases' n with n
+  · dsimp!
+    unfold pre_stolen_strat
+    rw [if_pos (by rfl)]
+    apply (Classical.choose_spec hgs).1
+  · rw [← History_on_turn_stolen_pre_stolen]
+    simp only [ne_eq, pre_stolen_strat, List.append_eq_nil, and_false, List.dropLast_concat, ite_false]
+    apply ((Classical.choose_spec hgs).2 _ _ (by sorry) (by sorry) (by sorry)).2
 
-#exit
+--#exit
 lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)
   {T : ℕ} (hg : g.isWL_wBound T) (hgs : Strong_stealing_condition g) : g.is_fst_win :=
   by

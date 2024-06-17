@@ -1062,6 +1062,25 @@ lemma Game_World.History_Hist_legal (g : Game_World α β)
     · rw [if_neg c]
       exact snd_lawful t c
 
+lemma Symm_Game_World.History_Hist_legal (g : Symm_Game_World α β)
+  (f_strat s_strat: Strategy α β)
+  (fst_lawful : Strategy_legal_fst g.init_game_state g.law f_strat s_strat)
+  (snd_lawful : Strategy_legal_snd g.init_game_state g.law f_strat s_strat)
+  (t : ℕ) :
+  Hist_legal g.law g.law g.init_game_state (History_on_turn g.init_game_state f_strat s_strat t) :=
+  by
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs
+    all_goals apply Hist_legal.cons _ _ _ ih
+    all_goals rename_i c
+    all_goals rw [History_on_turn_length]
+    · rw [if_pos c]
+      exact fst_lawful t c
+    · rw [if_neg c]
+      exact snd_lawful t c
 
 lemma Game.History_Hist_legal (g : Game α β) (t : ℕ) :
   Hist_legal g.fst_legal g.snd_legal g.init_game_state (History_on_turn g.init_game_state g.fst_strat g.snd_strat t) :=
