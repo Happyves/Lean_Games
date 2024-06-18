@@ -1047,9 +1047,43 @@ instance (f_law s_law : α → List β → (β → Prop)) [∀ i : α, ∀ h : L
   induction' hist with x l ih
   · apply isTrue
     apply Hist_legal.nil
-  · -- cases ih
+  · cases' ih with ih ih
+    · apply isFalse
+      intro con
+      cases' con
+      rename_i no nope
+      exact ih no
+    · exact (if h : Turn_fst (l.length + 1)
+             then (by
+                   rename_i I I'
+                   specialize I ini l x
+                   cases' I with I I
+                   · apply isFalse
+                     intro con
+                     cases' con
+                     rename_i no
+                     rw [if_pos h] at no
+                     exact I no
+                   · apply isTrue
+                     apply Hist_legal.cons _ _ _ ih
+                     rw [if_pos h]
+                     exact I
+                  )
+             else (by
+                   rename_i I I'
+                   specialize I' ini l x
+                   cases' I' with I' I'
+                   · apply isFalse
+                     intro con
+                     cases' con
+                     rename_i no
+                     rw [if_neg h] at no
+                     exact I' no
+                   · apply isTrue
+                     apply Hist_legal.cons _ _ _ ih
+                     rw [if_neg h]
+                     exact I'))
 
-#exit
 
 lemma Game_World.History_Hist_legal (g : Game_World α β)
   (f_strat s_strat: Strategy α β)

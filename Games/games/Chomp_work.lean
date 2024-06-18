@@ -158,7 +158,7 @@ def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ 
                              then -- fix ↑ ↓ and maybe instead reques Hist_legal wrt. Chomp_law ?
                               if Chomp_state ini hist ≠ {(0,0)}
                               then Chomp_law ini hist act
-                              else act ≠ (0,0) ∧ act ∈ Chomp_state ini hist -- saves ass in `preChomp_law_careless`
+                              else act ≠ (0,0) ∧ act ∈ ini -- saves ass in `preChomp_law_careless`
                              else True
 
 
@@ -266,7 +266,9 @@ lemma Chomp_law_blind (ini : Finset (ℕ × ℕ) ) (l L : List (ℕ × ℕ)) (ac
 
 
 
-
+lemma Chomp_hist_no_zero_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (prehist : List (ℕ × ℕ))
+  (main : Hist_legal (preChomp height length).law (preChomp height length).law ini prehist) : Hist_legal Chomp_law Chomp_law ini prehist  :=
+  by
 
 lemma Chomp_hist_no_zero_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (prehist : List (ℕ × ℕ))
   (main : Hist_legal (preChomp height length).law (preChomp height length).law ini prehist) : (0,0) ∉ prehist ∧ (∀ a ∈ prehist, a ∈ ini) :=
@@ -281,12 +283,23 @@ lemma Chomp_hist_no_zero_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ 
     · apply List.not_mem_cons_of_ne_of_not_mem
       · split_ifs at now
         all_goals { dsimp [preChomp] at now
-                    rw [if_pos ⟨hini, (ih sofar).1, (ih sofar).2⟩ ] at now
+                    --rw [if_pos ⟨hini, (ih sofar).1, (ih sofar).2⟩ ] at now
                     split_ifs at now
                     · intro con
                       exact now.1 con.symm
                     · rw [ne_comm]
-                      apply now.nz_act}
+                      apply now.nz_act
+                    · exfalso
+                      rename_i no
+                      dsimp [preChomp] at sofar
+                      cases' l with y l'
+                      · rw [partiality_condition_iff] at no
+                        apply no
+                        exact ⟨hini, Hist_legal.nil⟩
+                      · apply no
+                        refine' ⟨hini,_⟩
+                        cases' sofar
+                        rename_i main  }
       · exact (ih sofar).1
     · intro a adef
       rw [List.mem_cons] at adef
@@ -294,7 +307,7 @@ lemma Chomp_hist_no_zero_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ 
       · rw [adef]
         split_ifs at now
         all_goals { dsimp [preChomp] at now
-                    rw [if_pos ⟨hini, (ih sofar).1, (ih sofar).2⟩ ] at now
+                    --rw [if_pos ⟨hini, (ih sofar).1, (ih sofar).2⟩ ] at now
                     split_ifs at now
                     · exact (Chomp_state_sub_ini _ _) now.2
                     · exact now.act_mem
@@ -313,6 +326,7 @@ lemma Chomp_hist_partiality_of_Hist_legal (height length : ℕ) (ini : Finset (�
   · exact main.zero_hist
   ·
 
+#exit
 
 lemma preChomp_law_careless (height length : ℕ) :
   careless (preChomp height length).law (preChomp height length).law (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).transition :=
