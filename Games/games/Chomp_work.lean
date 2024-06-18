@@ -97,18 +97,21 @@ lemma Chomp_state_blind (ini : Finset (ℕ × ℕ)) (hist prehist : List (ℕ ×
       apply H.2
       exact List.mem_append.mpr (Or.inl qh)
 
-
+@[mk_iff]
 structure Chomp_law (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Prop where
   act_mem : act ∈ ini
   nd : ∀ q ∈ hist, nondomi q act
   nz_act : act ≠ (0,0)
 
+instance (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Decidable (Chomp_law ini hist act) :=
+  by
+  rw [chomp_law_iff]
+  exact And.decidable
+
 @[mk_iff]
 structure partiality_condition (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Prop where
   zero_ini : (0,0) ∈ ini
-  zero_hist : (0,0) ∉ hist
-  hist_ini : ∀ a ∈ hist, a ∈ ini
-  --state : Chomp_state ini hist ≠ {(0,0)}
+  hist_leg : Hist_legal Chomp_law Chomp_law ini hist
 
 
 instance (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Decidable (partiality_condition ini hist) :=
@@ -299,7 +302,17 @@ lemma Chomp_hist_no_zero_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ 
         }
       · exact (ih sofar).2 a adef
 
---#exit
+
+lemma Chomp_hist_partiality_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (prehist : List (ℕ × ℕ))
+  (leg : Hist_legal (preChomp height length).law (preChomp height length).law ini prehist)
+  (main : partiality_condition ini hist ): partiality_condition (Chomp_state ini prehist) hist :=
+  by
+  constructor
+  · rw [Chomp_state_has_zero_iff_hist_has_zero _ hini]
+    exact (Chomp_hist_no_zero_of_Hist_legal _ _ _ hini _ leg).1
+  · exact main.zero_hist
+  ·
+
 
 lemma preChomp_law_careless (height length : ℕ) :
   careless (preChomp height length).law (preChomp height length).law (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).transition :=

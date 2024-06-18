@@ -1041,6 +1041,15 @@ inductive Hist_legal (f_law s_law : α → List β → (β → Prop)) (ini : α)
                                 then f_law ini l act
                                 else s_law ini l act) → Hist_legal f_law s_law ini l →  Hist_legal f_law s_law ini (act :: l)
 
+instance (f_law s_law : α → List β → (β → Prop)) [∀ i : α, ∀ h : List β, DecidablePred (f_law i h)] [∀ i : α, ∀ h : List β, DecidablePred (s_law i h)] (ini : α) : DecidablePred (Hist_legal f_law s_law ini) :=
+  by
+  intro hist
+  induction' hist with x l ih
+  · apply isTrue
+    apply Hist_legal.nil
+  · -- cases ih
+
+#exit
 
 lemma Game_World.History_Hist_legal (g : Game_World α β)
   (f_strat s_strat: Strategy α β)
