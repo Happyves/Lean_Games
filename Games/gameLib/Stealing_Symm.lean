@@ -135,6 +135,26 @@ lemma pre_stolen_strat_legal_fst (g : zSymm_Game_World α β) (hgs : Strong_stea
     · contradiction
     · exact ((Classical.choose_spec hgs).2 _ _ f_leg' (by apply History_on_turn_nonempty_of_succ)).2
 
+lemma pre_stolen_strat_legal_fst' (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g)
+  (ws s_strat : Strategy α β)
+  (f_leg : Strategy_legal_snd g.init_game_state g.law (stolen_strat g hgs ws) s_strat)
+  : Strategy_legal_fst g.init_game_state g.law (pre_stolen_strat g hgs s_strat) ws :=
+  by
+  intro t tf
+  apply @Nat.twoStepInduction (fun t => --Turn_fst (t + 1) →
+    Symm_Game_World.law g.toSymm_Game_World g.init_game_state
+      (History_on_turn g.init_game_state (pre_stolen_strat g hgs s_strat) ws t)
+      (pre_stolen_strat g hgs s_strat g.init_game_state
+        (History_on_turn g.init_game_state (pre_stolen_strat g hgs s_strat) ws t)))
+  · sorry
+  · dsimp [History_on_turn, pre_stolen_strat]
+    rw [if_pos (by decide)]
+    rw [if_pos (by rfl)]
+    rw [if_neg (by apply List.noConfusion)]
+    dsimp
+    specialize f_leg 1 (by decide)
+    dsimp [History_on_turn, pre_stolen_strat] at f_leg
+  · intro n ih1 ih2
 
 #exit
 lemma Strong_strategy_stealing [Inhabited β] (g : zSymm_Game_World α β)

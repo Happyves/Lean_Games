@@ -923,7 +923,7 @@ lemma preChomp_law_prop_law' (height length : ℕ) (h : height ≠ 0 ∨ length 
     trivial
 
 
-#exit
+--#exit
 
 lemma preChomp_law_prop (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) : Strong_stealing_condition (Chomp height length ) :=
   by
