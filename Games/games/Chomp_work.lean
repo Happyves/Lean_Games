@@ -177,6 +177,14 @@ lemma Chomp_state_hist_zero (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × �
   dsimp [domi]
   simp_all only [Prod.forall, zero_le, and_self]
 
+lemma Chomp_state_mem_state_not_hist_zero (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) (main : act ∈ Chomp_state ini hist) :
+  (0,0) ∉ hist :=
+  by
+  have := Finset.ne_empty_of_mem main
+  have that := (Chomp_state_hist_zero ini hist)
+  rw [← not_imp_not] at that
+  exact that this
+
 
 lemma Chomp_state_state_empty (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (hist : List (ℕ × ℕ)) (main : Chomp_state ini hist = ∅) :
   (0,0) ∈ hist :=
@@ -256,12 +264,14 @@ lemma Chomp_state_empty_hist (ini : Finset ( ℕ × ℕ)) : Chomp_state ini [] =
   intro _ _ _ no
   contradiction
 
-lemma Chomp_hist_legal  (ini : Finset (ℕ × ℕ) ) (prehist hist : List (ℕ × ℕ)) (act : ℕ × ℕ)
-  --(main : Chomp_law ini prehist)
+lemma Chomp_hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (prehist hist : List (ℕ × ℕ)) (act : ℕ × ℕ)
+  (Hleg : Hist_legal (preChomp height length).law (preChomp height length).law ini prehist)
   : Chomp_law ini (hist ++ prehist) act ↔  Chomp_law (Chomp_state ini prehist) (hist) act :=
   by
+  revert act
   induction' hist with x l ih
-  · constructor
+  · intro act
+    constructor
     · intro main
       cases' main
       · rename_i h1 h2
@@ -282,29 +292,53 @@ lemma Chomp_hist_legal  (ini : Finset (ℕ × ℕ) ) (prehist hist : List (ℕ �
       · intro act h1 h2
         dsimp
         apply Chomp_law.cons _ _ _ _ h1 h2
-        apply ih
-        -- restore prehist ≠ [] (?) and Hist_leg to get this ??
-        exact Chomp_state_cons _ _ _ h1
-  · constructor
+        cases' Hleg
+        rename_i sofar now
+        dsimp [preChomp] at now
+        have lnz : (0, 0) ∉ l :=
+          by
+          apply Chomp_state_mem_state_not_hist_zero ini _ act
+          apply (Chomp_state_cons _ _ _) h1
+        have snz : ¬Chomp_state ini l = {(0, 0)} :=
+          by
+          intro con
+          apply h2
+          have := (Chomp_state_cons _ _ _) h1
+          rw [con, Finset.mem_singleton] at this
+          exact this
+        by_cases t : Turn_fst (List.length l + 1)
+        · rw [if_pos t] at now
+          rw [if_pos ⟨hini, lnz⟩, if_pos snz] at now
+          apply ih sofar
+          · apply Chomp_law_state_mem _ _ _ now
+          · apply Chomp_law_act_nz _ _ _ now
+        · rw [if_neg t] at now
+          rw [if_pos ⟨hini, lnz⟩, if_pos snz] at now
+          apply ih sofar
+          · apply Chomp_law_state_mem _ _ _ now
+          · apply Chomp_law_act_nz _ _ _ now
+  · intro act
+    constructor
     · intro main
       rw [List.cons_append] at main
       cases' main
       rename_i h1 h2 h3
-      apply Chomp_law.cons  _ _ _ (ih.mp h2) _ h1
-      rw [Chomp_state_blind]
-      rw [List.cons_append]
-      exact h3
+      apply Chomp_law.cons _ _ _ _ _ h2
+      · rw [← ih]
+        exact h1
+      · rw [Chomp_state_blind, List.cons_append]
+        exact h3
     · intro main
       rw [List.cons_append]
       cases' main
       rename_i h1 h2 h3
-      apply Chomp_law.cons _ _ _ (ih.mpr h2) _ h1
-      rw [Chomp_state_blind] at h3
-      rw [List.cons_append] at h3
-      exact h3
+      apply Chomp_law.cons _ _ _ _ _ h2
+      · rw [ih]
+        exact h1
+      · rw [Chomp_state_blind] at h3
+        exact h3
 
-
-#exit
+--#exit
 
 lemma preChomp_law_careless (height length : ℕ) :
   careless (preChomp height length).law (preChomp height length).law (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).transition :=
@@ -325,7 +359,7 @@ lemma preChomp_law_careless (height length : ℕ) :
           by_cases q3 : Chomp_state ini (List.tail prehist) ≠ {(0, 0)}
           · rw [if_pos q3] at *
             split_ifs
-            all_goals { exact (Chomp_hist_legal _ _ _ _).mp c}
+            all_goals { rename_i h ; exact (Chomp_hist_legal height length _ (Chomp_state_sub_ini _ _ h.1) _ _ _  pHl).mp c }
           · rw [if_neg q3] at *
             exfalso
             have : Chomp_state {(0, 0)} hist ⊂ {(0, 0)} :=
@@ -396,7 +430,7 @@ lemma preChomp_law_careless (height length : ℕ) :
           by_cases q3 : Chomp_state (Chomp_state ini prehist) hist ≠ {(0, 0)}
           · rw [if_pos q3] at c
             rw [if_pos] at c
-            · exact (Chomp_hist_legal _ _ _ _).mpr c
+            · exact (Chomp_hist_legal height length _ (fix.1) _ _ _  pHl).mpr c
             · rw [Chomp_state_has_zero_iff_hist_has_zero ini fix.1 prehist]
               exact ⟨Chomp_hist_no_zero_of_Hist_legal height length ini fix.1 prehist pHl, fix.2⟩
           · rw [if_neg q3] at c
@@ -714,66 +748,94 @@ lemma preChomp_coherent (height length : ℕ)  : (preChomp height length).cohere
         exact main
 
 
-
 lemma preChomp_playable (height length : ℕ) : (preChomp height length).playable :=
   by
   intro ini hist
   dsimp [preChomp]
-  by_cases q : ¬Chomp_state ini hist = {(0, 0)}
-  · simp_rw [if_pos q]
-    split_ifs
-    · have : ∃ act, act ∈ Chomp_state ini hist ∧ act ≠ (0,0) :=
+  split_ifs
+  · use (1,0)
+    decide
+  · rename_i h1 h2
+    induction' hist with x l ih
+    · rw [Chomp_state_empty_hist] at h2
+      have : ∃ x ∈ ini, x ≠ (0,0) :=
         by
-        contrapose! q
-        ext x
+        by_contra! con
+        apply h2
+        ext y
         constructor
-        · intro xdef
-          specialize q x xdef
-          rename_i h
-          aesop_subst q
-          simp_all only [gt_iff_lt, Finset.mem_singleton]
-        · intro xdef
-          rw [Finset.mem_singleton] at xdef
-          rw [xdef]
-          dsimp [Chomp_state]
-          rw [Finset.mem_filter]
-          rename_i gain
-          refine' ⟨gain.1, _ ⟩
-          intro q qdef
-          dsimp [nondomi, domi]
-          intro con
-          simp_rw [Nat.le_zero] at con
-          apply gain.2
-          convert qdef
-          · exact con.1.symm
-          · exact con.2.symm
-      obtain ⟨act, act_mem, act_nz⟩ := this
-      use act
-      induction' hist with x l ih
-      · apply Chomp_law.nil _ _ act_nz
-        rw [Chomp_state_empty_hist] at act_mem
-        exact act_mem
-      · apply Chomp_law.cons _ _ _ _ act_mem act_nz
-        rename_i h
-        apply ih
-        · contrapose! q
-          apply Chomp_state_zero_act_non_zero _ h.1 _ _ q
-          intro con
-          rw [con] at h
-          apply h.2
-          exact List.mem_cons_self (0, 0) l
-        · refine' ⟨ h.1, _ ⟩
-          intro con
-          apply h.2
-          exact List.mem_cons_of_mem x con
-        · apply Chomp_state_cons _ _ _ act_mem
-    · use (0,0)
-  · simp_rw [if_neg q]
-    use (1,0)
-    split_ifs
-    · decide
+        · intro h
+          rw [Finset.mem_singleton]
+          exact con y h
+        · rw [Finset.mem_singleton]
+          intro h
+          rw [h]
+          exact h1.1
+      obtain ⟨ x, xini, xnz ⟩ := this
+      use x
+      apply Chomp_law.nil x xini xnz
+    ·
+  · use (0,0)
+  -- by_cases q : ¬Chomp_state ini hist = {(0, 0)}
+  -- · simp_rw [if_pos q]
+  --   split_ifs
+  --   · have : ∃ act, act ∈ Chomp_state ini hist ∧ act ≠ (0,0) :=
+  --       by
+  --       contrapose! q
+  --       ext x
+  --       constructor
+  --       · intro xdef
+  --         specialize q x xdef
+  --         rename_i h
+  --         aesop_subst q
+  --         simp_all only [gt_iff_lt, Finset.mem_singleton]
+  --       · intro xdef
+  --         rw [Finset.mem_singleton] at xdef
+  --         rw [xdef]
+  --         dsimp [Chomp_state]
+  --         rw [Finset.mem_filter]
+  --         rename_i gain
+  --         refine' ⟨gain.1, _ ⟩
+  --         intro q qdef
+  --         dsimp [nondomi, domi]
+  --         intro con
+  --         simp_rw [Nat.le_zero] at con
+  --         apply gain.2
+  --         convert qdef
+  --         · exact con.1.symm
+  --         · exact con.2.symm
+  --     obtain ⟨act, act_mem, act_nz⟩ := this
+  --     use act
+  --     --revert act
+  --     induction' hist with x l ih
+  --     · --intro act act_mem act_nz
+  --       apply Chomp_law.nil _ _ act_nz
+  --       rw [Chomp_state_empty_hist] at act_mem
+  --       exact act_mem
+  --     · --intro act act_mem act_nz
+  --       apply Chomp_law.cons _ _ _ _ act_mem act_nz
+  --       rename_i h
+  --       apply ih
+  --       · contrapose! q
+  --         apply Chomp_state_zero_act_non_zero _ h.1 _ _ q
+  --         intro con
+  --         rw [con] at h
+  --         apply h.2
+  --         exact List.mem_cons_self (0, 0) l
+  --       · refine' ⟨ h.1, _ ⟩
+  --         intro con
+  --         apply h.2
+  --         exact List.mem_cons_of_mem x con
+  --       · apply Chomp_state_cons _ _ _ act_mem
+  --   · use (0,0)
+  -- · simp_rw [if_neg q]
+  --   use (1,0)
+  --   split_ifs
+  --   · decide
 
+#check Chomp_law.rec
 
+#exit
 
 def Chomp (height length : ℕ) : zSymm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
   toSymm_Game_World := preChomp height length
