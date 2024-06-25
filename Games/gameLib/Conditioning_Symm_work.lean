@@ -8,6 +8,8 @@ import Games.gameLib.Basic
 import Games.gameLib.Termination
 
 
+-- Alternative playability for safe hstories
+
 
 def Symm_Game_World.world_after_fst {α β : Type u} (g : Symm_Game_World α β)
   (fst_act : β) : Symm_Game_World α β := -- act not required to be legal
@@ -88,7 +90,7 @@ lemma Symm_Game_World.playable_has_strat [Inhabited β] (g : Symm_Game_World α 
   Strategy_legal_fst g.init_game_state g.law f_strat s_strat ∧
   Strategy_legal_snd g.init_game_state g.law f_strat s_strat :=
   by
-  classical
+  classical -- probably better to have strats that take Hist_leg as input too ?
   use (fun ini hist => if h : Hist_legal g.law g.law ini hist then Classical.choose (hg ini hist h) else default)
   use (fun ini hist => if h : Hist_legal g.law g.law ini hist then Classical.choose (hg ini hist h) else default)
   constructor

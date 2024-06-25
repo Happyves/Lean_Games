@@ -106,7 +106,34 @@ lemma Chomp_state_blind (ini : Finset (ℕ × ℕ)) (hist prehist : List (ℕ ×
 
 inductive Chomp_law (ini : Finset (ℕ × ℕ)) : List (ℕ × ℕ) → ℕ × ℕ →  Prop where
 | nil (act : ℕ × ℕ) : act ∈ ini →  act ≠ (0,0) → Chomp_law ini [] act
-| cons (act : ℕ × ℕ) (l : List (ℕ × ℕ)) (x : ℕ × ℕ) : Chomp_law ini l x →  act ∈ Chomp_state ini (x :: l) →  act ≠ (0,0) → Chomp_law ini (x :: l) act
+| cons (act : ℕ × ℕ) (l : List (ℕ × ℕ)) (x : ℕ × ℕ) : Chomp_law ini l x →
+          (if Chomp_state ini hist ≠ {(0,0)} then act ∈ Chomp_state ini (x :: l) else True) →
+          act ≠ (0,0) → Chomp_law ini (x :: l) act
+
+-- instance (ini :  Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ))  : DecidablePred (Chomp_law ini hist) :=
+--   by
+--   induction' hist with x l ih
+--   · intro act
+--     have : Decidable (act ∈ ini ∧ act ≠ (0,0)) := by exact And.decidable
+--     cases' this with h h
+--     · apply isFalse
+--       intro con
+--       cases' con with _ no nope
+--       exact h ⟨no,nope⟩
+--     · apply isTrue
+--       exact Chomp_law.nil act h.1 h.2
+--   · intro act
+--     specialize ih x
+--     have : Decidable (Chomp_law ini l x ∧ act ∈ Chomp_state ini (x :: l) ∧ act ≠ (0,0)) :=
+--       by exact And.decidable
+--     cases' this with h h
+--     · apply isFalse
+--       intro con
+--       cases' con with _  _ _ _  _ _ no nope nada -- cases kind of broken ???
+--       exact h ⟨no,nope, nada⟩
+--     · apply isTrue
+--       exact Chomp_law.cons act _ _ h.1 h.2.1 h.2.2
+
 
 
 def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
@@ -116,11 +143,9 @@ def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ 
                                     then (Chomp_state ini) (act :: hist)
                                     else {(0,0)}
   law := fun ini hist act => if (0,0) ∈ ini ∧ (0,0) ∉ hist
-                             then
-                              if Chomp_state ini hist ≠ {(0,0)}
-                              then Chomp_law ini hist act
-                              else act ≠ (0,0) -- saves ass in `preChomp_law_careless`
+                             then Chomp_law ini hist act
                              else True
+
 
 
 
@@ -216,6 +241,8 @@ lemma Chomp_law_state_mem (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × ℕ)
     exact c
 
 
+#exit
+
 lemma Chomp_law_ini_mem (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) (leg : Chomp_law ini hist act) :
   act ∈ ini  :=
   by
@@ -256,6 +283,7 @@ lemma Chomp_hist_no_zero_of_Hist_legal (height length : ℕ) (ini : Finset (ℕ 
                     apply Chomp_law_act_nz _ _ _ now}
     · exact ih sofar
 
+--#exit
 
 lemma Chomp_state_empty_hist (ini : Finset ( ℕ × ℕ)) : Chomp_state ini [] = ini :=
   by
