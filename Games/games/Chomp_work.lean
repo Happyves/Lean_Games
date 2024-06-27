@@ -414,191 +414,8 @@ lemma Chomp_hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini 
 
 --#exit
 
+
 lemma preChomp_law_careless (height length : ℕ) :
-  careless (preChomp height length).law (preChomp height length).law (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).transition :=
-  by
-  intro ini hist prehist pHne pHl
-  ext act
-  by_cases fix : (0,0) ∈ ini ∧ (0, 0) ∉ hist
-  · constructor
-    · intro c
-      dsimp [preChomp] at c
-      rw [if_pos ⟨fix.1, (by apply List.not_mem_append fix.2 ; exact Chomp_hist_no_zero_of_Hist_legal height length ini fix.1 prehist pHl)⟩ ] at c
-      by_cases q1 : Chomp_state ini (hist ++ prehist) ≠ {(0,0)}
-      · --rw [if_pos q1] at c
-        by_cases q2 : Chomp_state (Symm_Game_World.transition (preChomp height length) ini (List.tail prehist) (List.head prehist pHne)) (hist) ≠ {(0,0)}
-        · dsimp [preChomp] at *
-          rw [if_pos q2]
-          rw [List.cons_head_tail] at *
-          by_cases q3 : Chomp_state ini (List.tail prehist) ≠ {(0, 0)}
-          · rw [if_pos q3] at *
-            split_ifs
-            all_goals { rename_i h ; exact (Chomp_hist_legal height length _ (Chomp_state_sub_ini _ _ h.1) _ _ _  pHl).mp c }
-          · rw [if_neg q3] at *
-            exfalso
-            have : Chomp_state {(0, 0)} hist ⊂ {(0, 0)} :=
-              by
-              rw [Finset.ssubset_iff_subset_ne]
-              constructor
-              · apply Chomp_state_sub_ini
-              · exact q2
-            rw [Finset.ssubset_singleton_iff] at this
-            have that := Chomp_state_has_zero_iff_hist_has_zero {(0,0)} (by apply Finset.mem_singleton_self) hist
-            rw [iff_not_comm] at that
-            rw [this] at that
-            simp only [Finset.not_mem_empty, not_false_eq_true, iff_true] at that
-            have actually := Chomp_law_state_mem _ _ _ c
-            rw [Chomp_state_hist_zero _ (hist ++ prehist) (by exact List.mem_append_left prehist that)] at actually
-            contradiction
-        · dsimp [preChomp] at *
-          rw [if_neg q2]
-          split_ifs
-          all_goals apply (Chomp_law_act_nz _ _ _ c)
-      · rw [if_neg q1] at c
-        by_cases q2 : Chomp_state (Symm_Game_World.transition (preChomp height length) ini (List.tail prehist) (List.head prehist pHne)) (hist) ≠ {(0,0)}
-        · dsimp [preChomp] at *
-          rw [if_pos q2]
-          rw [not_not] at q1
-          rw [List.cons_head_tail] at *
-          by_cases q3 : Chomp_state ini (List.tail prehist) ≠ {(0, 0)}
-          · rw [if_pos q3] at *
-            exfalso
-            rw [Chomp_state_blind] at q2
-            exact q2 q1
-          · rw [if_neg q3] at *
-            exfalso
-            have : Chomp_state {(0, 0)} hist ⊂ {(0, 0)} :=
-              by
-              rw [Finset.ssubset_iff_subset_ne]
-              constructor
-              · apply Chomp_state_sub_ini
-              · exact q2
-            rw [Finset.ssubset_singleton_iff] at this
-            have that := Chomp_state_has_zero_iff_hist_has_zero {(0,0)} (by apply Finset.mem_singleton_self) hist
-            rw [iff_not_comm] at that
-            rw [this] at that
-            simp only [Finset.not_mem_empty, not_false_eq_true, iff_true] at that
-            have thut : (0,0) ∈ ini :=
-              by
-              have := Chomp_state_sub_ini ini (hist ++ prehist)
-              rw [q1] at this
-              apply this (Finset.mem_singleton_self (0,0))
-            have thus := Chomp_state_has_zero_iff_hist_has_zero ini thut (hist ++ prehist)
-            rw [q1] at thus
-            simp only [Finset.mem_singleton, List.mem_append, true_iff] at thus
-            apply thus
-            left
-            exact that
-        · dsimp [preChomp] at *
-          rw [if_neg q2]
-          split_ifs
-          all_goals apply c
-    · intro c
-      dsimp [preChomp] at *
-      rw [if_pos ⟨fix.1, (by apply List.not_mem_append fix.2 ; exact Chomp_hist_no_zero_of_Hist_legal height length ini fix.1 prehist pHl)⟩ ]
-      rw [List.cons_head_tail] at *
-      by_cases q1 : Chomp_state ini (hist ++ prehist) ≠ {(0,0)}
-      · rw [if_pos q1]
-        by_cases q2 : Chomp_state ini (List.tail prehist) ≠ {(0, 0)}
-        · rw [if_pos q2] at c
-          by_cases q3 : Chomp_state (Chomp_state ini prehist) hist ≠ {(0, 0)}
-          · rw [if_pos q3] at c
-            rw [if_pos] at c
-            · exact (Chomp_hist_legal height length _ (fix.1) _ _ _  pHl).mpr c
-            · rw [Chomp_state_has_zero_iff_hist_has_zero ini fix.1 prehist]
-              exact ⟨Chomp_hist_no_zero_of_Hist_legal height length ini fix.1 prehist pHl, fix.2⟩
-          · rw [if_neg q3] at c
-            rw [not_not] at q3
-            exfalso
-            rw [Chomp_state_blind] at q3
-            exact q1 q3
-        · rw [if_neg q2] at c
-          by_cases q3 : Chomp_state {(0, 0)} hist ≠ {(0, 0)}
-          · rw [if_pos q3, if_pos ⟨ (by apply Finset.mem_singleton_self) , fix.2⟩ ] at c
-            exfalso
-            apply (Chomp_law_act_nz _ _ _ c)
-            have := Chomp_law_ini_mem _ _ _ c
-            rwa [Finset.mem_singleton] at this
-          · rw [if_neg q3] at c
-            rw [not_not] at q3 q2
-            exfalso
-            have : (0,0) ∉ hist :=
-              by
-              intro con
-              have := Chomp_state_hist_zero {(0,0)} hist con
-              rw [this] at q3
-              contradiction
-            have temp : hist ++ prehist = (hist ++ [prehist.head pHne]) ++ prehist.tail :=
-              by rw [List.append_assoc, List.singleton_append, List.cons_head_tail]
-            rw [temp] at q1
-            have that := Chomp_state_sub' ini (hist ++ [prehist.head pHne]) prehist.tail
-            rw [q2] at that
-            rw [Finset.subset_singleton_iff] at that
-            cases' that with k k
-            · have fact : (0,0) ∈ ini :=
-                by
-                apply Chomp_state_sub_ini _ prehist.tail
-                rw [q2]
-                exact Finset.mem_singleton.mpr rfl
-              have more := Chomp_state_state_empty _ fact _ k
-              have thut : (0,0) ∉ prehist.tail :=
-                by
-                intro con
-                have tmp := Chomp_state_hist_zero ini _ con
-                rw [tmp] at q2
-                contradiction
-              rw [List.mem_append] at more
-              cases' more with more more
-              · rw [List.mem_append] at more
-                cases' more with more more
-                · exact this more
-                · rw [List.mem_singleton] at more
-                  cases' prehist with x l
-                  · contradiction
-                  · cases' pHl
-                    · rename_i uno dos
-                      by_cases last : Turn_fst (List.length l + 1)
-                      · rw [if_pos last, if_pos ⟨fix.1 , thut⟩ , if_neg (by rw [not_not] ; apply q2)] at dos
-                        apply dos
-                        rw [more]
-                        rfl
-                      · rw [if_neg last, if_pos  ⟨fix.1 , thut⟩, if_neg (by rw [not_not] ; apply q2)] at dos
-                        apply dos
-                        rw [more]
-                        rfl
-              · exact thut more
-            · exact q1 k
-      · rw [if_neg q1]
-        split_ifs at c
-        · exact c
-        · apply (Chomp_law_act_nz _ _ _ c)
-        · rename_i no
-          push_neg at no
-          exact False.elim (fix.2 (no (by apply Finset.mem_singleton_self)))
-        · exact c
-        · apply (Chomp_law_act_nz _ _ _ c)
-        · exfalso
-          rename_i no
-          apply no
-          rw [Chomp_state_has_zero_iff_hist_has_zero ini fix.1 prehist]
-          exact ⟨Chomp_hist_no_zero_of_Hist_legal height length ini fix.1 prehist pHl, fix.2⟩
-  · dsimp [preChomp]
-    rw [if_neg (by push_neg at * ;intro _ ; simp_all only [ne_eq, forall_true_left, List.mem_append, true_or] )]
-    simp only [ite_not, true_iff]
-    split_ifs
-    · rename_i a b c
-      rw [← a] at b
-      exact False.elim (by apply fix ; constructor ; apply Chomp_state_sub_ini ; apply b.1 ; apply b.2)
-    · rename_i a b c
-      rw [← a] at b
-      exact False.elim (by apply fix ; constructor ; apply Chomp_state_sub_ini ; apply b.1 ; apply b.2)
-    · rename_i a b c
-      exact False.elim (by apply fix ; constructor ; apply Chomp_state_sub_ini ; apply b.1 ; apply b.2)
-    · rename_i a b c
-      exact False.elim (by apply fix ; constructor ; apply Chomp_state_sub_ini ; apply b.1 ; apply b.2)
-
-
-lemma preChomp_law_careless' (height length : ℕ) :
   careless (preChomp height length).law (preChomp height length).law (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).transition :=
   by
   intro ini hist prehist pHne pHl
@@ -642,7 +459,34 @@ lemma preChomp_law_careless' (height length : ℕ) :
       dsimp [preChomp] at *
       rw [if_pos ⟨fix.1, (by apply List.not_mem_append fix.2 ; exact Chomp_hist_no_zero_of_Hist_legal height length ini fix.1 prehist pHl)⟩ ]
       split_ifs at c
-      · sorry
+      · revert act
+        induction' hist with x l ih
+        · intro act c
+          rename_i h1 h2
+          -- use h1 to show that state at prehist and pHl is 0, so that only requirements are legality and act non-zero, which we get from c
+          sorry
+        · intro act c
+          rename_i h1 h2
+          rw [List.cons_append]
+          apply Chomp_law.cons
+          · apply ih ⟨fix.1, List.not_mem_of_not_mem_cons fix.2⟩ ⟨h2.1, List.not_mem_of_not_mem_cons fix.2⟩
+            apply Chomp_law_ini_zero _ (List.not_mem_of_not_mem_cons fix.2)
+            intro con
+            apply fix.2
+            rw [con]
+            exact List.mem_cons_self (0, 0) l
+          · rw [if_neg]
+            · trivial
+            · rw [not_not, ← List.cons_append]
+              have : Chomp_state ini (x :: l ++ prehist) ⊆ Chomp_state ini (prehist.tail) :=
+                by
+                nth_rewrite 1 [← List.cons_head_tail _ pHne]
+                rw [List.append_cons]
+                apply Chomp_state_sub'
+              rw [h1] at this
+              rw [Finset.eq_singleton_iff_unique_mem]
+          · apply Chomp_law_act_nz _ _ _ c
+
       · rename_i no
         exfalso
         apply no
@@ -655,7 +499,6 @@ lemma preChomp_law_careless' (height length : ℕ) :
         refine' ⟨_, fix.2⟩
         rw [Chomp_state_has_zero_iff_hist_has_zero _ fix.1]
         exact Chomp_hist_no_zero_of_Hist_legal height length _ fix.1 _ pHl
-
   · dsimp [preChomp]
     rw [if_neg (by push_neg at * ;intro _ ; simp_all only [ne_eq, forall_true_left, List.mem_append, true_or] )]
     simp only [ite_not, true_iff]
@@ -675,7 +518,7 @@ lemma preChomp_law_careless' (height length : ℕ) :
       exact h1.1
 
 
-
+#check List.not_mem_of_not_mem_cons
 
 
 #exit
