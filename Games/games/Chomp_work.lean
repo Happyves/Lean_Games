@@ -485,8 +485,15 @@ lemma preChomp_law_careless (height length : ℕ) :
                 apply Chomp_state_sub'
               rw [h1] at this
               rw [Finset.eq_singleton_iff_unique_mem]
+              constructor
+              · rw [Chomp_state_has_zero_iff_hist_has_zero _ fix.1]
+                apply List.not_mem_append fix.2
+                apply Chomp_hist_no_zero_of_Hist_legal height length _ fix.1 _  pHl
+              · intro y ydef
+                specialize this ydef
+                rw [Finset.mem_singleton] at this
+                exact this
           · apply Chomp_law_act_nz _ _ _ c
-
       · rename_i no
         exfalso
         apply no
