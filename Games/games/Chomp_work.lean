@@ -412,6 +412,77 @@ lemma Chomp_hist_legal (height length : ℕ) (ini : Finset (ℕ × ℕ) ) (hini 
 
 #check Hist_legal.rec
 
+lemma Chomp_law_of_Hist_leg (height length : Nat) (ini : Finset (ℕ × ℕ)) (hini : (0,0) ∈ ini)
+  (prehist : List (ℕ × ℕ)) (pHne : prehist ≠ [])
+  (pHl : Hist_legal (preChomp height length).law (preChomp height length).law ini prehist) :
+  Chomp_law ini prehist.tail (prehist.head pHne) :=
+  by
+  cases' prehist with x l ih
+  · contradiction
+  · by_cases q : l = []
+    · simp_rw [q] at *
+      dsimp
+      cases' pHl
+      rename_i f
+      dsimp [preChomp] at f
+      split_ifs at f
+      · exact f
+      · exfalso
+        rename_i no
+        exact no ⟨hini, (by decide)⟩
+      · exact f
+      · exfalso
+        rename_i no
+        exact no ⟨hini, (by decide)⟩
+    · dsimp
+      cases' pHl
+      rename_i leg f
+      dsimp [preChomp] at f
+      split_ifs at f
+      · exact f
+      · exfalso
+        rename_i no
+        exact no ⟨hini, (by apply Chomp_hist_no_zero_of_Hist_legal _ _ _ hini _ leg)⟩
+      · exact f
+      · exfalso
+        rename_i no
+        exact no ⟨hini, (by apply Chomp_hist_no_zero_of_Hist_legal _ _ _ hini _ leg)⟩
+
+lemma nondomi_zero (act : ℕ × ℕ) : nondomi act (0,0) ↔ act ≠ (0,0) := by
+  dsimp [nondomi,domi]
+  simp_rw [Nat.le_zero]
+  simp_all only [not_and]
+  unhygienic with_reducible aesop_destruct_products
+  simp_all only [Prod.mk.injEq, not_and]
+
+
+
+lemma Chomp_state_zero_act_non_zero (ini : Finset (ℕ × ℕ)) (hini : (0, 0) ∈ ini) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ)
+  (hs : Chomp_state ini hist = {(0,0)}) (ha : act ≠ (0,0)) : Chomp_state ini (act :: hist) = {(0,0)} :=
+  by
+  dsimp [Chomp_state] at *
+  have : (fun p => ∀ q ∈ act :: hist, nondomi q p) = (fun p => (nondomi act p) ∧ (∀ q ∈ hist, nondomi q p)) :=
+    by
+    ext p
+    simp_all only [Prod.forall, List.mem_cons, forall_eq_or_imp]
+    unhygienic with_reducible aesop_destruct_products
+    simp_all only [Prod.forall, Prod.mk.injEq, not_and]
+    apply Iff.intro
+    · intro a
+      simp_all only [Prod.forall, and_self, true_or, or_true, implies_true, forall_const]
+    · intro a a_1 b a_2
+      unhygienic with_reducible aesop_destruct_products
+      unhygienic aesop_cases a_2
+      · simp_all only [Prod.forall]
+      · simp_all only [Prod.forall]
+  simp_rw [this, Finset.filter_and,hs]
+  rw [Finset.inter_eq_right]
+  intro y ydef
+  rw [Finset.mem_singleton] at ydef
+  rw [ydef, Finset.mem_filter]
+  exact ⟨ hini, (by rw [nondomi_zero]; exact ha)⟩
+
+
 --#exit
 
 
@@ -425,7 +496,7 @@ lemma preChomp_law_careless (height length : ℕ) :
     · intro c
       dsimp [preChomp] at c
       rw [if_pos ⟨fix.1, (by apply List.not_mem_append fix.2 ; exact Chomp_hist_no_zero_of_Hist_legal height length ini fix.1 prehist pHl)⟩ ] at c
-      induction' hist with x l ih
+      cases' hist with x l
       · dsimp [preChomp]
         split_ifs
         · apply Chomp_law.nil
@@ -462,9 +533,22 @@ lemma preChomp_law_careless (height length : ℕ) :
       · revert act
         induction' hist with x l ih
         · intro act c
-          rename_i h1 h2
-          -- use h1 to show that state at prehist and pHl is 0, so that only requirements are legality and act non-zero, which we get from c
-          sorry
+          rename_i h1 _
+          dsimp
+          rw [← List.cons_head_tail _ pHne]
+          apply Chomp_law.cons
+          · exact Chomp_law_of_Hist_leg height length _ fix.1 _ pHne pHl
+          · rw [if_neg]
+            · trivial
+            · rw [not_not]
+              apply Chomp_state_zero_act_non_zero _ fix.1 _ _ h1
+              have := Chomp_hist_no_zero_of_Hist_legal height length ini fix.1 prehist pHl
+              rw [← List.cons_head_tail _ pHne] at this
+              contrapose this
+              rw [not_not] at *
+              rw [this]
+              exact List.mem_cons_self (0, 0) (List.tail prehist)
+          · exact Chomp_law_act_nz _ _ _ c
         · intro act c
           rename_i h1 h2
           rw [List.cons_append]
@@ -498,7 +582,9 @@ lemma preChomp_law_careless (height length : ℕ) :
         exfalso
         apply no
         exact ⟨ (by exact Finset.mem_singleton.mpr rfl), fix.2 ⟩
-      · sorry
+      · rw [List.cons_head_tail _ pHne] at c
+        rw [Chomp_hist_legal height length _ fix.1 _ _ _ pHl]
+        exact c
       · rename_i no
         exfalso
         apply no
@@ -525,10 +611,6 @@ lemma preChomp_law_careless (height length : ℕ) :
       exact h1.1
 
 
-#check List.not_mem_of_not_mem_cons
-
-
-#exit
 
 lemma preChomp_tranistion_careless (height length : ℕ) :
   careless (preChomp height length).law (preChomp height length).law (preChomp height length).init_game_state (preChomp height length).transition (preChomp height length).transition :=
@@ -599,7 +681,7 @@ lemma preChomp_tranistion_careless (height length : ℕ) :
                 cases' pHl
                 rename_i main
                 split_ifs at main
-                all_goals {dsimp [preChomp] at main ; rw [if_pos ⟨fact, thut⟩, if_neg (by rw [not_not] ; exact q2)] at main ; exact main more.symm}
+                all_goals {dsimp [preChomp] at main ; rw [if_pos ⟨fact, thut⟩] at main ; exact (Chomp_law_act_nz _ _ _ main) more.symm}
           · exact thut more
         · exact q1 k
   · rw [if_neg q1] at *
@@ -620,39 +702,8 @@ lemma preChomp_tranistion_careless (height length : ℕ) :
         rw [if_neg (by rw [not_not] ; exact q3)]
 
 
-lemma nondomi_zero (act : ℕ × ℕ) : nondomi act (0,0) ↔ act ≠ (0,0) := by
-  dsimp [nondomi,domi]
-  simp_rw [Nat.le_zero]
-  simp_all only [not_and]
-  unhygienic with_reducible aesop_destruct_products
-  simp_all only [Prod.mk.injEq, not_and]
 
 
-
-lemma Chomp_state_zero_act_non_zero (ini : Finset (ℕ × ℕ)) (hini : (0, 0) ∈ ini) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ)
-  (hs : Chomp_state ini hist = {(0,0)}) (ha : act ≠ (0,0)) : Chomp_state ini (act :: hist) = {(0,0)} :=
-  by
-  dsimp [Chomp_state] at *
-  have : (fun p => ∀ q ∈ act :: hist, nondomi q p) = (fun p => (nondomi act p) ∧ (∀ q ∈ hist, nondomi q p)) :=
-    by
-    ext p
-    simp_all only [Prod.forall, List.mem_cons, forall_eq_or_imp]
-    unhygienic with_reducible aesop_destruct_products
-    simp_all only [Prod.forall, Prod.mk.injEq, not_and]
-    apply Iff.intro
-    · intro a
-      simp_all only [Prod.forall, and_self, true_or, or_true, implies_true, forall_const]
-    · intro a a_1 b a_2
-      unhygienic with_reducible aesop_destruct_products
-      unhygienic aesop_cases a_2
-      · simp_all only [Prod.forall]
-      · simp_all only [Prod.forall]
-  simp_rw [this, Finset.filter_and,hs]
-  rw [Finset.inter_eq_right]
-  intro y ydef
-  rw [Finset.mem_singleton] at ydef
-  rw [ydef, Finset.mem_filter]
-  exact ⟨ hini, (by rw [nondomi_zero]; exact ha)⟩
 
 
 lemma Chomp_init_has_zero (height length : ℕ)  : (0,0) ∈ Chomp_init height length :=
@@ -660,7 +711,6 @@ lemma Chomp_init_has_zero (height length : ℕ)  : (0,0) ∈ Chomp_init height l
   dsimp [Chomp_init]
   simp_rw [Finset.mem_product, Finset.mem_range, and_comm]
   constructor <;> {exact Nat.add_pos_right _ Nat.le.refl}
-
 
 
 
@@ -685,11 +735,8 @@ lemma preChomp_coherent (height length : ℕ)  : (preChomp height length).cohere
         · have : f_strat (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) ≠ (0, 0) :=
             by
             specialize f_leg t tu
-            by_cases split_ifs_is_wierd : ¬Chomp_state (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) = {(0, 0)}
-            · rw [if_pos ⟨(Chomp_init_has_zero _ _), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩ , if_pos (split_ifs_is_wierd)] at f_leg
-              exact (Chomp_law_act_nz _ _ _ f_leg)
-            · rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩, if_neg (split_ifs_is_wierd)] at f_leg
-              exact f_leg
+            rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩] at f_leg
+            exact (Chomp_law_act_nz _ _ _ f_leg)
           apply Chomp_state_zero_act_non_zero
           · exact Chomp_init_has_zero _ _
           · exact k
@@ -697,11 +744,8 @@ lemma preChomp_coherent (height length : ℕ)  : (preChomp height length).cohere
         · have : s_strat (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) ≠ (0, 0) :=
             by
             specialize s_leg t tu
-            by_cases split_ifs_is_wierd : ¬Chomp_state (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) = {(0, 0)}
-            · rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩, if_pos (split_ifs_is_wierd)] at s_leg
-              exact (Chomp_law_act_nz _ _ _ s_leg)
-            · rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩, if_neg (split_ifs_is_wierd)] at s_leg
-              exact s_leg
+            rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩] at s_leg
+            exact (Chomp_law_act_nz _ _ _ s_leg)
           apply Chomp_state_zero_act_non_zero
           · exact Chomp_init_has_zero _ _
           · exact k
@@ -726,11 +770,8 @@ lemma preChomp_coherent (height length : ℕ)  : (preChomp height length).cohere
         · have : f_strat (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) ≠ (0, 0) :=
             by
             specialize f_leg t tu
-            by_cases split_ifs_is_wierd : ¬Chomp_state (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) = {(0, 0)}
-            · rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩, if_pos (split_ifs_is_wierd)] at f_leg
-              exact (Chomp_law_act_nz _ _ _ f_leg)
-            · rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩, if_neg (split_ifs_is_wierd)] at f_leg
-              exact f_leg
+            rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩] at f_leg
+            exact (Chomp_law_act_nz _ _ _ f_leg)
           apply Chomp_state_zero_act_non_zero
           · exact Chomp_init_has_zero _ _
           · exact k
@@ -738,11 +779,8 @@ lemma preChomp_coherent (height length : ℕ)  : (preChomp height length).cohere
         · have : s_strat (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) ≠ (0, 0) :=
             by
             specialize s_leg t tu
-            by_cases split_ifs_is_wierd : ¬Chomp_state (Chomp_init height length) (History_on_turn (Chomp_init height length) f_strat s_strat t) = {(0, 0)}
-            · rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩, if_pos (split_ifs_is_wierd)] at s_leg
-              exact (Chomp_law_act_nz _ _ _ s_leg)
-            · rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩, if_neg (split_ifs_is_wierd)] at s_leg
-              exact s_leg
+            rw [if_pos ⟨(Chomp_init_has_zero _ _ ), (by rw [← Chomp_state_has_zero_iff_hist_has_zero (Chomp_init height length) (Chomp_init_has_zero _ _ ), k] ; apply Finset.mem_singleton_self )⟩] at s_leg
+            exact (Chomp_law_act_nz _ _ _ s_leg)
           apply Chomp_state_zero_act_non_zero
           · exact Chomp_init_has_zero _ _
           · exact k
@@ -751,34 +789,35 @@ lemma preChomp_coherent (height length : ℕ)  : (preChomp height length).cohere
         rw [if_pos (by rw [Turn_fst_not_step] ; exact q1)]
         exact main
 
+--#exit
 
 lemma preChomp_playable (height length : ℕ) : (preChomp height length).playable :=
   by
   intro ini hist
   dsimp [preChomp]
   split_ifs
-  · use (1,0)
-    decide
-  · rename_i h1 h2
+  · rename_i h
     induction' hist with x l ih
-    · rw [Chomp_state_empty_hist] at h2
-      have : ∃ x ∈ ini, x ≠ (0,0) :=
-        by
-        by_contra! con
-        apply h2
-        ext y
-        constructor
-        · intro h
-          rw [Finset.mem_singleton]
-          exact con y h
-        · rw [Finset.mem_singleton]
-          intro h
-          rw [h]
-          exact h1.1
-      obtain ⟨ x, xini, xnz ⟩ := this
-      use x
-      apply Chomp_law.nil x xini xnz
+    · by_cases q : ∃ p ∈ ini, p ≠ (0,0)
+      · obtain ⟨ p, pi, pp⟩ := q
+        use p
+        apply Chomp_law.nil
+        rw [if_pos]
+        · exact ⟨pi,pp⟩
+        · intro con
+          rw [con, Finset.mem_singleton] at pi
+          exact pp pi
+      · push_neg at q
+        use (1,0)
+        apply Chomp_law.nil
+        rw [if_neg]
+        · decide
+        · rw [not_not]
+          rw [Finset.eq_singleton_iff_unique_mem]
+          exact ⟨ h.1,q⟩
     ·
+
+
   · use (0,0)
   -- by_cases q : ¬Chomp_state ini hist = {(0, 0)}
   -- · simp_rw [if_pos q]
@@ -839,7 +878,7 @@ lemma preChomp_playable (height length : ℕ) : (preChomp height length).playabl
 
 #check Chomp_law.rec
 
-#exit
+--#exit
 
 def Chomp (height length : ℕ) : zSymm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
   toSymm_Game_World := preChomp height length
@@ -998,7 +1037,7 @@ lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length �
       · rw [if_neg q1] at leg
 
 
-#exit
+--#exit
 
 
 
@@ -1019,7 +1058,14 @@ lemma preChomp_law_prop_law' (height length : ℕ) (h : height ≠ 0 ∨ length 
       cases' h with h h
       · exact False.elim (h con.2.symm)
       · exact False.elim (h con.1.symm)
-    · by_cases q1 : ¬Chomp_state (Chomp_init height length) hist = {(0, 0)}
+    · revert act
+      induction' hist with x l ih
+      · contradiction
+      · rw [List.cons_append]
+        intro act act_leg
+        apply Chomp_law.cons
+
+      by_cases q1 : ¬Chomp_state (Chomp_init height length) hist = {(0, 0)}
       · rw [if_pos q1] at leg
         by_cases q2 : ¬Chomp_state (Chomp_init height length) (hist ++ [(length, height)]) = {(0, 0)}
         · rw [if_pos q2]

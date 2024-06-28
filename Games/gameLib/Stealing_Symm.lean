@@ -15,7 +15,7 @@ def Strong_stealing_condition (g : zSymm_Game_World α β) : Prop :=
   ∃ (f_act : β), (g.law g.init_game_state [] f_act) ∧
     ∀ act : β, ∀ hist : List β,
     g.law g.init_game_state hist act →
-    hist ≠ [] →
+    hist ≠ [] → -- hist also shouldn't contain f_act ???
     g.transition g.init_game_state hist act = g.transition g.init_game_state (hist ++ [f_act]) act -- not used so far
     ∧ ( g.law g.init_game_state (hist ++ [f_act]) act)
 
