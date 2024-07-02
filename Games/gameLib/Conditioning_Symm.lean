@@ -212,6 +212,54 @@ lemma Symm_Game_World.playable_extensible_fst_strat (g : Symm_Game_World α β)
 
 
 
+
+
+
+
+
+def law_nonprohibitive' (law : α → List β → β → Prop) : Prop :=
+  ∀ ini : α, ∀ hist : List β, Hist_legal law law ini hist → ∃ act : β, law ini hist act
+
+def Symm_Game_World.playable' (g : Symm_Game_World α β) : Prop :=
+  law_nonprohibitive' g.law
+
+open Classical in
+noncomputable
+def exStrat [Inhabited β] (law : α → List β → β → Prop) ( nh_law : law_nonprohibitive' law) : Strategy α β :=
+  fun ini hist => if l : Hist_legal law law ini hist then Classical.choose (nh_law ini hist l) else default
+
+
+lemma Symm_Game_World.playable_has_strat' [Inhabited β] (g : Symm_Game_World α β)
+  (hg : g.playable') :
+  ∃ f_strat : Strategy α β , ∃ s_strat : Strategy α β,
+  Strategy_legal_fst g.init_game_state g.law f_strat s_strat ∧
+  Strategy_legal_snd g.init_game_state g.law f_strat s_strat :=
+  by
+  classical
+  use exStrat g.law hg
+  use exStrat g.law hg
+  dsimp [Strategy_legal_fst, Strategy_legal_snd]
+  rw [← forall_and]
+  intro t
+  apply @Nat.strong_induction_on
+
+  -- induction' t with t ih
+  -- · constructor
+  --   · intro _
+  --     dsimp [History_on_turn]
+  --     rw [dif_pos (by apply Hist_legal.nil)]
+  --     exact Classical.choose_spec (hg g.init_game_state [] (by apply Hist_legal.nil))
+  --   · intro no
+  --     contradiction
+  -- · constructor
+  --   · intro tdef
+
+
+
+
+#exit
+
+
 -- # Easy termination
 
 
