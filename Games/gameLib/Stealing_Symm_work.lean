@@ -14,7 +14,7 @@ import Games.exLib.List
 structure the_stealing_conditions (g : zSymm_Game_World α β) (f_act : β) : Prop where
   legal_fst : g.law g.init_game_state [] f_act
   tran : ∀ act : β, ∀ hist : List β, g.law g.init_game_state hist act → (g.transition g.init_game_state hist act = g.transition g.init_game_state (hist ++ [f_act]) act)
-  leg : ∀ act : β, ∀ hist : List β, hist ≠ [] → (g.law g.init_game_state hist act ↔ g.law g.init_game_state (hist ++ [f_act]) act)
+  leg : ∀ act : β, ∀ hist : List β, hist ≠ [] → ( g.law g.init_game_state hist act → g.law g.init_game_state (hist ++ [f_act]) act  )
 
 def Strong_stealing_condition (g : zSymm_Game_World α β) : Prop :=
   ∃ (f_act : β), the_stealing_conditions g f_act
@@ -133,7 +133,7 @@ lemma pre_stolen_strat_legal_fst (g : zSymm_Game_World α β) (hgs : Strong_stea
     have f_leg' := f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
     cases' t with t
     · contradiction
-    · rw [← (Classical.choose_spec hgs).leg _ _ (by apply History_on_turn_nonempty_of_succ)]
+    · apply (Classical.choose_spec hgs).leg _ _ (by apply History_on_turn_nonempty_of_succ)
       exact f_leg'
 
 

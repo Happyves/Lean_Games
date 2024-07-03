@@ -801,7 +801,7 @@ lemma preChomp_coherent (height length : ℕ)  : (preChomp height length).cohere
 
 lemma preChomp_playable (height length : ℕ) : (preChomp height length).playable :=
   by
-  intro ini hist
+  intro ini hist hist_leg
   dsimp [preChomp]
   by_cases q : ¬Chomp_state ini hist = {(0, 0)}
   · simp_rw [if_pos q]
@@ -835,8 +835,26 @@ lemma preChomp_playable (height length : ℕ) : (preChomp height length).playabl
       use act
       constructor
       · exact (Chomp_state_sub_ini _ _) act_mem
-      ·
-      · sorry
+      · rename_i facts
+        apply Chomp_hist_mem_ini_of_Hist_legal height length _ facts.1 _ hist_leg
+        contrapose! q
+        cases' hist with x l
+        · apply q
+        · apply Chomp_state_zero_act_non_zero _ facts.1 l x q
+          intro con
+          rw [con] at facts
+          apply facts.2
+          exact List.mem_cons_self (0, 0) l
+      · rename_i facts
+        apply Chomp_hist_pairwise_nondomi_of_Hist_legal height length _ facts.1 _ hist_leg
+        contrapose! q
+        cases' hist with x l
+        · apply q
+        · apply Chomp_state_zero_act_non_zero _ facts.1 l x q
+          intro con
+          rw [con] at facts
+          apply facts.2
+          exact List.mem_cons_self (0, 0) l
       · dsimp [Chomp_state] at act_mem
         rw [Finset.mem_filter] at act_mem
         exact act_mem.2
@@ -847,7 +865,7 @@ lemma preChomp_playable (height length : ℕ) : (preChomp height length).playabl
     split_ifs
     · decide
 
-#exit
+--#exit
 
 def Chomp (height length : ℕ) : zSymm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
   toSymm_Game_World := preChomp height length

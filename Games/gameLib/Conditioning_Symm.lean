@@ -68,169 +68,202 @@ lemma Symm_Game_World.coherent_end_all (g : Symm_Game_World α β)  (h : g.coher
 -- # Playability
 
 
-/--
-Remember that the game goes on even when its over, where players
-play dummy values, in our formalism (and coherent end assures certain props)
-The ∀ initial states may seem to strong, but its necessary for world_after_fst
-and is also explain by playing dummy vals, in a a priori impossible initial state
+-- /--
+-- Remember that the game goes on even when its over, where players
+-- play dummy values, in our formalism (and coherent end assures certain props)
+-- The ∀ initial states may seem to strong, but its necessary for world_after_fst
+-- and is also explain by playing dummy vals, in a a priori impossible initial state
 
-NOTE : this should be used instead of the inhabited instances for zermelo !!
--/
+-- NOTE : this should be used instead of the inhabited instances for zermelo !!
+-- -/
+-- def law_nonprohibitive (law : α → List β → β → Prop) : Prop :=
+--   ∀ ini : α, ∀ hist : List β, ∃ act : β, law ini hist act
+
+-- def Symm_Game_World.playable (g : Symm_Game_World α β) : Prop :=
+--   law_nonprohibitive g.law
+
+-- lemma Symm_Game_World.playable_has_strat (g : Symm_Game_World α β)
+--   (hg : g.playable) :
+--   ∃ f_strat : Strategy α β , ∃ s_strat : Strategy α β,
+--   Strategy_legal_fst g.init_game_state g.law f_strat s_strat ∧
+--   Strategy_legal_snd g.init_game_state g.law f_strat s_strat :=
+--   by
+--   classical
+--   use (fun ini hist => Classical.choose (hg ini hist))
+--   use (fun ini hist => Classical.choose (hg ini hist))
+--   constructor
+--   · intro t _
+--     set hist := (History_on_turn g.init_game_state
+--     (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act))
+--     (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act)) t)
+--     have pf := Classical.choose_spec (hg g.init_game_state hist)
+--     apply pf
+--   · intro t _
+--     set hist := (History_on_turn g.init_game_state
+--     (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act))
+--     (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act)) t)
+--     have ps:= Classical.choose_spec (hg g.init_game_state hist)
+--     apply ps
+
+
+-- lemma Symm_Game_World.playable_has_Fst_strat (g : Symm_Game_World α β)
+--   (hg : g.playable) (s_strat : Strategy α β) :
+--   ∃ f_strat : Strategy α β,
+--   Strategy_legal_fst g.init_game_state g.law f_strat s_strat :=
+--   by
+--   classical
+--   use (fun ini hist => Classical.choose (hg ini hist))
+--   intro t _
+--   set hist := (History_on_turn g.init_game_state
+--   (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act))
+--   (s_strat) t)
+--   have pf := Classical.choose_spec (hg g.init_game_state hist)
+--   apply pf
+
+
+-- lemma Symm_Game_World.playable_has_strong_fst_strat (g : Symm_Game_World α β)
+--   (hg : g.playable) :
+--   ∃ f_strat : Strategy α β, ∀ (s_strat : Strategy α β),
+--   Strategy_legal_snd g.init_game_state g.law f_strat s_strat → -- isn't needed ...
+--   Strategy_legal_fst g.init_game_state g.law f_strat s_strat :=
+--   by
+--   classical
+--   use (fun ini hist => Classical.choose (hg ini hist))
+--   intro s_strat _
+--   intro t _
+--   let hist := History_on_turn g.init_game_state (fun ini hist => Classical.choose (hg ini hist : ∃ act, law g ini hist act)) s_strat t
+--   have pf := Classical.choose_spec (hg g.init_game_state hist)
+--   apply pf
+
+-- lemma Symm_Game_World.playable_has_strong_snd_strat (g : Symm_Game_World α β)
+--   (hg : g.playable) :
+--   ∃ s_strat : Strategy α β, ∀ (f_strat : Strategy α β),
+--   Strategy_legal_fst g.init_game_state g.law f_strat s_strat → -- isn't needed ...
+--   Strategy_legal_snd g.init_game_state g.law f_strat s_strat :=
+--   by
+--   classical
+--   use (fun ini hist => Classical.choose (hg ini hist))
+--   intro f_strat _
+--   intro t _
+--   let hist := History_on_turn g.init_game_state f_strat (fun ini hist => Classical.choose (hg ini hist : ∃ act, law g ini hist act)) t
+--   have pf := Classical.choose_spec (hg g.init_game_state hist)
+--   apply pf
+
+
+
+-- lemma Symm_Game_World.playable_extensible (g : Symm_Game_World α β)
+--   (hg : g.playable) (f_act : β) (f_act_leg : g.law g.init_game_state [] f_act) :
+--   ∃ f_strat : Strategy α β , ∃ s_strat : Strategy α β,
+--   Strategy_legal_fst g.init_game_state g.law f_strat s_strat ∧
+--   Strategy_legal_snd g.init_game_state g.law f_strat s_strat ∧
+--   f_strat g.init_game_state [] = f_act :=
+--   by
+--   classical
+--   use (fun ini hist => if hist = [] then f_act else Classical.choose (hg ini hist))
+--   use (fun ini hist => Classical.choose (hg ini hist))
+--   constructor
+--   · intro t tf
+--     cases' t with t
+--     · dsimp!
+--       rw [if_pos (by rfl)]
+--       exact f_act_leg
+--     · set hist := (History_on_turn g.init_game_state
+--         (fun ini hist => if hist = [] then f_act else Classical.choose (_ : ∃ act, law g ini hist act))
+--         (fun ini hist => Classical.choose (_ : ∃ act, law g ini hist act)) (t+1))
+--       have pf := Classical.choose_spec (hg g.init_game_state hist)
+--       have beta : ((fun ini hist => if hist = [] then f_act else Classical.choose (hg ini hist)) g.init_game_state hist) = Classical.choose (hg g.init_game_state hist) :=
+--         by dsimp ; rw [if_neg (by apply History_on_turn_nonempty_of_succ)]
+--       rw [beta]
+--       apply pf
+--   · constructor
+--     · intro t _
+--       set hist := (History_on_turn g.init_game_state
+--         (fun ini hist => if hist = [] then f_act else Classical.choose (_ : ∃ act, law g ini hist act))
+--         (fun ini hist => Classical.choose (_ : ∃ act, law g ini hist act)) t)
+--       have ps:= Classical.choose_spec (hg g.init_game_state hist)
+--       apply ps
+--     · rw [if_pos (by rfl)]
+
+
+-- lemma Symm_Game_World.playable_extensible_fst_strat (g : Symm_Game_World α β)
+--   (hg : g.playable) (s_strat : Strategy α β)
+--   (f_act : β) (f_act_leg : g.law g.init_game_state [] f_act) :
+--   ∃ f_strat : Strategy α β,
+--   Strategy_legal_fst g.init_game_state g.law f_strat s_strat ∧
+--   f_strat g.init_game_state [] = f_act :=
+--   by
+--   classical
+--   use (fun ini hist => if hist = [] then f_act else Classical.choose (hg ini hist))
+--   constructor
+--   · intro t tf
+--     cases' t with t
+--     · dsimp!
+--       rw [if_pos (by rfl)]
+--       exact f_act_leg
+--     · set hist := (History_on_turn g.init_game_state
+--         (fun ini hist => if hist = [] then f_act else Classical.choose (_ : ∃ act, law g ini hist act)) s_strat
+--         (Nat.succ t))
+--       have pf := Classical.choose_spec (hg g.init_game_state hist)
+--       have beta : ((fun ini hist => if hist = [] then f_act else Classical.choose (hg ini hist)) g.init_game_state hist) = Classical.choose (hg g.init_game_state hist) :=
+--         by dsimp ; rw [if_neg (by apply History_on_turn_nonempty_of_succ)]
+--       rw [beta]
+--       apply pf
+--   · rw [if_pos (by rfl)]
+
+
+
+
+
+
+
+
 def law_nonprohibitive (law : α → List β → β → Prop) : Prop :=
-  ∀ ini : α, ∀ hist : List β, ∃ act : β, law ini hist act
+  ∀ ini : α, ∀ hist : List β, Hist_legal law law ini hist → ∃ act : β, law ini hist act
 
 def Symm_Game_World.playable (g : Symm_Game_World α β) : Prop :=
   law_nonprohibitive g.law
 
-lemma Symm_Game_World.playable_has_strat (g : Symm_Game_World α β)
-  (hg : g.playable) :
-  ∃ f_strat : Strategy α β , ∃ s_strat : Strategy α β,
-  Strategy_legal_fst g.init_game_state g.law f_strat s_strat ∧
-  Strategy_legal_snd g.init_game_state g.law f_strat s_strat :=
-  by
-  classical
-  use (fun ini hist => Classical.choose (hg ini hist))
-  use (fun ini hist => Classical.choose (hg ini hist))
-  constructor
-  · intro t _
-    set hist := (History_on_turn g.init_game_state
-    (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act))
-    (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act)) t)
-    have pf := Classical.choose_spec (hg g.init_game_state hist)
-    apply pf
-  · intro t _
-    set hist := (History_on_turn g.init_game_state
-    (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act))
-    (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act)) t)
-    have ps:= Classical.choose_spec (hg g.init_game_state hist)
-    apply ps
-
-
-lemma Symm_Game_World.playable_has_Fst_strat (g : Symm_Game_World α β)
-  (hg : g.playable) (s_strat : Strategy α β) :
-  ∃ f_strat : Strategy α β,
-  Strategy_legal_fst g.init_game_state g.law f_strat s_strat :=
-  by
-  classical
-  use (fun ini hist => Classical.choose (hg ini hist))
-  intro t _
-  set hist := (History_on_turn g.init_game_state
-  (fun ini hist => Classical.choose (_ : ∃ act, Symm_Game_World.law g ini hist act))
-  (s_strat) t)
-  have pf := Classical.choose_spec (hg g.init_game_state hist)
-  apply pf
-
-
-lemma Symm_Game_World.playable_has_strong_fst_strat (g : Symm_Game_World α β)
-  (hg : g.playable) :
-  ∃ f_strat : Strategy α β, ∀ (s_strat : Strategy α β),
-  Strategy_legal_snd g.init_game_state g.law f_strat s_strat → -- isn't needed ...
-  Strategy_legal_fst g.init_game_state g.law f_strat s_strat :=
-  by
-  classical
-  use (fun ini hist => Classical.choose (hg ini hist))
-  intro s_strat _
-  intro t _
-  let hist := History_on_turn g.init_game_state (fun ini hist => Classical.choose (hg ini hist : ∃ act, law g ini hist act)) s_strat t
-  have pf := Classical.choose_spec (hg g.init_game_state hist)
-  apply pf
-
-lemma Symm_Game_World.playable_has_strong_snd_strat (g : Symm_Game_World α β)
-  (hg : g.playable) :
-  ∃ s_strat : Strategy α β, ∀ (f_strat : Strategy α β),
-  Strategy_legal_fst g.init_game_state g.law f_strat s_strat → -- isn't needed ...
-  Strategy_legal_snd g.init_game_state g.law f_strat s_strat :=
-  by
-  classical
-  use (fun ini hist => Classical.choose (hg ini hist))
-  intro f_strat _
-  intro t _
-  let hist := History_on_turn g.init_game_state f_strat (fun ini hist => Classical.choose (hg ini hist : ∃ act, law g ini hist act)) t
-  have pf := Classical.choose_spec (hg g.init_game_state hist)
-  apply pf
-
-
-
-lemma Symm_Game_World.playable_extensible (g : Symm_Game_World α β)
-  (hg : g.playable) (f_act : β) (f_act_leg : g.law g.init_game_state [] f_act) :
-  ∃ f_strat : Strategy α β , ∃ s_strat : Strategy α β,
-  Strategy_legal_fst g.init_game_state g.law f_strat s_strat ∧
-  Strategy_legal_snd g.init_game_state g.law f_strat s_strat ∧
-  f_strat g.init_game_state [] = f_act :=
-  by
-  classical
-  use (fun ini hist => if hist = [] then f_act else Classical.choose (hg ini hist))
-  use (fun ini hist => Classical.choose (hg ini hist))
-  constructor
-  · intro t tf
-    cases' t with t
-    · dsimp!
-      rw [if_pos (by rfl)]
-      exact f_act_leg
-    · set hist := (History_on_turn g.init_game_state
-        (fun ini hist => if hist = [] then f_act else Classical.choose (_ : ∃ act, law g ini hist act))
-        (fun ini hist => Classical.choose (_ : ∃ act, law g ini hist act)) (t+1))
-      have pf := Classical.choose_spec (hg g.init_game_state hist)
-      have beta : ((fun ini hist => if hist = [] then f_act else Classical.choose (hg ini hist)) g.init_game_state hist) = Classical.choose (hg g.init_game_state hist) :=
-        by dsimp ; rw [if_neg (by apply History_on_turn_nonempty_of_succ)]
-      rw [beta]
-      apply pf
-  · constructor
-    · intro t _
-      set hist := (History_on_turn g.init_game_state
-        (fun ini hist => if hist = [] then f_act else Classical.choose (_ : ∃ act, law g ini hist act))
-        (fun ini hist => Classical.choose (_ : ∃ act, law g ini hist act)) t)
-      have ps:= Classical.choose_spec (hg g.init_game_state hist)
-      apply ps
-    · rw [if_pos (by rfl)]
-
-
-lemma Symm_Game_World.playable_extensible_fst_strat (g : Symm_Game_World α β)
-  (hg : g.playable) (s_strat : Strategy α β)
-  (f_act : β) (f_act_leg : g.law g.init_game_state [] f_act) :
-  ∃ f_strat : Strategy α β,
-  Strategy_legal_fst g.init_game_state g.law f_strat s_strat ∧
-  f_strat g.init_game_state [] = f_act :=
-  by
-  classical
-  use (fun ini hist => if hist = [] then f_act else Classical.choose (hg ini hist))
-  constructor
-  · intro t tf
-    cases' t with t
-    · dsimp!
-      rw [if_pos (by rfl)]
-      exact f_act_leg
-    · set hist := (History_on_turn g.init_game_state
-        (fun ini hist => if hist = [] then f_act else Classical.choose (_ : ∃ act, law g ini hist act)) s_strat
-        (Nat.succ t))
-      have pf := Classical.choose_spec (hg g.init_game_state hist)
-      have beta : ((fun ini hist => if hist = [] then f_act else Classical.choose (hg ini hist)) g.init_game_state hist) = Classical.choose (hg g.init_game_state hist) :=
-        by dsimp ; rw [if_neg (by apply History_on_turn_nonempty_of_succ)]
-      rw [beta]
-      apply pf
-  · rw [if_pos (by rfl)]
-
-
-
-
-
-
-
-
-def law_nonprohibitive' (law : α → List β → β → Prop) : Prop :=
-  ∀ ini : α, ∀ hist : List β, Hist_legal law law ini hist → ∃ act : β, law ini hist act
-
-def Symm_Game_World.playable' (g : Symm_Game_World α β) : Prop :=
-  law_nonprohibitive' g.law
-
 open Classical in
 noncomputable
-def exStrat [Inhabited β] (law : α → List β → β → Prop) ( nh_law : law_nonprohibitive' law) : Strategy α β :=
+def exStrat [Inhabited β] (law : α → List β → β → Prop) (nh_law : law_nonprohibitive law) : Strategy α β :=
   fun ini hist => if l : Hist_legal law law ini hist then Classical.choose (nh_law ini hist l) else default
 
 
+lemma exStrat_helper [Inhabited β] (law : α → List β → β → Prop) (nh_law : law_nonprohibitive law)
+  (ini : α) (hist : List β) (main : Hist_legal law law ini hist) :
+  exStrat law nh_law ini hist = Classical.choose (nh_law ini hist main) :=
+  by
+  unfold exStrat
+  rw [dif_pos main]
+
+lemma exStrat_prop [Inhabited β] (law : α → List β → β → Prop) (nh_law : law_nonprohibitive law)
+  (ini : α) (hist : List β) (main : Hist_legal law law ini hist) :
+  law ini hist (exStrat law nh_law ini hist) :=
+  by
+  rw [exStrat_helper law nh_law ini hist main]
+  apply Classical.choose_spec
+
+--#exit
+
+lemma exStrat_Hist_legal [Inhabited β] (law : α → List β → β → Prop) ( nh_law : law_nonprohibitive law) (ini : α) :
+  ∀ t, Hist_legal law law ini (History_on_turn ini (exStrat law nh_law) (exStrat law nh_law) t) :=
+  by
+  intro t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    rw [ite_self]
+    apply Hist_legal.cons
+    · rw [ite_self]
+      apply exStrat_prop law nh_law ini _ ih
+    · exact ih
+
+
+
+
 lemma Symm_Game_World.playable_has_strat' [Inhabited β] (g : Symm_Game_World α β)
-  (hg : g.playable') :
+  (hg : g.playable) :
   ∃ f_strat : Strategy α β , ∃ s_strat : Strategy α β,
   Strategy_legal_fst g.init_game_state g.law f_strat s_strat ∧
   Strategy_legal_snd g.init_game_state g.law f_strat s_strat :=
@@ -241,23 +274,76 @@ lemma Symm_Game_World.playable_has_strat' [Inhabited β] (g : Symm_Game_World α
   dsimp [Strategy_legal_fst, Strategy_legal_snd]
   rw [← forall_and]
   intro t
-  apply @Nat.strong_induction_on
-
-  -- induction' t with t ih
-  -- · constructor
-  --   · intro _
-  --     dsimp [History_on_turn]
-  --     rw [dif_pos (by apply Hist_legal.nil)]
-  --     exact Classical.choose_spec (hg g.init_game_state [] (by apply Hist_legal.nil))
-  --   · intro no
-  --     contradiction
-  -- · constructor
-  --   · intro tdef
+  constructor
+  · intro _
+    apply exStrat_prop
+    apply exStrat_Hist_legal
+  · intro _
+    apply exStrat_prop
+    apply exStrat_Hist_legal
 
 
+lemma Symm_Game_World.playable_has_strat_explicit [Inhabited β] (g : Symm_Game_World α β)
+  (hg : g.playable) :
+  Strategy_legal_fst g.init_game_state g.law (exStrat g.law hg) (exStrat g.law hg) ∧
+  Strategy_legal_snd g.init_game_state g.law (exStrat g.law hg) (exStrat g.law hg) :=
+  by
+  dsimp [Strategy_legal_fst, Strategy_legal_snd]
+  rw [← forall_and]
+  intro t
+  constructor
+  · intro _
+    apply exStrat_prop
+    apply exStrat_Hist_legal
+  · intro _
+    apply exStrat_prop
+    apply exStrat_Hist_legal
 
 
-#exit
+lemma Symm_Game_World.playable_has_strong_snd_strat_help [Inhabited β] (g : Symm_Game_World α β)
+  (hg : g.playable) :
+  ∀ (f_strat : Strategy α β),
+  Strategy_legal_fst g.init_game_state g.law f_strat (exStrat g.law hg) →
+  ∀ t, Hist_legal g.law  g.law g.init_game_state (History_on_turn g.init_game_state f_strat (exStrat g.law hg) t) :=
+  by
+  intro f_strat f_leg t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs with T
+    · apply Hist_legal.cons
+      · rw [ite_self]
+        exact f_leg t T
+      · exact ih
+    · apply Hist_legal.cons
+      · rw [ite_self]
+        apply exStrat_prop
+        exact ih
+      · exact ih
+
+
+
+
+--#exit
+
+lemma Symm_Game_World.playable_has_strong_snd_strat [Inhabited β] (g : Symm_Game_World α β)
+  (hg : g.playable) :
+  ∀ (f_strat : Strategy α β),
+  Strategy_legal_fst g.init_game_state g.law f_strat (exStrat g.law hg) →
+  Strategy_legal_snd g.init_game_state g.law f_strat (exStrat g.law hg) :=
+  by
+  intro f_strat f_leg
+  intro t _
+  apply exStrat_prop
+  exact g.playable_has_strong_snd_strat_help hg f_strat f_leg t
+
+
+
+
+
+
+--#exit
 
 
 -- # Easy termination
@@ -1016,16 +1102,18 @@ inductive zSymm_Game_World.has_WL (g : zSymm_Game_World α β) : Prop where
 
 
 lemma zSymm_Game_World.has_WL_init_end
+  [Inhabited β ]
   (g : zSymm_Game_World α β)
   (P : Prop)
   (hp : P)
   (h : (P ∧ (¬ g.win_states g.init_game_state)) → g.has_WL) :
   g.has_WL :=
   by
-  obtain ⟨ss,ss_prop⟩ := g.playable_has_strong_snd_strat g.playable
+  --obtain ⟨ss,ss_prop⟩ := g.playable_has_strong_snd_strat g.playable
+
   by_cases q2 : g.win_states g.init_game_state
   · apply zSymm_Game_World.has_WL.ws
-    use ss
+    use (exStrat g.law g.playable)
     intro fs fs_leg
     constructor
     · use 0
@@ -1035,10 +1123,11 @@ lemma zSymm_Game_World.has_WL_init_end
         · apply q2
         · intro t no
           contradiction
-    · exact ss_prop fs fs_leg
+    · exact (g.toSymm_Game_World.playable_has_strong_snd_strat g.playable) fs fs_leg
   · exact h ⟨hp, q2⟩
 
 
+--#exit
 
 
 

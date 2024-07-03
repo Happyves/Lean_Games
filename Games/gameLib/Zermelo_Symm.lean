@@ -186,15 +186,16 @@ lemma zSymm_Game_World.Zermelo
   induction' T with t ih
   · intro g t0
     dsimp [Game_World.isWL_wBound] at t0
-    obtain ⟨s_strat, s_prop⟩ := g.playable_has_strong_snd_strat g.playable
-    obtain ⟨ f_strat, f_leg⟩ := g.playable_has_Fst_strat g.playable s_strat
-    let s_leg := s_prop f_strat f_leg
-    obtain ⟨t, tl0, t_end⟩ := t0 f_strat s_strat f_leg s_leg
+    -- obtain ⟨s_strat, s_prop⟩ := g.playable_has_strong_snd_strat g.playable
+    -- obtain ⟨ f_strat, f_leg⟩ := g.playable_has_Fst_strat g.playable s_strat
+    -- let s_leg := s_prop f_strat f_leg
+    --obtain ⟨t, tl0, t_end⟩ := t0 f_strat s_strat f_leg s_leg
+    obtain ⟨t, tl0, t_end⟩ := t0 (exStrat g.law g.playable) (exStrat g.law g.playable) (g.playable_has_strat_explicit g.playable).1 (g.playable_has_strat_explicit g.playable).2
     rw [Nat.le_zero] at tl0
     rw [tl0] at t_end
-    replace t_end := g.init_WL_of_turn_zero_WL f_strat s_strat t_end
+    replace t_end := g.init_WL_of_turn_zero_WL (exStrat g.law g.playable) (exStrat g.law g.playable) t_end
     apply zSymm_Game_World.has_WL.ws
-    use s_strat
+    use (exStrat g.law g.playable)
     intro f_strat' f_leg'
     constructor
     · use 0
@@ -204,7 +205,7 @@ lemma zSymm_Game_World.Zermelo
         · dsimp [Game.state_on_turn]
           exact t_end
         · intro t ahhh ; contradiction
-    · exact s_prop f_strat' f_leg'
+    · exact (g.playable_has_strong_snd_strat g.playable) f_strat' f_leg'
   · intro g bd
     apply zSymm_Game_World.conditioning_WL
     intro f_act f_leg
