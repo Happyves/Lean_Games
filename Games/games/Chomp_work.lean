@@ -992,6 +992,31 @@ lemma preChomp_law_prop_transition (height length : ℕ) (h : height ≠ 0 ∨ l
     rw [Chomp_state_hist_zero _ (act ::(hist ++ [(length, height)])) (List.mem_cons_of_mem _ (List.mem_append_left _ q1))]
 
 
+private lemma helper (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) : (0,0) ∉ [(length, height)] :=
+  by
+  intro con
+  rw [List.mem_singleton] at con
+  cases' h with h h
+  · apply h
+    simp_all only [Prod.mk.injEq, ne_eq]
+    unhygienic with_reducible aesop_destruct_products
+    aesop_subst [right, left]
+    simp_all only [not_true_eq_false]
+  · apply h
+    simp_all only [Prod.mk.injEq, ne_eq]
+    unhygienic with_reducible aesop_destruct_products
+    aesop_subst [right, left]
+    simp_all only [not_true_eq_false]
+
+
+lemma Chomp_init_has_len_hei (height length : ℕ) : (length, height) ∈ Chomp_init height length :=
+  by
+  dsimp [Chomp_init]
+  simp_rw [Finset.mem_product, Finset.mem_range]
+  constructor
+  all_goals {apply Nat.lt_succ_self}
+
+--#exit
 
 lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (act : ℕ × ℕ) (hist : List (ℕ × ℕ)) (hh : hist ≠ [])
   (leg : Symm_Game_World.law (Chomp height length).toSymm_Game_World (Chomp height length).toSymm_Game_World.init_game_state hist act) :
@@ -1016,8 +1041,27 @@ lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length �
         · rw [if_pos q2]
           constructor
           · exact leg.act_mem
-          · sorry
-          · sorry
+          · intro q qdef
+            rw [List.mem_append] at qdef
+            cases' qdef with qdef qdef
+            · exact leg.hist_mem q qdef
+            · rw [List.mem_singleton] at qdef
+              rw [qdef]
+              apply Chomp_init_has_len_hei
+          · rw [List.pairwise_append]
+            constructor
+            · apply leg.hist_nd
+            · constructor
+              · apply List.pairwise_singleton
+              · intro a ah b bs
+                rw [List.mem_singleton] at bs
+                rw [bs]
+                replace ah := leg.hist_mem a ah
+                dsimp [Chomp_init] at ah
+                simp_rw [Finset.mem_product, Finset.mem_range, Nat.lt_succ] at ah
+                intro con
+                dsimp [domi] at con
+                -- fuck
           · intro q qdef
             rw [List.mem_append] at qdef
             cases' qdef with qdef qdef
@@ -1042,6 +1086,21 @@ lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length �
         · rw [if_neg q2]
           exact leg.nz_act
       · rw [if_neg q1] at leg
+        rw [not_not] at q1
+        rw [if_neg ]
+        · exact leg
+        · rw [not_not]
+          rw [Finset.eq_singleton_iff_unique_mem]
+          constructor
+          · rw [Chomp_state_has_zero_iff_hist_has_zero]
+            · apply List.not_mem_append q0
+              exact helper _ _ h
+            · apply Chomp_init_has_zero
+          · intro x xdef
+            replace xdef := Chomp_state_sub _ _ _ xdef
+            rw [q1] at xdef
+            rw [Finset.mem_singleton] at xdef
+            exact xdef
 
 
 
