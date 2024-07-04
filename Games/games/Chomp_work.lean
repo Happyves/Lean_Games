@@ -1016,6 +1016,8 @@ lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length �
         · rw [if_pos q2]
           constructor
           · exact leg.act_mem
+          · sorry
+          · sorry
           · intro q qdef
             rw [List.mem_append] at qdef
             cases' qdef with qdef qdef
@@ -1026,10 +1028,16 @@ lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length �
               induction' hist with x hist ih
               · contradiction
               · have leg1 := leg.act_mem
-                dsimp [Chomp_init] at leg1
-                simp_rw [Finset.mem_product, Finset.mem_range, Nat.lt_add_one_iff] at leg1
+                have leg3 := leg.hist_mem x (by exact List.mem_cons_self x hist)
+                dsimp [Chomp_init] at leg1 leg3
+                simp_rw [Finset.mem_product, Finset.mem_range, Nat.lt_add_one_iff] at leg1 leg3
                 have leg2 := leg.nd x (List.mem_cons_self x hist)
-
+                dsimp [nondomi, domi] at leg2
+                intro con
+                have uno : act.1 = length := le_antisymm leg1.1 con.1
+                have dos : act.2 = height := le_antisymm leg1.2 con.2
+                rw [← uno, ← dos] at leg3
+                exact leg2 leg3
           · exact leg.nz_act
         · rw [if_neg q2]
           exact leg.nz_act
@@ -1038,35 +1046,6 @@ lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length �
 
 
 
-
-lemma preChomp_law_prop_law' (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (act : ℕ × ℕ) (hist : List (ℕ × ℕ)) (hh : hist ≠ [])
-  (leg : Symm_Game_World.law (Chomp height length).toSymm_Game_World (Chomp height length).toSymm_Game_World.init_game_state (hist ++ [(length, height)]) act) :
-  Symm_Game_World.law (Chomp height length).toSymm_Game_World (Chomp height length).toSymm_Game_World.init_game_state (hist) act :=
-  by
-  dsimp [Chomp, preChomp] at *
-  by_cases q0 : (0, 0) ∉ hist
-  · rw [if_pos ⟨Chomp_init_has_zero height length, q0⟩]
-    have fact : (0,0) ∉ hist ++ [(length, height)] :=
-      by
-      apply List.not_mem_append
-      · exact q0
-      · rw [List.mem_singleton]
-        simp_all only [List.mem_append, List.mem_singleton, Prod.mk.injEq, false_or, not_and, ite_not]
-        intro a
-        aesop_subst a
-        simp_all only [not_true_eq_false, or_false, forall_true_left]
-        unhygienic with_reducible aesop_destruct_products
-        simp_all only [Prod.mk.injEq, not_and]
-        apply Aesop.BuiltinRules.not_intro
-        intro a
-        aesop_subst a
-        simp_all only [not_true_eq_false]
-    rw [if_pos ⟨Chomp_init_has_zero height length, fact⟩] at leg
-    by_cases q1 : ¬Chomp_state (Chomp_init height length) hist = {(0, 0)}
-    · rw [if_pos q1]
-
-
-#check List.pmap
 
 #exit
 

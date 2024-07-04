@@ -692,6 +692,7 @@ lemma preChomp_playable (height length : ℕ) : (preChomp height length).playabl
           · exact con.1.symm
           · exact con.2.symm
       obtain ⟨act, act_mem, act_nz⟩ := this
+      intro _
       use act
       constructor
       · exact (Chomp_state_sub_ini _ _) act_mem
@@ -699,8 +700,10 @@ lemma preChomp_playable (height length : ℕ) : (preChomp height length).playabl
         rw [Finset.mem_filter] at act_mem
         exact act_mem.2
       · exact act_nz
-    · use (0,0)
-  · simp_rw [if_neg q]
+    · intro _
+      use (0,0)
+  · intro _
+    simp_rw [if_neg q]
     use (1,0)
     split_ifs
     · decide
