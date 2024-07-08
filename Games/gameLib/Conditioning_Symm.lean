@@ -340,6 +340,45 @@ lemma Symm_Game_World.playable_has_strong_snd_strat [Inhabited β] (g : Symm_Gam
 
 
 
+lemma Symm_Game_World.playable_has_strong_fst_strat_help [Inhabited β] (g : Symm_Game_World α β)
+  (hg : g.playable) :
+  ∀ (s_strat : Strategy α β),
+  Strategy_legal_snd g.init_game_state g.law (exStrat g.law hg) s_strat →
+  ∀ t, Hist_legal g.law  g.law g.init_game_state (History_on_turn g.init_game_state (exStrat g.law hg) s_strat t) :=
+  by
+  intro f_strat f_leg t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs with T
+    · apply Hist_legal.cons
+      · rw [ite_self]
+        apply exStrat_prop
+        exact ih
+      · exact ih
+    · apply Hist_legal.cons
+      · rw [ite_self]
+        exact f_leg t T
+      · exact ih
+
+
+
+
+
+--#exit
+
+lemma Symm_Game_World.playable_has_strong_fst_strat [Inhabited β] (g : Symm_Game_World α β)
+  (hg : g.playable) :
+  ∀ (s_strat : Strategy α β),
+  Strategy_legal_snd g.init_game_state g.law (exStrat g.law hg) s_strat →
+  Strategy_legal_fst g.init_game_state g.law (exStrat g.law hg) s_strat :=
+  by
+  intro f_strat f_leg
+  intro t _
+  apply exStrat_prop
+  exact g.playable_has_strong_fst_strat_help hg f_strat f_leg t
+
 
 
 

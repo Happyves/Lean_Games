@@ -66,6 +66,26 @@ lemma Chomp_state_sub' (ini : Finset (ℕ × ℕ)) (l L :  List (ℕ × ℕ)) :
     apply xdef.2
     exact List.mem_append_right l ql
 
+lemma Chomp_state_sub_cons (ini : Finset (ℕ × ℕ)) (x : ℕ × ℕ) (l :  List (ℕ × ℕ)) :
+  Chomp_state ini (x :: l) ⊆ Chomp_state ini l :=
+  by
+  rw [List.cons_eq_singleton_append]
+  apply Chomp_state_sub'
+
+
+lemma Chomp_state_sub_of_hist_sub (ini : Finset (ℕ × ℕ)) (l L :  List (ℕ × ℕ)) (h : l ⊆ L) :
+  Chomp_state ini (L) ⊆ Chomp_state ini l :=
+  by
+  intro x xdef
+  dsimp [Chomp_state] at *
+  rw [Finset.mem_filter] at *
+  constructor
+  · apply xdef.1
+  · intro q ql
+    apply xdef.2
+    exact h ql
+
+
 
 def Chomp_init (height length : ℕ) := (Finset.range (length+1)) ×ˢ (Finset.range (height+1))
 
@@ -1111,4 +1131,233 @@ lemma preChomp_law_prop_law (height length : ℕ) (h : height ≠ 0 ∨ length �
     trivial
 
 
--- Next, show strat_unique_actions
+
+
+lemma Chomp_History_no_zero (height length : ℕ)  (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  : ∀ t, (0,0) ∉ History_on_turn (Chomp_init height length) f_strat s_strat t :=
+  by
+  intro t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    trivial
+  · dsimp [History_on_turn]
+    split_ifs with q
+    · apply List.not_mem_cons_of_ne_of_not_mem _ ih
+      specialize f_leg t q
+      dsimp [Chomp, preChomp] at f_leg
+      rw [if_pos ⟨(Chomp_init_has_zero height length), ih⟩] at f_leg
+      split_ifs at f_leg with q2
+      · contrapose! f_leg
+        exact f_leg.symm
+      · intro con
+        apply f_leg.nz_act con.symm
+    · apply List.not_mem_cons_of_ne_of_not_mem _ ih
+      rw [Turn_not_fst_iff_snd] at q
+      specialize s_leg t q
+      dsimp [Chomp, preChomp] at s_leg
+      rw [if_pos ⟨(Chomp_init_has_zero height length), ih⟩] at s_leg
+      split_ifs at s_leg with q2
+      · contrapose! s_leg
+        exact s_leg.symm
+      · intro con
+        apply s_leg.nz_act con.symm
+
+
+
+
+lemma Chomp_strat_non_zero_fst (height length : ℕ) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat) :
+  ∀ t, Turn_fst (t+1) → f_strat (Chomp height length).init_game_state (History_on_turn (Chomp height length).init_game_state f_strat s_strat t) ≠ (0,0) :=
+  by
+  intro t tf
+  have := f_leg t tf
+  dsimp [Chomp, preChomp] at this
+  rw [if_pos ⟨(Chomp_init_has_zero height length), (Chomp_History_no_zero _ _ _ _ f_leg s_leg  t)⟩] at this
+  split_ifs at this with q2
+  · exact this
+  · intro con
+    apply this.nz_act con
+
+
+lemma Chomp_strat_non_zero_snd (height length : ℕ) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat) :
+  ∀ t, Turn_snd (t+1) → s_strat (Chomp height length).init_game_state (History_on_turn (Chomp height length).init_game_state f_strat s_strat t) ≠ (0,0) :=
+  by
+  intro t tf
+  have := s_leg t tf
+  dsimp [Chomp, preChomp] at this
+  rw [if_pos ⟨(Chomp_init_has_zero height length), (Chomp_History_no_zero _ _ _ _ f_leg s_leg  t)⟩] at this
+  split_ifs at this with q2
+  · exact this
+  · intro con
+    apply this.nz_act con
+
+
+
+
+lemma Chomp_state_on_turn_has_zero (height length : ℕ)  (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  :
+  ∀ t, (0,0) ∈ (Chomp height length).state_on_turn f_strat s_strat t :=
+  by
+  intro t
+  cases' t with t
+  · dsimp [Symm_Game_World.state_on_turn]
+    dsimp [Chomp, preChomp, Symm_Game_World.history_on_turn, History_on_turn]
+    apply Chomp_init_has_zero
+  · dsimp [Symm_Game_World.state_on_turn]
+    by_cases q : Turn_fst (t + 1)
+    · rw [if_pos q]
+      dsimp [Chomp, preChomp]
+      by_cases q1 : Chomp_state (Chomp_init height length) ((Chomp height length).history_on_turn f_strat s_strat t) = {(0,0)}
+      · rw [if_neg (by rw [not_not] ; apply q1)]
+        exact Finset.mem_singleton.mpr rfl
+      · rw [if_pos (by apply q1)]
+        rw [Chomp_state_has_zero_iff_hist_has_zero _ (by apply Chomp_init_has_zero)]
+        apply List.not_mem_cons_of_ne_of_not_mem
+        · exact (Chomp_strat_non_zero_fst _ _ _ _ f_leg s_leg t q).symm
+        · apply (Chomp_History_no_zero _ _ _ _ f_leg s_leg  t)
+    · rw [if_neg q]
+      rw [Turn_not_fst_iff_snd] at q
+      dsimp [Chomp, preChomp]
+      by_cases q1 : Chomp_state (Chomp_init height length) ((Chomp height length).history_on_turn f_strat s_strat t) = {(0,0)}
+      · rw [if_neg (by rw [not_not] ; apply q1)]
+        exact Finset.mem_singleton.mpr rfl
+      · rw [if_pos (by apply q1)]
+        rw [Chomp_state_has_zero_iff_hist_has_zero _ (by apply Chomp_init_has_zero)]
+        apply List.not_mem_cons_of_ne_of_not_mem
+        · exact (Chomp_strat_non_zero_snd _ _ _ _ f_leg s_leg t q).symm
+        · apply (Chomp_History_no_zero _ _ _ _ f_leg s_leg  t)
+
+
+
+
+
+lemma Chomp_state_on_turn_sub (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  :
+  ∀ t, ((Chomp height length).state_on_turn f_strat s_strat (t+1)) ⊆ (Chomp height length).state_on_turn f_strat s_strat t :=
+  by
+  intro t
+  cases' t with t
+  · dsimp [Symm_Game_World.state_on_turn]
+    rw [if_pos (by decide)]
+    dsimp [Chomp, preChomp, Symm_Game_World.history_on_turn, History_on_turn]
+    rw [if_pos (by apply Chomp_state_ini_not_zero _ _ h)]
+    apply Chomp_state_sub_ini
+  · dsimp [Symm_Game_World.state_on_turn]
+    by_cases q : Turn_fst (t + 1)
+    · rw [if_pos q]
+      rw [Turn_fst_not_step] at q
+      rw [if_neg q]
+      dsimp [Chomp, preChomp]
+      rw [← Turn_fst_not_step] at q
+      by_cases q1 : Chomp_state (Chomp_init height length) ((Chomp height length).history_on_turn f_strat s_strat t) = {(0,0)}
+      · have : Chomp_state (Chomp_init height length) ((Chomp height length).history_on_turn f_strat s_strat (t+1)) = {(0,0)} :=
+          by
+          dsimp [Symm_Game_World.history_on_turn, History_on_turn]
+          rw [if_pos q]
+          apply Chomp_state_zero_act_non_zero
+          · apply Chomp_init_has_zero
+          · exact q1
+          · apply Chomp_strat_non_zero_fst _ _ _ _ f_leg s_leg t q
+        rw [if_neg (by rw [not_not] ; apply this), if_neg (by rw [not_not] ; apply q1)]
+      · by_cases q2 : Chomp_state (Chomp_init height length) ((Chomp height length).history_on_turn f_strat s_strat (t+1)) = {(0,0)}
+        · rw [if_neg (by rw [not_not]; apply q2)]
+          rw [if_pos (by apply q1)]
+          rw [Finset.singleton_subset_iff]
+          rw [Chomp_state_has_zero_iff_hist_has_zero _ (by apply Chomp_init_has_zero)]
+          apply List.not_mem_cons_of_ne_of_not_mem
+          · exact (Chomp_strat_non_zero_fst _ _ _ _ f_leg s_leg t q).symm
+          · apply (Chomp_History_no_zero _ _ _ _ f_leg s_leg  t)
+        · rw [if_pos (by apply q2)]
+          rw [if_pos (by apply q1)]
+          apply Chomp_state_sub_of_hist_sub
+          dsimp [Symm_Game_World.history_on_turn, History_on_turn]
+          rw [if_pos q]
+          exact fun ⦃a⦄ a_1 =>
+            List.Mem.tail
+              (s_strat (Chomp_init height length)
+                (f_strat (Chomp_init height length)
+                    (History_on_turn (Chomp_init height length) f_strat s_strat t) ::
+                  History_on_turn (Chomp_init height length) f_strat s_strat t))
+              a_1
+    · rw [if_neg q]
+      rw [Turn_fst_not_step, not_not] at q
+      rw [if_pos q]
+      dsimp [Chomp, preChomp]
+      replace q := not_not.mpr q -- rw fails, pathetic
+      rw [← Turn_fst_not_step] at q
+      by_cases q1 : Chomp_state (Chomp_init height length) ((Chomp height length).history_on_turn f_strat s_strat t) = {(0,0)}
+      · have : Chomp_state (Chomp_init height length) ((Chomp height length).history_on_turn f_strat s_strat (t+1)) = {(0,0)} :=
+          by
+          dsimp [Symm_Game_World.history_on_turn, History_on_turn]
+          rw [if_neg q]
+          apply Chomp_state_zero_act_non_zero
+          · apply Chomp_init_has_zero
+          · exact q1
+          · apply Chomp_strat_non_zero_snd _ _ _ _ f_leg s_leg t q
+        rw [if_neg (by rw [not_not] ; apply this), if_neg (by rw [not_not] ; apply q1)]
+      · by_cases q2 : Chomp_state (Chomp_init height length) ((Chomp height length).history_on_turn f_strat s_strat (t+1)) = {(0,0)}
+        · rw [if_neg (by rw [not_not]; apply q2)]
+          rw [if_pos (by apply q1)]
+          rw [Finset.singleton_subset_iff]
+          rw [Chomp_state_has_zero_iff_hist_has_zero _ (by apply Chomp_init_has_zero)]
+          apply List.not_mem_cons_of_ne_of_not_mem
+          · exact (Chomp_strat_non_zero_snd _ _ _ _ f_leg s_leg t q).symm
+          · apply (Chomp_History_no_zero _ _ _ _ f_leg s_leg  t)
+        · rw [if_pos (by apply q2)]
+          rw [if_pos (by apply q1)]
+          apply Chomp_state_sub_of_hist_sub
+          dsimp [Symm_Game_World.history_on_turn, History_on_turn]
+          rw [if_neg q]
+          exact fun ⦃a⦄ a_1 =>
+            List.Mem.tail
+              (f_strat (Chomp_init height length)
+                (s_strat (Chomp_init height length)
+                    (History_on_turn (Chomp_init height length) f_strat s_strat t) ::
+                  History_on_turn (Chomp_init height length) f_strat s_strat t))
+              a_1
+
+
+
+
+
+lemma Chomp_state_on_turn_sub_strict (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (t : ℕ) (hs : (Chomp height length).state_on_turn f_strat s_strat t ≠ {(0,0)}):
+  ((Chomp height length).state_on_turn f_strat s_strat (t+1)) ⊂ (Chomp height length).state_on_turn f_strat s_strat t :=
+  by
+  rw [Finset.ssubset_iff_subset_ne]
+  refine' ⟨Chomp_state_on_turn_sub _ _ h _ _ f_leg s_leg t, _ ⟩
+  intro con
+  dsimp [Symm_Game_World.state_on_turn] at con
+  split_ifs at con with T
+  ·
+
+
+
+-- Chomp_state_ini_not_zero (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0)
+
+--#exit
+
+
+
+#exit
+
+lemma Chomp_WLT (height length : ℕ) : (Chomp height length).isWL_wBound (length * height) :=
+  by
+  intro f_strat s_strat f_leg s_leg
+  use (length * height)
+  refine' ⟨le_refl (length * height), _ ⟩
+  dsimp [Symm_Game_World.Turn_isWL, Chomp, preChomp]
+
+
+#check Finset.card_eq_one
