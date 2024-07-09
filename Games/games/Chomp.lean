@@ -1326,8 +1326,82 @@ lemma Chomp_state_on_turn_sub (height length : ℕ) (h : height ≠ 0 ∨ length
               a_1
 
 
+lemma Chomp_state_empty  (ini : (Finset (ℕ × ℕ))) : Chomp_state ini [] = ini :=
+  by
+  dsimp [Chomp_state]
+  rw [Finset.filter_eq_self]
+  intro _ _ _ no
+  contradiction
+
+lemma Chomp_not_mem_state_of_mem_hist (ini : (Finset (ℕ × ℕ))) (hist : (List (ℕ × ℕ))) (act : ℕ × ℕ) (ha : act ∈ hist) : act ∉ Chomp_state ini hist :=
+  by
+  dsimp [Chomp_state]
+  intro con
+  rw [Finset.mem_filter] at con
+  replace con := con.2 _ ha
+  apply con
+  dsimp [domi]
+  exact ⟨le_refl act.1, le_refl act.2⟩
 
 
+lemma Chomp_state_eq_state_on_turn (height length : ℕ) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (t : ℕ) :
+  (Chomp height length).state_on_turn f_strat s_strat t = Chomp_state (Chomp height length).init_game_state (History_on_turn (Chomp height length).init_game_state f_strat s_strat t) :=
+  by
+  cases' t with t
+  · dsimp [Symm_Game_World.state_on_turn, History_on_turn]
+    rw [Chomp_state_empty]
+  · dsimp [Symm_Game_World.state_on_turn, History_on_turn]
+    by_cases q : Turn_fst (t + 1)
+    · simp_rw [if_pos q]
+      dsimp [Chomp, preChomp]
+      split_ifs with q2
+      · dsimp [Symm_Game_World.history_on_turn] at q2
+        rw [eq_comm]
+        apply Chomp_state_zero_act_non_zero
+        · apply Chomp_init_has_zero
+        · exact q2
+        · apply Chomp_strat_non_zero_fst _ _ _ _ f_leg s_leg t q
+      · rfl
+    · simp_rw [if_neg q]
+      dsimp [Chomp, preChomp]
+      split_ifs with q2
+      · dsimp [Symm_Game_World.history_on_turn] at q2
+        rw [eq_comm]
+        apply Chomp_state_zero_act_non_zero
+        · apply Chomp_init_has_zero
+        · exact q2
+        · apply Chomp_strat_non_zero_snd _ _ _ _ f_leg s_leg t q
+      · rfl
+
+lemma Chomp_act_mem_state_of_law (ini : (Finset (ℕ × ℕ))) (hist : (List (ℕ × ℕ))) (act : ℕ × ℕ) (leg : Chomp_law ini hist act) :
+  act ∈ Chomp_state ini hist :=
+  by
+  dsimp [Chomp_state]
+  rw [Finset.mem_filter]
+  exact ⟨leg.act_mem, leg.nd ⟩
+
+
+
+
+lemma Chomp_state_cons_eq (ini : (Finset (ℕ × ℕ))) (hist : (List (ℕ × ℕ))) (act : ℕ × ℕ)
+  (main : Chomp_state ini (act :: hist) = Chomp_state ini hist) :
+  ¬ Chomp_law ini hist act :=
+  by
+  intro con
+  replace con := Chomp_act_mem_state_of_law _ _ _ con
+  rw [← main] at con
+  dsimp [Chomp_state] at con
+  rw [Finset.mem_filter] at con
+  replace con := con.2 act (by exact List.mem_cons_self act hist)
+  apply con
+  exact ⟨le_refl act.1, le_refl act.2⟩
+
+
+
+--#exit
 
 lemma Chomp_state_on_turn_sub_strict (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
   (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
@@ -1338,15 +1412,23 @@ lemma Chomp_state_on_turn_sub_strict (height length : ℕ) (h : height ≠ 0 ∨
   rw [Finset.ssubset_iff_subset_ne]
   refine' ⟨Chomp_state_on_turn_sub _ _ h _ _ f_leg s_leg t, _ ⟩
   intro con
-  dsimp [Symm_Game_World.state_on_turn] at con
-  split_ifs at con with T
-  ·
-
-
-
--- Chomp_state_ini_not_zero (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0)
-
---#exit
+  simp_rw [Chomp_state_eq_state_on_turn _ _ _ _ f_leg s_leg] at *
+  dsimp [History_on_turn] at con
+  by_cases q : Turn_fst (t + 1)
+  · rw [if_pos q] at con
+    have := f_leg t q
+    dsimp [Chomp, preChomp] at this
+    rw [if_pos ⟨Chomp_init_has_zero _ _ , Chomp_History_no_zero _ _ _ _ f_leg s_leg  t⟩] at this
+    rw [if_pos (by apply hs)] at this
+    replace con := Chomp_state_cons_eq _ _ _ con
+    exact con this
+  · rw [if_neg q] at con
+    have := s_leg t q
+    dsimp [Chomp, preChomp] at this
+    rw [if_pos ⟨Chomp_init_has_zero _ _ , Chomp_History_no_zero _ _ _ _ f_leg s_leg  t⟩] at this
+    rw [if_pos (by apply hs)] at this
+    replace con := Chomp_state_cons_eq _ _ _ con
+    exact con this
 
 
 
