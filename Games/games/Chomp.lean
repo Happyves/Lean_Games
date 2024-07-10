@@ -1430,16 +1430,72 @@ lemma Chomp_state_on_turn_sub_strict (height length : ℕ) (h : height ≠ 0 ∨
     replace con := Chomp_state_cons_eq _ _ _ con
     exact con this
 
+lemma Chomp_state_zero_stays (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (t : ℕ) (hs : (Chomp height length).state_on_turn f_strat s_strat t = {(0,0)}) :
+  (Chomp height length).state_on_turn f_strat s_strat (t + 1) = {(0,0)} :=
+  by
+  rw [Finset.eq_singleton_iff_unique_mem]
+  refine' ⟨Chomp_state_on_turn_has_zero _ _ _ _ f_leg s_leg (t+1), _ ⟩
+  intro x xdef
+  replace xdef := (Chomp_state_on_turn_sub _ _ h _ _ f_leg s_leg t) xdef
+  rw [hs, Finset.mem_singleton] at xdef
+  exact xdef
+
+-- lemma Chomp_state_reaches_zero (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+--   (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+--   (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat) :
+--   ∃ t, (Chomp height length).state_on_turn f_strat s_strat t = {(0,0)} :=
+--   by
+--   by_contra! con
+--   have ohoh := fun t => Finset.card_lt_card ((Chomp_state_on_turn_sub_strict _ _ h _ _ f_leg s_leg t) (con t))
+--   have nonono : ∀ t, (Symm_Game_World.state_on_turn (Chomp height length).toSymm_Game_World f_strat s_strat t).card < ((length +1) * (height + 1)) - t :=
 
 
-#exit
+-- #check Finset.card_eq_one
+-- #check Finset.card_lt_card
 
-lemma Chomp_WLT (height length : ℕ) : (Chomp height length).isWL_wBound (length * height) :=
+
+lemma Chomp_state_zero_stays_strong (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
+  (t : ℕ) (hs : (Chomp height length).state_on_turn f_strat s_strat t = {(0,0)}) :
+  ∀ n, (Chomp height length).state_on_turn f_strat s_strat (t + n) = {(0,0)} :=
+  by
+  intro n
+  induction' n with n ih
+  · exact hs
+  · rw [Nat.add_succ]
+    apply Chomp_state_zero_stays  _ _ h _ _ f_leg s_leg (t+n) ih
+
+
+lemma Chomp_WLT (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) : (Chomp height length).isWL_wBound ((length +1) * (height + 1)) :=
   by
   intro f_strat s_strat f_leg s_leg
-  use (length * height)
-  refine' ⟨le_refl (length * height), _ ⟩
+  use ((length +1) * (height + 1))
+  refine' ⟨le_refl ((length +1) * (height + 1)), _ ⟩
   dsimp [Symm_Game_World.Turn_isWL, Chomp, preChomp]
-
-
-#check Finset.card_eq_one
+  by_contra! con
+  have dec : ∀ t ≤ ((length +1) * (height + 1)), (Symm_Game_World.state_on_turn (Chomp height length).toSymm_Game_World f_strat s_strat t).card ≤ ((length +1) * (height + 1)) - t :=
+    by
+    intro t tdef
+    have : ∀ t ≤ ((length +1) * (height + 1)), (Symm_Game_World.state_on_turn (Chomp height length).toSymm_Game_World f_strat s_strat t) ≠  {(0,0)} :=
+      by
+      intro n ndef con'
+      have := Chomp_state_zero_stays_strong _ _ h _ _ f_leg s_leg n con' (((length +1) * (height + 1)) - n)
+      rw [Nat.add_sub_cancel' ndef] at this
+      exact con this
+    induction' t with t ih
+    · dsimp [Symm_Game_World.state_on_turn, Chomp, preChomp, Chomp_init]
+      simp_rw [Finset.card_product, Finset.card_range]
+      apply le_refl
+    · have that := Finset.card_lt_card ((Chomp_state_on_turn_sub_strict _ _ h _ _ f_leg s_leg t) (this t (by apply le_trans _ tdef ; apply Nat.le_succ )))
+      rw [Nat.lt_iff_add_one_le] at that
+      rw [Nat.sub_succ', Nat.le_sub_iff_add_le (by rw [Nat.le_sub_iff_add_le, add_comm] ; apply tdef ; apply le_trans _ tdef ; apply Nat.le_succ)]
+      exact le_trans that (ih (by apply le_trans _ tdef ; apply Nat.le_succ ))
+  specialize dec ((length +1) * (height + 1)) (le_refl _)
+  rw [Nat.sub_self, Nat.le_zero, Finset.card_eq_zero] at dec
+  apply Finset.not_mem_empty (0,0)
+  rw [← dec]
+  apply Chomp_state_on_turn_has_zero _ _ _ _ f_leg s_leg
