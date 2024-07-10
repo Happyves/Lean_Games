@@ -159,31 +159,34 @@ lemma Hist_legal_singleton (f_law s_law: α → List β → β → Prop) (ini : 
 
 #exit
 
-lemma History_stolen_strat_has_not_choose (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g) (hgu : g.strat_unique_actions)
-  (ws s_strat : Strategy α β) (t : ℕ) (tf : Turn_fst (t+1)) (f_leg : Strategy_legal_snd g.init_game_state g.law (stolen_strat g hgs ws) s_strat):
-  Classical.choose hgs ∉ (History_on_turn g.init_game_state (stolen_strat g hgs ws) s_strat (t+1)) :=
-  by
-  induction' t with t ih
-  · dsimp [History_on_turn]
-    rw [if_pos (by decide)]
-    dsimp [stolen_strat]
-    rw [if_pos (by rfl)]
-    intro con
-    rw [List.mem_singleton] at con
-    apply (hgu ws ws [] [Classical.choose hgs] (Classical.choose hgs)).2 (by apply List.mem_singleton_self) (by rw [Hist_legal_singleton] ; exact (Classical.choose_spec hgs).1) con
-  · intro con
-    unfold History_on_turn at con
-    --by_cases q : Turn_fst ( Nat.succ t + 1)
-    rw [if_pos tf] at con
-    rw [List.mem_cons] at con
-    cases' con with con con
-    · dsimp [stolen_strat] at con
-      rw [if_neg (by apply History_on_turn_nonempty_of_succ)] at con
-      specialize hgu ws s_strat [Classical.choose hgs] ((List.dropLast (History_on_turn g.init_game_state (stolen_strat g hgs ws) s_strat (t + 1)) ++ [ws g.init_game_state [Classical.choose hgs], Classical.choose hgs])) (Classical.choose hgs)
-      replace hgu := hgu.1
-      specialize hgu (by apply List.mem_singleton_self) (by apply List.mem_append_right ; exact List.mem_cons_self (ws g.init_game_state [Classical.choose hgs]) [Classical.choose hgs])
-      exact hgu con.symm
-    · apply ih con
+-- lemma History_stolen_strat_has_not_choose (g : zSymm_Game_World α β) (hgs : Strong_stealing_condition g) (hgu : g.strat_unique_actions)
+--   (ws s_strat : Strategy α β) (t : ℕ) (tf : Turn_fst (t+1)) (f_leg : Strategy_legal_snd g.init_game_state g.law (stolen_strat g hgs ws) s_strat):
+--   Classical.choose hgs ∉ (History_on_turn g.init_game_state (stolen_strat g hgs ws) s_strat (t+1)) :=
+--   by
+--   induction' t with t ih
+--   · dsimp [History_on_turn]
+--     rw [if_pos (by decide)]
+--     dsimp [stolen_strat]
+--     rw [if_pos (by rfl)]
+--     intro con
+--     rw [List.mem_singleton] at con
+--     apply (hgu ws ws [] [Classical.choose hgs] (Classical.choose hgs)).2 (by apply List.mem_singleton_self) (by rw [Hist_legal_singleton] ; exact (Classical.choose_spec hgs).1) con
+--   · intro con
+--     unfold History_on_turn at con
+--     --by_cases q : Turn_fst ( Nat.succ t + 1)
+--     rw [if_pos tf] at con
+--     rw [List.mem_cons] at con
+--     cases' con with con con
+--     · dsimp [stolen_strat] at con
+--       rw [if_neg (by apply History_on_turn_nonempty_of_succ)] at con
+--       specialize hgu ws s_strat [Classical.choose hgs] ((List.dropLast (History_on_turn g.init_game_state (stolen_strat g hgs ws) s_strat (t + 1)) ++ [ws g.init_game_state [Classical.choose hgs], Classical.choose hgs])) (Classical.choose hgs)
+--       replace hgu := hgu.1
+--       specialize hgu (by apply List.mem_singleton_self) (by apply List.mem_append_right ; exact List.mem_cons_self (ws g.init_game_state [Classical.choose hgs]) [Classical.choose hgs])
+--       exact hgu con.symm
+--     · apply ih con
+
+
+
     -- · rw [if_neg q] at con
     --   rw [List.mem_cons] at con
     --   cases' con with con con

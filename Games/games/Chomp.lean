@@ -8,7 +8,7 @@ import Games.exLib.List
 import Games.gameLib.Conditioning_Symm
 import Mathlib.Tactic
 import Mathlib.Data.List.ProdSigma
-import Games.gameLib.Stealing_Symm
+--import Games.gameLib.Stealing_Symm
 
 
 
@@ -1443,18 +1443,6 @@ lemma Chomp_state_zero_stays (height length : ℕ) (h : height ≠ 0 ∨ length 
   rw [hs, Finset.mem_singleton] at xdef
   exact xdef
 
--- lemma Chomp_state_reaches_zero (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
---   (f_leg : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat)
---   (s_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law f_strat s_strat) :
---   ∃ t, (Chomp height length).state_on_turn f_strat s_strat t = {(0,0)} :=
---   by
---   by_contra! con
---   have ohoh := fun t => Finset.card_lt_card ((Chomp_state_on_turn_sub_strict _ _ h _ _ f_leg s_leg t) (con t))
---   have nonono : ∀ t, (Symm_Game_World.state_on_turn (Chomp height length).toSymm_Game_World f_strat s_strat t).card < ((length +1) * (height + 1)) - t :=
-
-
--- #check Finset.card_eq_one
--- #check Finset.card_lt_card
 
 
 lemma Chomp_state_zero_stays_strong (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (f_strat s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
@@ -1499,3 +1487,193 @@ lemma Chomp_WLT (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) : (Cho
   apply Finset.not_mem_empty (0,0)
   rw [← dec]
   apply Chomp_state_on_turn_has_zero _ _ _ _ f_leg s_leg
+
+
+
+
+noncomputable
+def stolen_strat
+  (trap : β) (ws : Strategy α β) : Strategy α β :=
+  fun ini hist =>
+    if hist = []
+    then ws ini [trap]
+    else ws ini (hist.dropLast ++ [ws ini [trap] , trap])
+
+
+noncomputable
+def pre_stolen_strat
+  (trap : β) (s_strat : Strategy α β) : Strategy α β :=
+  fun ini hist =>
+    if hist = []
+    then trap
+    else s_strat ini (hist.dropLast)
+
+
+
+lemma History_on_turn_stolen_getLast (ini : α)
+  (trap : β) (ws s_strat : Strategy α β) (t : ℕ) :
+  (History_on_turn ini (stolen_strat trap ws) s_strat (t+1)).getLast (by apply History_on_turn_nonempty_of_succ) = ws ini [trap] :=
+  by
+  induction' t with t ih
+  · dsimp!
+    unfold stolen_strat
+    rw [if_pos (by rfl)]
+  · dsimp [History_on_turn] at *
+    by_cases q : Turn_fst (Nat.succ t + 1)
+    · simp_rw [if_pos q]
+      rw [List.getLast_cons, ih]
+    · simp_rw [if_neg q]
+      rw [List.getLast_cons, ih]
+
+
+lemma History_on_turn_stolen_pre_stolen (ini : α)
+  (trap : β) (ws s_strat : Strategy α β) (t : ℕ) :
+  (History_on_turn ini (stolen_strat trap ws) s_strat t) ++ [trap] =
+  History_on_turn ini (pre_stolen_strat trap s_strat) ws (t+1) :=
+  by
+  induction' t with t ih
+  · dsimp [History_on_turn, stolen_strat, pre_stolen_strat]
+    rw [if_pos (by decide), if_pos (by rfl)]
+  · dsimp [History_on_turn]
+    by_cases q : Turn_fst (t + 1)
+    · simp_rw [if_pos q]
+      rw [Turn_fst_not_step] at q
+      rw [if_neg q]
+      rw [List.cons_append, ih]
+      dsimp [History_on_turn]
+      rw [← Turn_fst_not_step] at q
+      rw [if_pos q]
+      congr
+      cases' t with t
+      · dsimp [History_on_turn, stolen_strat, pre_stolen_strat]
+        rw [if_pos (by rfl), if_pos (by rfl)]
+      · unfold stolen_strat
+        rw [if_neg (by apply History_on_turn_nonempty_of_succ)]
+        rw [show [ws ini [trap], trap] = [ws ini [trap]] ++ [trap] from (by simp only [List.singleton_append]) ]
+        rw [← List.append_assoc]
+        have := History_on_turn_stolen_getLast ini trap ws s_strat (t)
+        have that := @List.dropLast_append_getLast _ (History_on_turn ini (stolen_strat trap ws) s_strat (t + 1)) (by apply History_on_turn_nonempty_of_succ)
+        rw [← this]
+        unfold stolen_strat at *
+        rw [that]
+        rw [ih]
+        congr
+        dsimp [History_on_turn]
+        simp_rw [if_pos q]
+    · simp_rw [if_neg q]
+      rw [Turn_fst_not_step, not_not] at q
+      rw [if_pos q]
+      rw [List.cons_append, ih]
+      dsimp [History_on_turn] at *
+      rw [← @not_not (Turn_fst (t + 1 + 1)), ← Turn_fst_not_step] at q
+      simp_rw [if_neg q] at *
+      congr
+      rw [← ih]
+      rw [List.dropLast_append_cons]
+      dsimp
+      rw [List.append_nil]
+
+
+lemma Chomp_len_heigh_legal (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) :
+  Symm_Game_World.law (Chomp height length).toSymm_Game_World (Chomp height length).toSymm_Game_World.init_game_state [] (length, height) :=
+  by
+  dsimp [Chomp, preChomp]
+  rw [if_pos ⟨Chomp_init_has_zero _ _ , (by trivial)⟩ ]
+  rw [Chomp_state_empty]
+  rw [if_pos (by intro con ; have := Chomp_init_has_len_hei height length ; rw [con, Finset.mem_singleton, Prod.eq_iff_fst_eq_snd_eq] at this ; cases' h with h h ; exact h this.2 ; exact h this.1 )]
+  constructor
+  · exact Chomp_init_has_len_hei height length
+  · intro q qdef ; contradiction
+  · apply List.Pairwise.nil
+  · intro q qdef ; contradiction
+  · intro con ; rw [Prod.eq_iff_fst_eq_snd_eq] at con ; cases' h with h h ; exact h con.2 ; exact h con.1
+
+
+lemma Chomp_state_zero_top (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (hist : List (ℕ × ℕ)):
+  Chomp_state (Chomp_init height length) hist = {(0, 0)} ↔ Chomp_state (Chomp_init height length) (hist ++ [(length, height)]) :=
+  by
+
+
+#exit
+
+lemma pre_stolen_strat_legal_fst (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0)
+  (ws s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law (stolen_strat (length, height) ws) s_strat)
+  : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law (pre_stolen_strat (length, height)  s_strat) ws :=
+  by
+  intro t tf
+  cases' t with t
+  · dsimp!
+    unfold pre_stolen_strat
+    rw [if_pos (by rfl)]
+    apply Chomp_len_heigh_legal _ _ h
+  · rw [← History_on_turn_stolen_pre_stolen]
+    simp only [ne_eq, pre_stolen_strat, List.append_eq_nil, and_false, List.dropLast_concat, ite_false]
+    have f_leg' := f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
+    dsimp [Chomp, preChomp]
+    dsimp [Chomp, preChomp] at f_leg'
+    by_cases qwlog : (0, 0) ∈ History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t
+    · rw [if_neg (by rw [not_and_or,not_not] ; right ; apply List.mem_append_left ; exact qwlog )]
+      exact trivial
+    · rw [if_pos ⟨Chomp_init_has_zero _ _, qwlog⟩] at f_leg'
+      rw [if_pos ⟨Chomp_init_has_zero _ _, (by apply List.not_mem_append qwlog (helper _ _ h))⟩]
+      by_cases q : ¬Chomp_state (Chomp_init height length) (History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t) = {(0, 0)}
+      · rw [if_pos q] at f_leg'
+
+
+
+
+
+
+-- initial stealing stuff
+#exit
+lemma Chomp_Stealing_condition (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) : Strong_stealing_condition (Chomp height length) :=
+  by
+  use (length, height)
+  constructor
+  · dsimp [Chomp, preChomp]
+    rw [if_pos ⟨Chomp_init_has_zero _ _ , (by trivial)⟩ ]
+    rw [Chomp_state_empty]
+    rw [if_pos (by intro con ; have := Chomp_init_has_len_hei height length ; rw [con, Finset.mem_singleton, Prod.eq_iff_fst_eq_snd_eq] at this ; cases' h with h h ; exact h this.2 ; exact h this.1 )]
+    constructor
+    · exact Chomp_init_has_len_hei height length
+    · intro q qdef ; contradiction
+    · apply List.Pairwise.nil
+    · intro q qdef ; contradiction
+    · intro con ; rw [Prod.eq_iff_fst_eq_snd_eq] at con ; cases' h with h h ; exact h con.2 ; exact h con.1
+  · intro act hist leg hne htop
+    constructor
+    · apply preChomp_law_prop_transition _ _ h _ _ leg
+    · apply preChomp_law_prop_law _ _ h _ _ hne htop leg
+
+
+--#exit
+
+lemma pre_stolen_strat_legal_fst (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) --(hgu : g.strat_unique_actions)
+  (ws s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
+  (f_leg : Strategy_legal_snd (Chomp height length).init_game_state (Chomp height length).law (stolen_strat (Chomp height length) (Chomp_Stealing_condition _ _ h) ws) s_strat)
+  : Strategy_legal_fst (Chomp height length).init_game_state (Chomp height length).law (pre_stolen_strat (Chomp height length) (Chomp_Stealing_condition _ _ h) s_strat) ws :=
+  by
+  intro t tf
+  cases' t with t
+  · dsimp!
+    unfold pre_stolen_strat
+    rw [if_pos (by rfl)]
+    apply (Classical.choose_spec (Chomp_Stealing_condition _ _ h)).1
+  · rw [← History_on_turn_stolen_pre_stolen]
+    simp only [ne_eq, pre_stolen_strat, List.append_eq_nil, and_false, List.dropLast_concat, ite_false]
+    have f_leg' := f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
+    dsimp [Chomp, preChomp]
+    dsimp [Chomp, preChomp] at f_leg'
+
+  -- induction' t with t ih
+  -- · dsimp!
+  --   unfold pre_stolen_strat
+  --   rw [if_pos (by rfl)]
+  --   apply (Classical.choose_spec (Chomp_Stealing_condition _ _ h)).1
+  -- · rw [← History_on_turn_stolen_pre_stolen]
+  --   simp only [ne_eq, pre_stolen_strat, List.append_eq_nil, and_false, List.dropLast_concat, ite_false]
+  --   have f_leg' := f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
+  --   cases' t with t
+  --   · contradiction
+  --   · sorry
