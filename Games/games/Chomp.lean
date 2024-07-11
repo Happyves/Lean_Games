@@ -1589,12 +1589,39 @@ lemma Chomp_len_heigh_legal (height length : ℕ) (h : height ≠ 0 ∨ length �
   · intro con ; rw [Prod.eq_iff_fst_eq_snd_eq] at con ; cases' h with h h ; exact h con.2 ; exact h con.1
 
 
-lemma Chomp_state_zero_top (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) (hist : List (ℕ × ℕ)):
-  Chomp_state (Chomp_init height length) hist = {(0, 0)} ↔ Chomp_state (Chomp_init height length) (hist ++ [(length, height)]) :=
+lemma Chomp_state_zero_top (height length : ℕ) (hist : List (ℕ × ℕ))
+  (hh : hist ≠ []) (hm : ∀ q ∈ hist, q ∈ Chomp_init height length):
+  Chomp_state (Chomp_init height length) hist = {(0, 0)} ↔ Chomp_state (Chomp_init height length) (hist ++ [(length, height)]) = {(0, 0)}  :=
   by
+  cases' hist with x l
+  · contradiction
+  · have main : Chomp_state (Chomp_init height length) (x :: l) =  Chomp_state (Chomp_init height length) ((x :: l) ++ [(length, height)]) :=
+      by
+      dsimp [Chomp_state]
+      apply Finset.filter_congr
+      intro y _
+      constructor
+      · intro Q q qdef
+        rw [← List.cons_append, List.mem_append] at qdef
+        cases' qdef with qdef qdef
+        · exact Q _ qdef
+        · rw [List.mem_singleton] at qdef
+          rw [qdef]
+          specialize Q x (by exact List.mem_cons_self x l)
+          specialize hm x (by exact List.mem_cons_self x l)
+          simp_rw [Chomp_init, Finset.mem_product, Finset.mem_range, Nat.lt_succ] at hm
+          dsimp [nondomi, domi] at *
+          contrapose! Q
+          exact ⟨le_trans hm.1 Q.1,  le_trans hm.2 Q.2⟩
+      · intro Q q qdef
+        rw [← List.cons_append] at Q
+        apply Q
+        exact List.mem_append_left [(length, height)] qdef
+    rw [main]
 
 
-#exit
+
+
 
 lemma pre_stolen_strat_legal_fst (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0)
   (ws s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
@@ -1619,6 +1646,18 @@ lemma pre_stolen_strat_legal_fst (height length : ℕ) (h : height ≠ 0 ∨ len
       rw [if_pos ⟨Chomp_init_has_zero _ _, (by apply List.not_mem_append qwlog (helper _ _ h))⟩]
       by_cases q : ¬Chomp_state (Chomp_init height length) (History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t) = {(0, 0)}
       · rw [if_pos q] at f_leg'
+        have : History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t ≠ [] :=
+          by
+          cases' t with t
+          · contradiction
+          · apply History_on_turn_nonempty_of_succ
+        replace this := Chomp_state_zero_top height length _ this f_leg'.hist_mem
+        rw [← not_iff_not] at this
+        rw [this] at q
+        rw [if_pos q]
+
+-- trouble on whether act isn't (len, height) → hist non empty, and act legal should imply it...
+
 
 
 
