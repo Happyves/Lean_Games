@@ -9,7 +9,7 @@ import Games.gameLib.Conditioning_Symm
 import Mathlib.Tactic
 import Mathlib.Data.List.ProdSigma
 --import Games.gameLib.Stealing_Symm
-
+import Games.gameLib.Zermelo_Symm
 
 
 
@@ -1621,7 +1621,94 @@ lemma Chomp_state_zero_top (height length : ℕ) (hist : List (ℕ × ℕ))
 
 
 
+lemma Chomp_state_zero_append_non_zero (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ)
+  (hs : Chomp_state ini hist = {(0,0)}) (ha : act ≠ (0,0)) : Chomp_state ini (hist ++ [act]) = {(0,0)} :=
+  by
+  dsimp [Chomp_state] at *
+  simp_rw [Finset.eq_singleton_iff_unique_mem, Finset.mem_filter] at *
+  refine' ⟨⟨hs.1.1, _ ⟩, _ ⟩
+  · intro q qdef
+    rw [List.mem_append] at qdef
+    cases' qdef with qdef qdef
+    · exact hs.1.2 q qdef
+    · rw [List.mem_singleton] at qdef
+      rw [qdef]
+      intro con
+      dsimp [domi] at con
+      simp_rw [Nat.le_zero] at con
+      apply ha
+      rw [Prod.eq_iff_fst_eq_snd_eq]
+      exact con
+  · intro x ⟨xi, xd⟩
+    apply hs.2
+    refine' ⟨ xi, _ ⟩
+    intro q qdef
+    apply xd
+    exact List.mem_append.mpr (Or.inl qdef)
 
+
+lemma Chomp_init_has_top (height length : ℕ) : (length, height) ∈ Chomp_init height length :=
+  by
+  simp_rw [Chomp_init, Finset.mem_product, Finset.mem_range, Nat.lt_succ]
+  refine' ⟨ le_refl length , le_refl height ⟩
+
+
+
+
+lemma fst_stolen_act_mem_init (height length : ℕ)
+  (ws s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ)) (t : Nat) (tf : Turn_fst (Nat.succ t + 1))
+  (leg : Chomp_law (Chomp_init height length)
+      (History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t)
+      (s_strat (Chomp_init height length)
+        (History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t))) :
+  ws (Chomp_init height length) [(length, height)] ∈ Chomp_init height length :=
+  by
+  cases' t with t
+  · contradiction
+  · have := History_on_turn_stolen_getLast (Chomp_init height length) (length, height) ws s_strat t
+    rw [← this]
+    apply leg.hist_mem
+    apply List.getLast_mem
+
+
+lemma pre_stolen_strat_legal_fst_helper_1 (height length : ℕ) (a b : Nat × Nat)
+  (adef : a ∈ Chomp_init height length) (bdef : b ∈ Chomp_init height length)
+  (main : nondomi b a) : nondomi (length, height) a :=
+  by
+  dsimp [nondomi, domi]
+  dsimp [nondomi, domi] at main
+  contrapose! main
+  simp_rw [Chomp_init, Finset.mem_product, Finset.mem_range, Nat.lt_succ] at adef bdef
+  convert bdef
+  · exact le_antisymm adef.1 main.1
+  · exact le_antisymm adef.2 main.2
+
+lemma pre_stolen_strat_legal_fst_helper_2 (height length : ℕ) (act : Nat × Nat) (hist : List (Nat × Nat))
+  (hh : hist ≠ [])
+  (leg : Chomp_law (Chomp_init height length) hist act)
+  (x : Nat × Nat) (xdef : x ∈ hist) : nondomi (length, height) x :=
+  by
+  have := leg.hist_nd
+  rw [← List.dropLast_append_getLast hh, List.pairwise_append] at this
+  rw [← List.dropLast_append_getLast hh, List.mem_append] at xdef
+  cases' xdef with xdef xdef
+  · replace this := this.2.2 _ xdef (List.getLast hist hh) (by exact List.mem_singleton.mpr rfl)
+    apply pre_stolen_strat_legal_fst_helper_1 _ _ _ _ _ _ this
+    · apply leg.hist_mem
+      exact List.mem_of_mem_dropLast xdef
+    · apply leg.hist_mem
+      exact List.getLast_mem hh
+  · rw [List.mem_singleton] at xdef
+    rw [xdef]
+
+
+
+
+
+
+
+
+--#exit
 
 lemma pre_stolen_strat_legal_fst (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0)
   (ws s_strat : Strategy (Finset (ℕ × ℕ)) (ℕ × ℕ))
@@ -1639,6 +1726,11 @@ lemma pre_stolen_strat_legal_fst (height length : ℕ) (h : height ≠ 0 ∨ len
     have f_leg' := f_leg t (by rw [Turn_snd_fst_step] ; exact tf)
     dsimp [Chomp, preChomp]
     dsimp [Chomp, preChomp] at f_leg'
+    have : History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t ≠ [] :=
+        by
+        cases' t with t
+        · contradiction
+        · apply History_on_turn_nonempty_of_succ
     by_cases qwlog : (0, 0) ∈ History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t
     · rw [if_neg (by rw [not_and_or,not_not] ; right ; apply List.mem_append_left ; exact qwlog )]
       exact trivial
@@ -1646,22 +1738,60 @@ lemma pre_stolen_strat_legal_fst (height length : ℕ) (h : height ≠ 0 ∨ len
       rw [if_pos ⟨Chomp_init_has_zero _ _, (by apply List.not_mem_append qwlog (helper _ _ h))⟩]
       by_cases q : ¬Chomp_state (Chomp_init height length) (History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t) = {(0, 0)}
       · rw [if_pos q] at f_leg'
-        have : History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t ≠ [] :=
-          by
-          cases' t with t
-          · contradiction
-          · apply History_on_turn_nonempty_of_succ
         replace this := Chomp_state_zero_top height length _ this f_leg'.hist_mem
         rw [← not_iff_not] at this
         rw [this] at q
         rw [if_pos q]
+        constructor
+        · exact f_leg'.act_mem
+        · intro q qdef
+          rw [List.mem_append] at qdef
+          cases' qdef with qdef qdef
+          · exact f_leg'.hist_mem q qdef
+          · rw [List.mem_singleton] at qdef
+            rw [qdef]
+            apply Chomp_init_has_top
+        · rw [List.pairwise_append]
+          refine' ⟨(by apply f_leg'.hist_nd), (by apply List.pairwise_singleton), _ ⟩
+          intro a adef b bdef
+          rw [List.mem_singleton] at bdef
+          rw [bdef]
+          sorry
+        · intro a adef
+          rw [List.mem_append] at adef
+          cases' adef with adef adef
+          · exact f_leg'.nd _ adef
+          · rw [List.mem_singleton] at adef
+            rw [adef]
+            have : nondomi (ws (Chomp_init height length) [(length, height)]) (s_strat (Chomp_init height length) (History_on_turn (Chomp_init height length) (stolen_strat (length, height) ws) s_strat t)) :=
+              by
+              apply f_leg'.nd
+              cases' t with t
+              · contradiction
+              · rw [← History_on_turn_stolen_getLast (Chomp_init height length) (length, height) ws s_strat t]
+                apply List.getLast_mem
+            apply pre_stolen_strat_legal_fst_helper_1 _ _ _ _ (f_leg'.act_mem) (fst_stolen_act_mem_init _ _ _ _ _ tf f_leg') this
+        · exact f_leg'.nz_act
+      · rw [if_neg q] at f_leg'
+        rw [not_not] at q
+        replace q := Chomp_state_zero_append_non_zero _ _ (length, height) q (by intro con ; rw [Prod.eq_iff_fst_eq_snd_eq] at con ; cases' h with h h ; apply h ; exact con.2 ; apply h ; exact con.1)
+        rw [if_neg (by rw [not_not]; apply q)]
+        exact f_leg'
+
+
 
 -- trouble on whether act isn't (len, height) → hist non empty, and act legal should imply it...
 
 
+lemma Strong_strategy_stealing (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) : (Chomp height length).is_fst_win :=
+  by
+  cases' (zSymm_Game_World.Zermelo (Chomp height length) (Chomp_WLT _ _ h)) with F S
+  · exact F
+  · obtain ⟨ws, ws_prop⟩ := S
+    use (stolen_strat (length, height) ws)
+    intro s_strat s_leg
 
-
-
+-- TODO : replace wining strat def so that request ∀ t, leg f at t → leg ws at (t+1) ...
 
 
 -- initial stealing stuff
