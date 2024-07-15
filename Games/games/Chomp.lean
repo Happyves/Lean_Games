@@ -1708,6 +1708,7 @@ lemma pre_stolen_strat_legal_fst_helper_2 (height length : ℕ) (act : Nat × Na
 
 
 
+
 --#exit
 
 lemma pre_stolen_strat_legal_fst (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0)

@@ -1166,9 +1166,33 @@ lemma zSymm_Game_World.has_WL_init_end
   · exact h ⟨hp, q2⟩
 
 
+-- --#exit
+
+
+-- lemma zSymm_Game_World.has_WL_init_end
+--   (g : zSymm_Game_World α β)
+--   (P : Prop)
+--   (hp : P)
+--   (h : (P ∧ (¬ g.win_states g.init_game_state)) → g.has_WL) :
+--   g.has_WL :=
+--   by
+--   obtain ⟨ss,ss_prop⟩ := g.playable_has_strong_snd_strat g.playable
+--   by_cases q2 : g.win_states g.init_game_state
+--   · apply zSymm_Game_World.has_WL.ws
+--     use ss
+--     intro fs fs_leg
+--     constructor
+--     · use 0
+--       constructor
+--       · decide
+--       · constructor
+--         · apply q2
+--         · intro t no
+--           contradiction
+--     · exact ss_prop fs fs_leg
+--   · exact h ⟨hp, q2⟩
+
 --#exit
-
-
 
 -- # More conditioining
 
