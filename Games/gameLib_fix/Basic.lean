@@ -324,7 +324,7 @@ lemma Invariant_snd' {p : ℕ → Prop}
 
 
 
--- # History
+-- # History and strategies
 
 inductive Hist_legal (ini : α) (f_law s_law : α → List β → (β → Prop))  : List β → Prop
 | nil : Hist_legal ini f_law s_law  []
