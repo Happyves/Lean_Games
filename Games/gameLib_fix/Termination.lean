@@ -1,8 +1,6 @@
 
 import Games.gameLib_fix.Basic
 
-#check Nat
-
 
 inductive Game_World.Turn_isWL (g : Game_World α β)
   (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal)
@@ -77,3 +75,20 @@ def Game_World.is_fst_win  {α β : Type _} (g : Game_World α β) : Prop :=
   ∃ ws : fStrategy g.init_game_state g.fst_legal g.snd_legal,
   ∀ snd_s : sStrategy g.init_game_state g.fst_legal g.snd_legal,
   ({g with fst_strat := ws, snd_strat := snd_s} : Game α β).fst_win
+
+def Game_World.is_snd_win  {α β : Type _} (g : Game_World α β) : Prop :=
+  ∃ ws : fStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ∀ snd_s : sStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ({g with fst_strat := ws, snd_strat := snd_s} : Game α β).snd_win
+
+def Symm_Game_World.is_fst_win  {α β : Type _} (g : Symm_Game_World α β) : Prop :=
+  g.toGame_World.is_fst_win
+
+def Symm_Game_World.is_snd_win  {α β : Type _} (g : Symm_Game_World α β) : Prop :=
+  g.toGame_World.is_snd_win
+
+inductive Game_World.is_WL (g : Game_World α β) : Prop where
+| wf (h : g.is_fst_win)
+| ws (h : g.is_snd_win)
+
+def Symm_Game_World.is_WL (g : Symm_Game_World α β) := g.toGame_World.is_WL
