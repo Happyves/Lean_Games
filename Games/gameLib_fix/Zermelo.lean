@@ -19,8 +19,22 @@ inductive History_good : (α) → (α → List β → (β → Prop)) → (α →
 
 --set_option trace.Elab.inductive true in
 --set_option trace.Kernel true in
-inductive test : Option Nat → Nat → Prop where
+inductive test : Nat → Nat → Prop where
 | mk (k) (n) (h : ∃ m, 1 = 0 →  test (k+1) m) : test (k) n
+
+inductive test' : Nat → Nat → Prop where
+| mk (k) (n) (h : PSigma Nat ((fun q m : Nat => 1 = 0 →  test' (q) m) (k+1))) : test' (k) n
+
+
+mutual -- Thanks Arthur
+inductive test : Nat → Nat → Prop where
+| mk (k) (n)  : ExistsTest k → test k n
+
+inductive ExistsTest : Nat → Prop where
+| intro (m : Nat) : test (k+1) m → ExistsTest k
+end
+
+#check Exists
 
 lemma Game_World.Zermelo (g : Game_World α β) :
   g.isWL → g.has_WL :=
