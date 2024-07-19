@@ -87,8 +87,8 @@ def Symm_Game_World.is_fst_win  {α β : Type _} (g : Symm_Game_World α β) : P
 def Symm_Game_World.is_snd_win  {α β : Type _} (g : Symm_Game_World α β) : Prop :=
   g.toGame_World.is_snd_win
 
-inductive Game_World.is_WL (g : Game_World α β) : Prop where
+inductive Game_World.has_WL (g : Game_World α β) : Prop where
 | wf (h : g.is_fst_win)
 | ws (h : g.is_snd_win)
 
-def Symm_Game_World.is_WL (g : Symm_Game_World α β) := g.toGame_World.is_WL
+def Symm_Game_World.has_WL (g : Symm_Game_World α β) := g.toGame_World.has_WL
