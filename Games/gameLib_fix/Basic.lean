@@ -572,6 +572,34 @@ def Symm_Game_World.state_on_turn {α β : Type _} (g : Symm_Game_World α β)
 def Symm_Game.state_on_turn {α β : Type _} (g : Symm_Game α β) : ℕ → α :=
   Symm_Game_World.state_on_turn g.toSymm_Game_World g.fst_strat g.snd_strat
 
+def State_from_history (ini : α ) (f_trans s_trans : α → List β → (β → α)) : List β → α
+| [] => ini
+| a :: h => if Turn_fst (h.length +1)
+            then f_trans ini h a
+            else s_trans ini h a
+
+lemma Game_World.state_on_turn_State_from_history (g : Game_World α β)
+    (fst_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal)
+    (snd_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal)
+    (t : ℕ) :
+    g.state_on_turn fst_strat snd_strat t =
+    State_from_history g.init_game_state g.fst_transition g.snd_transition
+    (History_on_turn g.init_game_state g.fst_legal g.snd_legal fst_strat snd_strat t).val :=
+    by
+    cases' t with t
+    · dsimp!
+    · dsimp [state_on_turn, History_on_turn]
+      split_ifs with T
+      · dsimp [State_from_history]
+        simp_rw [History_on_turn_length]
+        rw [if_pos T]
+        rfl
+      · dsimp [State_from_history]
+        simp_rw [History_on_turn_length]
+        rw [if_neg T]
+        rfl
+
+
 -- TODO : port initial stuff
 
 
