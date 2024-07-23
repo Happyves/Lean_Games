@@ -71,10 +71,6 @@ structure history_safe (g : Game_World α β) (hist : List β) : Prop where
   prolong_fst : (Turn_fst (hist.length+1) → ∃ act : β, g.fst_legal g.init_game_state hist act ∧ (∀ next : β, g.snd_legal g.init_game_state (act :: hist) next → ¬ g.snd_win_states (State_from_history g.init_game_state g.fst_transition g.snd_transition (next :: act :: hist))))
   prolong_snd : (Turn_snd (hist.length+1) → ∃ act : β, g.snd_legal g.init_game_state hist act ∧ (∀ next : β, g.fst_legal g.init_game_state (act :: hist) next → ¬ g.fst_win_states (State_from_history g.init_game_state g.fst_transition g.snd_transition (next :: act :: hist))))
 
-lemma main (g : Game_World α β) (hgp : g.playable) (hgw : ¬ g.has_WL) :
-  ∃ chain : ℕ → β, ∀ t, history_safe g ((List.range t).map chain) :=
-  by
-  by_contra! con
 
 
 
@@ -93,11 +89,22 @@ lemma main (g : Game_World α β) (hgp : g.playable) (hgw : ¬ g.has_WL) :
 
 
 def Game_World.isWL_alt (g : Game_World α β) : Prop :=
-  ∀ hist : List β,  Hist_legal g.init_game_state g.fst_legal g.snd_legal (hist) →
+  ∀ hist : List β,  Hist_legal g.init_game_state g.fst_legal g.snd_legal (hist) → -- probably, his can be ommitted
     ∀ futures : Nat → List β, (∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal ((futures t) ++ hist)) →
-      (∀ t, (futures t) ≥ t) →
+      (∀ t, (futures t).length = t) → ∃ T, (g.fst_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition ((futures T) ++ hist))) ∨ (g.snd_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition ((futures T) ++ hist)))
 
 
+/-
+Idea:
+
+consider type of histories that are legal and neutral ; nonempty → empty hist ; disjoin on whether the length are bounded
+or unbounded ; in the unbounded case show that the negation of the above `isWL_alt` holds ; in the bounded case, for a bound
+T, show Zermelo by induction on T, as in the classic proof ?
+Maybe look at histories rather then changing game-world. For a given hist, consider the set of hists that extend it and
+reached a terminal state (there must be one such extention, by the case we're in)....
+-/
+
+#exit
 
 lemma Game_World.Zermelo (g : Game_World α β) :
   g.isWL → g.has_WL :=
