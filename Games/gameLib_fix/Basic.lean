@@ -6,6 +6,8 @@ Author: Yves Jäckle.
 
 
 import Mathlib.Tactic
+import Mathlib.Data.List.DropRight -- now Rdrop
+
 
 -- should contain game structures, turn manipulations, history and state lemmas
 
@@ -375,6 +377,19 @@ instance (f_law s_law : α → List β → (β → Prop)) [∀ i : α, ∀ h : L
                      apply Hist_legal.cons _ _ _ ih
                      rw [if_neg h]
                      exact I'))
+
+
+lemma Hist_legal_suffix (ini : α) (f_law s_law : α → List β → (β → Prop)) (pre post : List β) :
+  Hist_legal ini f_law s_law (post ++ pre) → Hist_legal ini f_law s_law pre :=
+  by
+  intro main
+  induction' post with x l ih
+  · rw [List.nil_append] at main
+    exact main
+  · cases' main
+    rename_i yes _
+    exact ih yes
+
 
 
 def fStrategy (ini : α) (f_law s_law : α → List β → (β → Prop)) :=
@@ -825,3 +840,82 @@ lemma History_eq_of_strat_strong_eq' (ini : α) (f_law s_law : α → List β �
       · simp_rw [ih]
       · apply heq_prop
       · apply heq_prop
+
+
+-- # Playability
+
+def Symm_Game_World.playable (g : Symm_Game_World α β) : Prop :=
+  ∀ hist : List β, Hist_legal g.init_game_state g.law g.law  hist → ∃ act : β, g.law g.init_game_state hist act
+
+noncomputable
+def Symm_Game_World.exStrat_fst (g : Symm_Game_World α β) (hg : g.playable) : fStrategy g.init_game_state g.law g.law :=
+  fun hist _ leg => Classical.choice <| let ⟨x, xp⟩ := (hg hist leg); ⟨(⟨x, xp⟩ : { act // law g g.init_game_state hist act })⟩
+
+noncomputable
+def Symm_Game_World.exStrat_snd (g : Symm_Game_World α β) (hg : g.playable) : sStrategy g.init_game_state g.law g.law :=
+  fun hist _ leg => Classical.choice <| let ⟨x, xp⟩ := (hg hist leg); ⟨(⟨x, xp⟩ : { act // law g g.init_game_state hist act })⟩
+
+
+
+lemma exStrat_Hist_legal (g : Symm_Game_World α β) (hg : g.playable) :
+  ∀ t, Hist_legal g.init_game_state g.law g.law (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t) :=
+  by
+  intro t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs with T
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_pos T]
+      apply ((g.exStrat_fst hg) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t).property.1).property
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_neg T]
+      apply ((g.exStrat_snd hg) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t).property.1).property
+
+
+lemma Symm_Game_World.playable_has_strong_snd_strat (g : Symm_Game_World α β) (hg : g.playable) (f_strat : fStrategy g.init_game_state g.law g.law) :
+  ∀ t, Hist_legal g.init_game_state g.law g.law (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t) :=
+  by
+  intro t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs with T
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_pos T]
+      apply (f_strat (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t).property.1).property
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_neg T]
+      apply ((g.exStrat_snd hg) (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t).property.1).property
+
+
+
+lemma Symm_Game_World.playable_has_strong_fst (g : Symm_Game_World α β) (hg : g.playable) (s_strat : sStrategy g.init_game_state g.law g.law ):
+  ∀ t, Hist_legal g.init_game_state g.law g.law (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t) :=
+  by
+  intro t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs with T
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_pos T]
+      apply ((g.exStrat_fst hg) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t).property.1).property
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_neg T]
+      apply (s_strat (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t).property.1).property
+
+
+#check Hist_legal_suffix
+#check List.rtake
+#check List.get
+
+/-
+TODO : Show that any legal history can be extended by two strategies
+- define strats in mutual block
+- for turns less the prescribed hist (:= ph) size, have strat take hist, and if `List.rtake` of hist and ph coincide, play ph acts with `List.get`, else play classical chosen act from g.playable
+-
+-/

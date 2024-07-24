@@ -118,3 +118,24 @@ inductive Game_World.has_WL (g : Game_World α β) : Prop where
 | ws (h : g.is_snd_win)
 
 def Symm_Game_World.has_WL (g : Symm_Game_World α β) := g.toGame_World.has_WL
+
+
+
+-- # Coherent end
+
+
+def Symm_Game_World.coherent_end (g : Symm_Game_World α β) : Prop :=
+  ∀ (f_strat : fStrategy g.init_game_state g.law g.law) (s_strat : sStrategy g.init_game_state g.law g.law) (t : ℕ),
+    g.win_states (g.state_on_turn f_strat s_strat t) → g.win_states (g.state_on_turn f_strat s_strat (t+1))
+
+
+lemma Symm_Game_World.coherent_end_all (g : Symm_Game_World α β)  (h : g.coherent_end)
+  (f_strat : fStrategy g.init_game_state g.law g.law) (s_strat : sStrategy g.init_game_state g.law g.law) (t n : ℕ) :
+  g.win_states (g.state_on_turn f_strat s_strat t) → g.win_states (g.state_on_turn f_strat s_strat (t+n)) :=
+  by
+  intro H
+  induction' n with n ih
+  · dsimp
+    exact H
+  · apply h _ _
+    exact ih
