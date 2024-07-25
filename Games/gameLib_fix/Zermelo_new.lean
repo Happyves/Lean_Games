@@ -80,8 +80,23 @@ lemma Hist_from_moves_length (moves : ℕ → β) : ∀ t, (Hist_from_moves move
 lemma Hist_from_moves_succ (moves : ℕ → β) : ∀ t, (Hist_from_moves moves (t+1)) = (moves (t)) :: (Hist_from_moves moves (t)):= by
   intro t ; dsimp [Hist_from_moves] ; rw [List.range_succ, List.reverse_append, List.map_append, List.reverse_singleton, List.map_singleton, List.singleton_append]
 
+lemma fStrategy_from_moves (g : Game_World α β) (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t)) :
+  fStrategy g.init_game_state g.fst_legal g.snd_legal :=
+  fun hist T leg => sorry --if hist = (Hist_from_moves moves (hist.length)) then ⟨moves (hist.length + 1), _ ⟩ else Classical.choice <| let ⟨x, xp⟩ := (hg hist leg); ⟨(⟨x, xp⟩ : { act // law g g.init_game_state hist act })⟩
 
---#exit
+def moves_from_strats (g : Game_World α β)
+  (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal) (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) :
+  ℕ → β :=
+  fun t =>
+    let H := (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t)
+    if T : Turn_fst (t+1) then (f_strat H.val (by rw [H.property.2] ; exact T) H.property.1).val else (s_strat H.val (by rw [Turn_snd_iff_not_fst, H.property.2] ; exact T) H.property.1).val
+
+lemma moves_from_strats_legal (g : Game_World α β)
+  (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal) (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) :
+  ∀ t, (Turn_fst (t+1) → )
+    ∧ ( Turn_snd (t+1) → )
+
+#exit
 
 def Game_World.isWL_alt (g : Game_World α β) : Prop :=
   ∀ moves : ℕ → β, (∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t)) →

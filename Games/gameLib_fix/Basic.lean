@@ -621,6 +621,25 @@ lemma Game_World.state_on_turn_State_from_history (g : Game_World α β)
 -- # Properties of History
 
 
+lemma History_on_turn_fst_to_snd (ini : α) (f_law s_law : α → List β → (β → Prop))
+    (f_strat : fStrategy ini f_law s_law)  (s_strat : sStrategy ini f_law s_law) (turn : ℕ):
+  let H := History_on_turn ini f_law s_law f_strat s_strat ;
+  (T : Turn_fst turn) → (H (turn + 1)).val = (s_strat (H turn).val (by rw [(H turn).property.2, ← Turn_fst_snd_step] ; exact T)  (H turn).property.1).val :: (H turn).val :=
+  by
+  intro H tf
+  dsimp [H, History_on_turn]
+  rw [if_neg ((Turn_fst_not_step turn).mp tf)]
+
+lemma History_on_turn_snd_to_fst (ini : α) (f_law s_law : α → List β → (β → Prop))
+    (f_strat : fStrategy ini f_law s_law)  (s_strat : sStrategy ini f_law s_law) (turn : ℕ):
+  let H := History_on_turn ini f_law s_law f_strat s_strat ;
+  (T : Turn_snd turn) → (H (turn + 1)).val = (f_strat (H turn).val (by rw [(H turn).property.2, ← Turn_snd_fst_step] ; exact T)  (H turn).property.1).val :: (H turn).val :=
+  by
+  intro H tf
+  dsimp [H, History_on_turn]
+  rw [if_pos ((Turn_snd_fst_step turn).mp tf)]
+
+#exit
 
 lemma mem_History_on_turn {α β : Type _}
     (ini : α) (f_law s_law : α → List β → (β → Prop))
