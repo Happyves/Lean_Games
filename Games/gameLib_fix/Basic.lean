@@ -628,7 +628,7 @@ lemma History_on_turn_fst_to_snd (ini : α) (f_law s_law : α → List β → (�
   by
   intro H tf
   dsimp [H, History_on_turn]
-  rw [if_neg ((Turn_fst_not_step turn).mp tf)]
+  rw [dif_neg ((Turn_fst_not_step turn).mp tf)]
 
 lemma History_on_turn_snd_to_fst (ini : α) (f_law s_law : α → List β → (β → Prop))
     (f_strat : fStrategy ini f_law s_law)  (s_strat : sStrategy ini f_law s_law) (turn : ℕ):
@@ -637,9 +637,9 @@ lemma History_on_turn_snd_to_fst (ini : α) (f_law s_law : α → List β → (�
   by
   intro H tf
   dsimp [H, History_on_turn]
-  rw [if_pos ((Turn_snd_fst_step turn).mp tf)]
+  rw [dif_pos ((Turn_snd_fst_step turn).mp tf)]
 
-#exit
+
 
 lemma mem_History_on_turn {α β : Type _}
     (ini : α) (f_law s_law : α → List β → (β → Prop))
@@ -863,21 +863,22 @@ lemma History_eq_of_strat_strong_eq' (ini : α) (f_law s_law : α → List β �
 
 -- # Playability
 
-def Symm_Game_World.playable (g : Symm_Game_World α β) : Prop :=
-  ∀ hist : List β, Hist_legal g.init_game_state g.law g.law  hist → ∃ act : β, g.law g.init_game_state hist act
+
+def Game_World.playable (g : Game_World α β) : Prop :=
+  ∀ hist : List β, Hist_legal g.init_game_state g.fst_legal g.snd_legal hist →
+    ((Turn_fst (List.length hist + 1) → ∃ act : β, g.fst_legal g.init_game_state hist act) ∧ (Turn_snd (List.length hist + 1) → ∃ act : β, g.snd_legal g.init_game_state hist act))
 
 noncomputable
-def Symm_Game_World.exStrat_fst (g : Symm_Game_World α β) (hg : g.playable) : fStrategy g.init_game_state g.law g.law :=
-  fun hist _ leg => Classical.choice <| let ⟨x, xp⟩ := (hg hist leg); ⟨(⟨x, xp⟩ : { act // law g g.init_game_state hist act })⟩
+def Game_World.exStrat_fst (g : Game_World α β) (hg : g.playable) : fStrategy g.init_game_state g.fst_legal g.snd_legal :=
+  fun hist T leg => Classical.choice <| let ⟨x, xp⟩ := ((hg hist leg).1 T); ⟨(⟨x, xp⟩ : { act // g.fst_legal g.init_game_state hist act })⟩
 
 noncomputable
-def Symm_Game_World.exStrat_snd (g : Symm_Game_World α β) (hg : g.playable) : sStrategy g.init_game_state g.law g.law :=
-  fun hist _ leg => Classical.choice <| let ⟨x, xp⟩ := (hg hist leg); ⟨(⟨x, xp⟩ : { act // law g g.init_game_state hist act })⟩
+def Game_World.exStrat_snd (g : Game_World α β) (hg : g.playable) : sStrategy g.init_game_state g.fst_legal g.snd_legal :=
+  fun hist T leg => Classical.choice <| let ⟨x, xp⟩ := ((hg hist leg).2 T); ⟨(⟨x, xp⟩ : { act // g.snd_legal g.init_game_state hist act })⟩
 
 
-
-lemma exStrat_Hist_legal (g : Symm_Game_World α β) (hg : g.playable) :
-  ∀ t, Hist_legal g.init_game_state g.law g.law (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t) :=
+lemma Game_World.exStrat_Hist_legal (g : Game_World α β) (hg : g.playable) :
+  ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) (g.exStrat_snd hg) t) :=
   by
   intro t
   induction' t with t ih
@@ -887,45 +888,74 @@ lemma exStrat_Hist_legal (g : Symm_Game_World α β) (hg : g.playable) :
     split_ifs with T
     · apply Hist_legal.cons _ _ _ ih
       simp_rw [History_on_turn_length, if_pos T]
-      apply ((g.exStrat_fst hg) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t).property.1).property
+      apply ((g.exStrat_fst hg) (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) (g.exStrat_snd hg) t).property.1).property
     · apply Hist_legal.cons _ _ _ ih
       simp_rw [History_on_turn_length, if_neg T]
-      apply ((g.exStrat_snd hg) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t).property.1).property
+      apply ((g.exStrat_snd hg) (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) (g.exStrat_snd hg) t).property.1).property
+
+
+
+lemma Game_World.playable_has_strong_snd_strat (g : Game_World α β) (hg : g.playable) (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal) :
+  ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat (g.exStrat_snd hg) t) :=
+  by
+  intro t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs with T
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_pos T]
+      apply (f_strat (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat (g.exStrat_snd hg) t).property.1).property
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_neg T]
+      apply ((g.exStrat_snd hg) (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat (g.exStrat_snd hg) t).property.1).property
+
+
+
+lemma Game_World.playable_has_strong_fst (g : Game_World α β) (hg : g.playable) (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal ):
+  ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) s_strat t) :=
+  by
+  intro t
+  induction' t with t ih
+  · dsimp [History_on_turn]
+    apply Hist_legal.nil
+  · dsimp [History_on_turn]
+    split_ifs with T
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_pos T]
+      apply ((g.exStrat_fst hg) (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) s_strat t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) s_strat t).property.1).property
+    · apply Hist_legal.cons _ _ _ ih
+      simp_rw [History_on_turn_length, if_neg T]
+      apply (s_strat (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) s_strat t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.fst_legal g.snd_legal (g.exStrat_fst hg) s_strat t).property.1).property
+
+
+def Symm_Game_World.playable (g : Symm_Game_World α β) : Prop := g.toGame_World.playable
+
+noncomputable
+def Symm_Game_World.exStrat_fst (g : Symm_Game_World α β) (hg : g.playable) : fStrategy g.init_game_state g.law g.law :=
+  g.toGame_World.exStrat_fst hg
+
+noncomputable
+def Symm_Game_World.exStrat_snd (g : Symm_Game_World α β) (hg : g.playable) : sStrategy g.init_game_state g.law g.law :=
+  g.toGame_World.exStrat_snd hg
+
+
+lemma Symm_Game_World.exStrat_Hist_legal (g : Symm_Game_World α β) (hg : g.playable) :
+  ∀ t, Hist_legal g.init_game_state g.law g.law (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) (g.exStrat_snd hg) t) :=
+  by
+  apply g.toGame_World.exStrat_Hist_legal
 
 
 lemma Symm_Game_World.playable_has_strong_snd_strat (g : Symm_Game_World α β) (hg : g.playable) (f_strat : fStrategy g.init_game_state g.law g.law) :
   ∀ t, Hist_legal g.init_game_state g.law g.law (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t) :=
   by
-  intro t
-  induction' t with t ih
-  · dsimp [History_on_turn]
-    apply Hist_legal.nil
-  · dsimp [History_on_turn]
-    split_ifs with T
-    · apply Hist_legal.cons _ _ _ ih
-      simp_rw [History_on_turn_length, if_pos T]
-      apply (f_strat (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t).property.1).property
-    · apply Hist_legal.cons _ _ _ ih
-      simp_rw [History_on_turn_length, if_neg T]
-      apply ((g.exStrat_snd hg) (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law f_strat (g.exStrat_snd hg) t).property.1).property
-
-
+  apply g.toGame_World.playable_has_strong_snd_strat
 
 lemma Symm_Game_World.playable_has_strong_fst (g : Symm_Game_World α β) (hg : g.playable) (s_strat : sStrategy g.init_game_state g.law g.law ):
   ∀ t, Hist_legal g.init_game_state g.law g.law (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t) :=
   by
-  intro t
-  induction' t with t ih
-  · dsimp [History_on_turn]
-    apply Hist_legal.nil
-  · dsimp [History_on_turn]
-    split_ifs with T
-    · apply Hist_legal.cons _ _ _ ih
-      simp_rw [History_on_turn_length, if_pos T]
-      apply ((g.exStrat_fst hg) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t).property.1).property
-    · apply Hist_legal.cons _ _ _ ih
-      simp_rw [History_on_turn_length, if_neg T]
-      apply (s_strat (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t).val (by rw [History_on_turn_length] ; exact T) (History_on_turn g.init_game_state g.law g.law (g.exStrat_fst hg) s_strat t).property.1).property
+  apply g.toGame_World.playable_has_strong_fst
 
 
 #check Hist_legal_suffix
