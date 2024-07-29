@@ -45,18 +45,18 @@ lemma Symm_Game_World.world_after_fst_transition {α β : Type u} (g : Symm_Game
 def careless
   (f_law s_law : α → List β → (β → Prop)) (ini : α)
   (obj : α → List β → γ) (swap : α → List β → β → α): Prop :=
-  ∀ ini : α , ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) → Hist_legal ini f_law s_law prehist →
+  ∀ hist : List β, ∀ prehist : List β, (h : prehist ≠ []) → Hist_legal ini f_law s_law prehist →
     obj ini (hist ++ prehist) = obj (swap ini prehist.tail (prehist.head h)) hist
 
 
 lemma careless_singleton
   (f_law s_law : α → List β → (β → Prop)) (ini : α)
   (obj : α → List β → γ) (swap : α → List β → β → α) (hc : careless f_law s_law ini obj swap) :
-  ∀ ini : α , ∀ hist : List β, ∀ act : β, f_law ini [] act → obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
+  ∀ hist : List β, ∀ act : β, f_law ini [] act → obj ini (hist ++ [act]) = obj (swap ini [] (act)) hist
   :=
   by
-  intro ini hist act q
-  apply hc ini hist [act]
+  intro hist act q
+  apply hc hist [act]
   · apply List.noConfusion
   · apply Hist_legal.cons
     · rw [if_pos (by dsimp ; decide)]
@@ -114,13 +114,16 @@ lemma Symm_Game_World.Hist_dropLast_legal (g : Symm_Game_World α β)
       · rw [histDropLast_help _ q, Turn_fst_not_step] at T
         rw [if_neg T] at now
         rw [← List.dropLast_append_getLast q] at now
+        rw [careless_singleton _ _ _ _ _ lc] at now
+        · convert now
+          dsimp [Symm_Game_World.world_after_fst]
         -- rw lc at now, but show that gestLast singleton is legal due to ih and Hist_legal_suffix
 
 
 
 #check List.dropLast_cons_of_ne_nil
 
-#exit
+--#exit
 
 def Symm_Game_World.fst_strat_deconditioned (g : Symm_Game_World α β) (f_act : β) (f_act_leg : g.law g.init_game_state [] f_act)
   (s_strat : sStrategy (g.world_after_fst f_act).init_game_state g.law g.law) : fStrategy g.init_game_state g.law g.law :=

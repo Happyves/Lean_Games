@@ -861,6 +861,35 @@ lemma History_eq_of_strat_strong_eq' (ini : α) (f_law s_law : α → List β �
       · apply heq_prop
 
 
+
+-- # Properties of state
+
+
+lemma Game_World.state_on_turn_fst_to_snd (g : Game_World α β)
+  (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal) (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) (turn : ℕ) :
+  let h := g.history_on_turn f_strat s_strat turn ;
+  (T : Turn_fst (turn + 1)) →
+    let T' : Turn_fst (List.length h.val + 1) := (by rw [h.property.2] ; exact T) ;
+    g.state_on_turn f_strat s_strat (turn + 1) = g.fst_transition g.init_game_state h (f_strat h.val T' h.property.1)  :=
+  by
+  intro H tf
+  dsimp [H, Game_World.state_on_turn]
+  rw [dif_pos tf]
+
+lemma Game_World.state_on_turn_snd_to_fst (g : Game_World α β)
+  (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal) (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) (turn : ℕ) :
+  let h := g.history_on_turn f_strat s_strat turn ;
+  (T : Turn_snd (turn + 1)) →
+    let T' : Turn_snd (List.length h.val + 1) := (by rw [h.property.2] ; exact T) ;
+    g.state_on_turn f_strat s_strat (turn + 1) = g.snd_transition g.init_game_state h (s_strat h.val T' h.property.1)  :=
+  by
+  intro H tf
+  dsimp [H, Game_World.state_on_turn]
+  rw [Turn_snd_iff_not_fst] at tf
+  rw [dif_neg tf]
+
+
+
 -- # Playability
 
 

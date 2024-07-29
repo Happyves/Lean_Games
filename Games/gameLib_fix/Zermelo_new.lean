@@ -148,23 +148,159 @@ lemma moves_from_strats_Hist_legal (g : Game_World α β)
     · apply (moves_from_strats_legal g f_strat s_strat t).2 T
 
 
+
+
+
+lemma fStrategy_from_moves [DecidableEq β] (g : Game_World α β) (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t)) :
+  fStrategy g.init_game_state g.fst_legal g.snd_legal :=
+  fun hist T leg => if M : hist = (Hist_from_moves moves (hist.length))
+                    then ⟨moves (hist.length),
+                      by
+                      specialize hm (hist.length + 1)
+                      rw [Hist_from_moves_succ] at hm
+                      cases' hm
+                      rename_i _ now
+                      rw [← M, if_pos T] at now
+                      exact now
+                      ⟩
+                    else (g.exStrat_fst hg hist T leg)
+
+
+lemma sStrategy_from_moves [DecidableEq β] (g : Game_World α β) (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t)) :
+  sStrategy g.init_game_state g.fst_legal g.snd_legal :=
+  fun hist T leg => if M : hist = (Hist_from_moves moves (hist.length))
+                    then ⟨moves (hist.length),
+                      by
+                      specialize hm (hist.length + 1)
+                      rw [Hist_from_moves_succ] at hm
+                      cases' hm
+                      rename_i _ now
+                      rw [Turn_snd_iff_not_fst] at T
+                      rw [← M, if_neg T] at now
+                      exact now
+                      ⟩
+                    else (g.exStrat_snd hg hist T leg)
+
+lemma sStrategy_from_moves_eq  [DecidableEq β] (g : Game_World α β) (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t))
+  (hist : List β) (T : Turn_snd (List.length hist + 1)) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (M : hist = (Hist_from_moves moves (hist.length))) :
+  sStrategy_from_moves g hg moves hm hist T leg = ⟨moves (hist.length),
+                      by
+                      specialize hm (hist.length + 1)
+                      rw [Hist_from_moves_succ] at hm
+                      cases' hm
+                      rename_i _ now
+                      rw [Turn_snd_iff_not_fst] at T
+                      rw [← M, if_neg T] at now
+                      exact now
+                      ⟩ :=
+  by
+  unfold sStrategy_from_moves
+  rw [dif_pos M]
+
+
+lemma fStrategy_from_moves_eq  [DecidableEq β] (g : Game_World α β) (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t))
+  (hist : List β) (T : Turn_fst (List.length hist + 1)) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (M : hist = (Hist_from_moves moves (hist.length))) :
+  fStrategy_from_moves g hg moves hm hist T leg = ⟨moves (hist.length),
+                      by
+                      specialize hm (hist.length + 1)
+                      rw [Hist_from_moves_succ] at hm
+                      cases' hm
+                      rename_i _ now
+                      rw [← M, if_pos T] at now
+                      exact now
+                      ⟩ :=
+  by
+  unfold fStrategy_from_moves
+  rw [dif_pos M]
+
+
+lemma Hist_moves_strats [DecidableEq β] (g : Game_World α β) (hg : g.playable)
+  (moves : ℕ → β) (leg : ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t)) (t : Nat) :
+  Hist_from_moves moves t = (History_on_turn g.init_game_state g.fst_legal g.snd_legal (fStrategy_from_moves g hg moves leg) (sStrategy_from_moves g hg moves leg) t).val :=
+  by
+  induction' t with t ih
+  · rw [Hist_from_moves_zero]
+    dsimp!
+  · rw [Hist_from_moves_succ]
+    by_cases q : Turn_fst (t)
+    · rw [History_on_turn_fst_to_snd g.init_game_state g.fst_legal g.snd_legal (fStrategy_from_moves g hg moves leg) (sStrategy_from_moves g hg moves leg) t q]
+      rw [ih]
+      congr
+      rw [sStrategy_from_moves_eq]
+      · dsimp!
+        rw [History_on_turn_length]
+      · rw [History_on_turn_length]
+        exact ih.symm
+    · rw [Turn_not_fst_iff_snd] at q
+      rw [History_on_turn_snd_to_fst g.init_game_state g.fst_legal g.snd_legal (fStrategy_from_moves g hg moves leg) (sStrategy_from_moves g hg moves leg) t q]
+      rw [ih]
+      congr
+      rw [fStrategy_from_moves_eq]
+      · dsimp!
+        rw [History_on_turn_length]
+      · rw [History_on_turn_length]
+        exact ih.symm
+
+
+
+
+lemma States_moves_strats [DecidableEq β] (g : Game_World α β) (hg : g.playable)
+  (moves : ℕ → β) (leg : ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t)) (T : Nat) :
+  State_from_history g.init_game_state g.fst_transition g.snd_transition (Hist_from_moves moves T) =
+  g.state_on_turn (fStrategy_from_moves g hg moves leg) (sStrategy_from_moves g hg moves leg) T := by
+  cases' T with t
+  · rw [Hist_from_moves_zero]
+    dsimp!
+  · rw [Hist_from_moves_succ]
+    by_cases q : Turn_fst (t+1)
+    · rw[g.state_on_turn_fst_to_snd _ _ _ q]
+      dsimp [State_from_history]
+      rw [Hist_from_moves_length, if_pos q]
+      congr
+      · dsimp [Game_World.history_on_turn]
+        apply Hist_moves_strats
+      · dsimp [Game_World.history_on_turn]
+        rw [fStrategy_from_moves_eq]
+        · dsimp!
+          rw [History_on_turn_length]
+        · rw [History_on_turn_length, eq_comm]
+          apply Hist_moves_strats
+    · rw[g.state_on_turn_snd_to_fst _ _ _ q]
+      dsimp [State_from_history]
+      rw [Hist_from_moves_length, if_neg q]
+      congr
+      · dsimp [Game_World.history_on_turn]
+        apply Hist_moves_strats
+      · dsimp [Game_World.history_on_turn]
+        rw [sStrategy_from_moves_eq]
+        · dsimp!
+          rw [History_on_turn_length]
+        · rw [History_on_turn_length, eq_comm]
+          apply Hist_moves_strats
+
+
+
 def Game_World.isWL_alt (g : Game_World α β) : Prop :=
   ∀ moves : ℕ → β, (∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t)) →
     ∃ T, (Turn_fst T ∧ g.fst_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition (Hist_from_moves moves T))) ∨ (Turn_snd T ∧ g.snd_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition (Hist_from_moves moves T)))
 
-lemma fStrategy_from_moves [DecidableEq β] (g : Game_World α β) (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t)) :
-  fStrategy g.init_game_state g.fst_legal g.snd_legal :=
-  fun hist T leg => if hist = (Hist_from_moves moves (hist.length)) then ⟨moves (hist.length + 1), _ ⟩ else (g.exStrat_fst hg hist T leg)
 
-
-
-#exit
-
-lemma Game_World.isWL_iff_isWL_alt (g : Game_World α β) : g.isWL ↔ g.isWL_alt :=
+lemma Game_World.isWL_iff_isWL_alt [DecidableEq β] (g : Game_World α β) (hg : g.playable) : g.isWL ↔ g.isWL_alt :=
   by
   constructor
   · intro h moves leg
-    sorry
+    specialize h (fStrategy_from_moves g hg moves leg) (sStrategy_from_moves g hg moves leg)
+    obtain ⟨ T,Tp⟩ := h
+    use T
+    cases' Tp with TF Tp TS Tp
+    · left
+      refine' ⟨TF,_⟩
+      convert Tp
+      apply States_moves_strats
+    · right
+      refine' ⟨TS,_⟩
+      convert Tp
+      apply States_moves_strats
   · intro h f_strat s_strat
     specialize h (moves_from_strats g f_strat s_strat) (moves_from_strats_Hist_legal g f_strat s_strat)
     obtain ⟨T,q⟩ := h
@@ -179,7 +315,7 @@ lemma Game_World.isWL_iff_isWL_alt (g : Game_World α β) : g.isWL ↔ g.isWL_al
       rw [Game_World.state_on_turn_State_from_history]
       exact S.2
 
-#exit
+
 
 /-
 Idea:
@@ -211,7 +347,7 @@ variable {α β : Sort _} in -- inside leads to massive problems, fixed from 4.9
 mutual  -- Remeber to thank Arthur Adjedj
 
 inductive Hist_good_snd (g : Game_World α β) : List β → Prop where
-| ofWin (hist : List β) : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist → Turn_snd (hist.length + 1) → g.fst_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition hist) → Hist_good_snd g hist
+| ofWin (hist : List β) : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist → Turn_snd (hist.length + 1) → g.fst_win_states (State_from_history g.init_game_state g.fst_transition g.snd_transition hist) → Hist_good_snd g hist
 | ofSnd (hist : List β) : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist → Turn_snd (hist.length + 1) → auxExists_snd g hist → Hist_good_snd g hist
 | ofFst (hist : List β) : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist → Turn_fst (hist.length + 1) → (∀ next : β, g.fst_legal g.init_game_state hist next →  Hist_good_snd g (next :: hist)) → Hist_good_snd g hist
 
@@ -230,7 +366,19 @@ def auxExists_snd_choose (g : Game_World α β) (hist : List β) (main : auxExis
   Classical.choice <| let ⟨_,x, xl,xg⟩ := main; ⟨(⟨x, ⟨xl,xg⟩⟩ : {next // g.snd_legal g.init_game_state hist next ∧ Hist_good_snd g (next :: hist) })⟩
 
 
+lemma not_auxExists_fst (g : Game_World α β) (hist : List β) :
+  (¬ auxExists_fst g hist) ↔ (∀ next : β, g.fst_legal g.init_game_state hist next →  Hist_good_snd g (next :: hist)) :=
 
+
+#exit
+
+lemma Hist_good_em (g : Game_World α β) (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) : Hist_good_fst g hist ∨ Hist_good_snd g hist :=
+  by
+  by_cases T : Turn_fst (hist.length +1)
+  · by_cases w : g.fst_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition hist)
+    · left
+      apply Hist_good_fst.ofWin _ leg T w
+    ·
 
 #exit
 
