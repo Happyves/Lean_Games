@@ -317,6 +317,22 @@ lemma Game_World.isWL_iff_isWL_alt [DecidableEq β] (g : Game_World α β) (hg :
 
 
 
+
+
+
+
+/-
+Zermelo contrapositive. Assume that there are no winning strats. For a param t, consider the starts
+that allow a player to make the game last at least t moves (so all states up to t are neutral,
+no matter how the other player plays).
+Fact if there is a strat that survives up to T>t, then there is one that survives up to t.
+If we can find such strats for any T, 
+-/
+
+
+
+#exit
+
 /-
 Idea:
 

@@ -379,17 +379,6 @@ instance (f_law s_law : α → List β → (β → Prop)) [∀ i : α, ∀ h : L
                      exact I'))
 
 
-lemma Hist_legal_suffix (ini : α) (f_law s_law : α → List β → (β → Prop)) (pre post : List β) :
-  Hist_legal ini f_law s_law (post ++ pre) → Hist_legal ini f_law s_law pre :=
-  by
-  intro main
-  induction' post with x l ih
-  · rw [List.nil_append] at main
-    exact main
-  · cases' main
-    rename_i yes _
-    exact ih yes
-
 
 
 def fStrategy (ini : α) (f_law s_law : α → List β → (β → Prop)) :=
@@ -638,6 +627,33 @@ lemma History_on_turn_snd_to_fst (ini : α) (f_law s_law : α → List β → (�
   intro H tf
   dsimp [H, History_on_turn]
   rw [dif_pos ((Turn_snd_fst_step turn).mp tf)]
+
+
+lemma Hist_legal_suffix (ini : α) (f_law s_law : α → List β → (β → Prop)) (pre post : List β) :
+  Hist_legal ini f_law s_law (post ++ pre) → Hist_legal ini f_law s_law pre :=
+  by
+  intro main
+  induction' post with x l ih
+  · rw [List.nil_append] at main
+    exact main
+  · cases' main
+    rename_i yes _
+    exact ih yes
+
+
+-- to mathlib
+theorem List.rdrop_append_rtake : ∀ (n : Nat) (l : List α), List.rdrop l n ++ List.rtake l n = l :=
+  by
+  unfold List.rdrop List.rtake
+  intro n l
+  apply List.take_append_drop
+
+
+lemma Hist_legal_rtake (ini : α) (f_law s_law : α → List β → (β → Prop)) (hist : List β) (t : Nat) :
+  Hist_legal ini f_law s_law hist → Hist_legal ini f_law s_law (hist.rtake t) := by
+  intro main
+  rw [← hist.rdrop_append_rtake t] at main
+  apply Hist_legal_suffix _ _ _ _ _ main
 
 
 
