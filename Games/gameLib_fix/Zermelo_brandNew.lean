@@ -175,22 +175,103 @@ lemma sStrat_staged_cons (ini : α) (f_law s_law : α → List β → (β → Pr
   · rw [eq_comm]
     apply @List.rget_cons_eq_self _ hist act ⟨t,tl⟩
 
---#exit
 
-lemma Game_World.conditioning_step (g : Game_World α β) (t : Nat)
+lemma sStrat_staged_cons' (ini : α) (f_law s_law : α → List β → (β → Prop)) (s_strat : sStrategy ini f_law s_law) (act : β) (hist : List β)
+  (leg : Hist_legal ini f_law s_law (hist)) (al : f_law ini hist act) (len : List.length hist = t) (T : Turn_fst (t+1))
+  (st : sStrat_staged ini f_law s_law s_strat hist leg) :
+  sStrat_staged ini f_law s_law s_strat (act :: hist) (Hist_legal.cons hist act (by rw [len, if_pos T] ; exact al) leg) := by
+  intro t' t'l t'f
+  have  t'l' : t' < hist.length := by
+    apply lt_of_le_of_ne
+    · rw [← Nat.lt_succ]
+      rw [List.length_cons] at t'l
+      exact t'l
+    · intro con
+      rw [con, len] at t'f
+      contradiction -- beautiful
+  specialize st t' t'l' t'f
+  convert st using 2
+  · funext _
+    rw [List.rtake_cons_eq_self]
+    exact le_of_lt t'l'
+  · rw [List.rtake_cons_eq_self]
+    exact le_of_lt t'l'
+  · funext _
+    rw [List.rtake_cons_eq_self]
+    exact le_of_lt t'l'
+  · apply @List.rget_cons_eq_self _ hist act ⟨t', t'l'⟩
+
+lemma fStrat_staged_cons' (ini : α) (f_law s_law : α → List β → (β → Prop)) (f_strat : fStrategy ini f_law s_law) (act : β) (hist : List β)
+  (leg : Hist_legal ini f_law s_law (hist)) (al : s_law ini hist act) (len : List.length hist = t) (T : Turn_snd (t+1))
+  (st : fStrat_staged ini f_law s_law f_strat hist leg) :
+  fStrat_staged ini f_law s_law f_strat (act :: hist) (Hist_legal.cons hist act (by rw [Turn_snd_iff_not_fst] at T ; rw [len, if_neg T] ; exact al) leg) := by
+  intro t' t'l t'f
+  have  t'l' : t' < hist.length := by
+    apply lt_of_le_of_ne
+    · rw [← Nat.lt_succ]
+      rw [List.length_cons] at t'l
+      exact t'l
+    · intro con
+      rw [con, len] at t'f
+      contradiction -- beautiful
+  specialize st t' t'l' t'f
+  convert st using 2
+  · funext _
+    rw [List.rtake_cons_eq_self]
+    exact le_of_lt t'l'
+  · rw [List.rtake_cons_eq_self]
+    exact le_of_lt t'l'
+  · funext _
+    rw [List.rtake_cons_eq_self]
+    exact le_of_lt t'l'
+  · apply @List.rget_cons_eq_self _ hist act ⟨t', t'l'⟩
+
+
+lemma sStrat_staged_cons'' (ini : α) (f_law s_law : α → List β → (β → Prop)) (s_strat : sStrategy ini f_law s_law) (act : β) (hist : List β)
+  (leg : Hist_legal ini f_law s_law (hist)) (al : f_law ini hist act) (len : List.length hist = t) (T : Turn_fst (t+1))
+  (st : sStrat_staged ini f_law s_law s_strat (act :: hist) (Hist_legal.cons hist act (by rw [len, if_pos T] ; exact al) leg)) :
+  sStrat_staged ini f_law s_law s_strat hist leg := by
+  intro t' t'l t'f
+  have  t'l' : t' < (act :: hist).length := by
+    apply lt_of_le_of_ne
+    · rw [← Nat.lt_succ]
+      rw [List.length_cons]
+      apply lt_trans t'l
+      rw [Nat.lt_succ]
+      apply Nat.le_succ
+    · intro con
+      rw [List.length_cons] at con
+      rw [con] at t'l
+      --contradiction -- not beautiful
+      exfalso
+      apply Nat.not_succ_lt_self t'l
+  specialize st t' t'l' t'f
+  convert st using 2
+  · funext _
+    rw [List.rtake_cons_eq_self]
+    exact le_of_lt t'l'
+  · rw [List.rtake_cons_eq_self]
+    exact le_of_lt t'l'
+  · funext _
+    rw [List.rtake_cons_eq_self]
+    exact le_of_lt t'l'
+  · apply @List.rget_cons_eq_self _ hist act ⟨t', t'l'⟩
+
+#exit
+
+lemma Game_World.conditioning_step (g : Game_World α β) (hg : g.playable) (t : Nat)
   (main : ∀ hist : List β, (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) → hist.length = t+1 → g.has_staged_WL hist leg) :
   ∀ hist : List β, (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) → hist.length = t → g.has_staged_WL hist leg := by
   intro hist leg len
   by_cases T : Turn_fst (t+1)
   · by_cases q : ∃ f_act : β, ∃ (al : g.fst_legal g.init_game_state hist f_act), (g.is_fst_staged_win (f_act :: hist) (Hist_legal.cons hist f_act (by rw [len, if_pos T] ; exact al) leg))
     · obtain ⟨f_act, al, ws, ws_prop⟩ := q
-      have leg' := (Hist_legal.cons hist f_act (by rw [len, if_pos T] ; exact al) leg)
       apply Game_World.has_staged_WL.wf
       set ws' : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg := ⟨ws.val , (fStrat_staged_cons _ _ _ _ _ _ leg al len T ws.prop)⟩ with ws'_def
       use ws'
       intro s_strat
-      -- use s_strat in ws_prop, should be staged due toTurn_fst
-      sorry
+      specialize ws_prop ⟨s_strat.val, by apply sStrat_staged_cons' _ _ _ _ _ _ leg al len T s_strat.prop⟩
+      apply ws_prop
     · push_neg at q
       have main' : ∀ (f_act : β) (al : fst_legal g g.init_game_state hist f_act), g.is_snd_staged_win (f_act :: hist) (Hist_legal.cons hist f_act (by rw [len, if_pos T] ; exact al) leg) :=
         by
@@ -199,10 +280,12 @@ lemma Game_World.conditioning_step (g : Game_World α β) (t : Nat)
         specialize main (f_act :: hist) leg' (by rw [List.length_cons, len])
         specialize q f_act al
         exact g.has_WL_helper (f_act :: hist) leg' main q
-      -- requires playability to get a s_strat
+      obtain ⟨f_act, al⟩ := (hg hist leg).1 (by rw [len] ; exact T)
+      obtain ⟨ws, ws_prop⟩ := main' f_act al
+      apply Game_World.has_staged_WL.ws
+
       sorry
   · sorry
-
 
 
 
