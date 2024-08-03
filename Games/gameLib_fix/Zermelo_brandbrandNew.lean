@@ -391,12 +391,31 @@ lemma sStrat_winner_wins [DecidableEq β] (g : Game_World α β) (hg : g.playabl
 #check Acc
 
 
-inductive pairwise_rel (r : α → α → Prop) (x : α) : (n : Nat) → (Y : Fin (n+1) → α) → Prop where
-| zero : r (Y ⟨0, zero_lt_one⟩) x → pairwise_rel r x 0 Y
-| succ (n : Nat) (Y : Fin (n+1+1) → α) : r (Y ⟨n+1, Nat.lt_succ_self (n+1)⟩) (Y ⟨n, (Nat.le.step Nat.le.refl)⟩) → pairwise_rel r x (n+1) Y
+-- inductive pairwise_rel (r : α → α → Prop) (x : α) : (n : Nat) → (Y : Fin (n+1) → α) → Prop where
+-- | zero : r (Y ⟨0, zero_lt_one⟩) x → pairwise_rel r x 0 Y
+-- | succ (n : Nat) (Y : Fin (n+1+1) → α) : r (Y ⟨n+1, Nat.lt_succ_self (n+1)⟩) (Y ⟨n, (Nat.le.step Nat.le.refl)⟩) → pairwise_rel r x (n+1) Y
+
+-- lemma not_Acc (r : α → α → Prop) (x : α) (h : ¬ Acc r x) :
+--   ∀ n : Nat, ∃ Y : Fin (n+1) → α, Function.Injective Y ∧ pairwise_rel r x n Y :=
+--   by
+--   sorry
+
+noncomputable
+def Y (r : α → α → Prop) (x : α) (h : ¬ Acc r x) : Nat → {y : α // ¬ Acc r y}
+| 0 => ⟨x,h⟩
+| n+1 =>
+    let yn := (Y r x h n).val
+    have N : ∃ next, r next yn ∧ (¬ Acc r next) := by
+      have ynp := (Y r x h n).prop
+      contrapose! ynp
+      exact Acc.intro yn ynp
+      done
+    ⟨Classical.choose N, (Classical.choose_spec N).2⟩
+
+
 
 lemma not_Acc (r : α → α → Prop) (x : α) (h : ¬ Acc r x) :
-  ∀ n : Nat, ∃ Y : Fin (n+1) → α, Function.Injective Y ∧ pairwise_rel r x n Y :=
+  ∃ Y : Nat → α, (Y 0 = x) ∧ (∀ n : Nat, r (Y (n+1)) (Y n)) :=
   by
   sorry
 
