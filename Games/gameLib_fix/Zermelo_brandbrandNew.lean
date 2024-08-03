@@ -382,8 +382,34 @@ lemma sStrat_winner_wins [DecidableEq β] (g : Game_World α β) (hg : g.playabl
 
 
 
+-- # experimental
 
 
+
+#check Acc.of_downward_closed
+
+#check Acc
+
+
+inductive pairwise_rel (r : α → α → Prop) (x : α) : (n : Nat) → (Y : Fin (n+1) → α) → Prop where
+| zero : r (Y ⟨0, zero_lt_one⟩) x → pairwise_rel r x 0 Y
+| succ (n : Nat) (Y : Fin (n+1+1) → α) : r (Y ⟨n+1, Nat.lt_succ_self (n+1)⟩) (Y ⟨n, (Nat.le.step Nat.le.refl)⟩) → pairwise_rel r x (n+1) Y
+
+lemma not_Acc (r : α → α → Prop) (x : α) (h : ¬ Acc r x) :
+  ∀ n : Nat, ∃ Y : Fin (n+1) → α, Function.Injective Y ∧ pairwise_rel r x n Y :=
+  by
+  sorry
+
+
+#exit
+
+def R  (g : Game_World α β) : List β → List β → Prop := fun H h => (h <+: H ∧ h ≠ H) ∧ State_from_history_neutral g.init_game_state g.fst_transition g.snd_transition g.fst_win_states g.snd_win_states H
+
+lemma wfR (g : Game_World α β) (hg : g.isWL) : WellFounded (R g) := by
+  apply WellFounded.intro
+  intro h
+  sorry
+  -- use contrapositive of not_Acc ??
 
 #exit
 
