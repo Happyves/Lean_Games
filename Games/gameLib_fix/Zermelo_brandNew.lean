@@ -363,6 +363,58 @@ lemma fStrat_staged_cons_f_act (ini : α) (f_law s_law : α → List β → (β 
     · apply heq_prop
 
 
+-- ↓ to Basic
+lemma fStrat_eq_of_hist_eq (ini : α) (f_law s_law : α → List β → β → Prop) (fs : fStrategy ini f_law s_law)
+  (h H : List β) (hh : Hist_legal ini f_law s_law h) (hH : Hist_legal ini f_law s_law H) (Th : Turn_fst (h.length + 1)) (TH : Turn_fst (H.length + 1))
+  (main : h = H) : (fs h Th hh ).val = (fs H TH hH).val :=
+  by
+  sorry
+
+#exit
+
+lemma sStrat_winner_help_history [DecidableEq β] (g : Game_World α β) (hg : g.playable)
+  (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (len : List.length hist = t) (T : Turn_fst (t+1))
+  (main : ∀ (f_act : β) (al : g.fst_legal g.init_game_state hist f_act), g.is_snd_staged_win (f_act :: hist) (Hist_legal.cons hist f_act (by rw [len,if_pos T] ; exact al) leg))
+  (f_strat : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) :
+  let f_act := f_strat.val hist (by rw [len] ; exact T) leg
+  let ws := Classical.choose (main f_act.val f_act.prop)
+  g.history_on_turn f_strat.val (sStrat_winner g hg hist leg len T main).val = g.history_on_turn f_strat.val ws.val :=
+  by
+  intro f_act ws
+  funext n
+  induction' n with n ih
+  · rfl
+  · dsimp [Game_World.history_on_turn, History_on_turn]
+    dsimp [Game_World.history_on_turn] at ih
+    split_ifs with tu
+    · apply Subtype.eq
+      dsimp!
+      congr 1
+      · apply fStrat_eq_of_hist_eq
+        rw [ih]
+      · rw [ih]
+
+#check Subtype.heq_iff_coe_eq
+
+#exit
+
+lemma sStrat_winner_help_state [DecidableEq β] (g : Game_World α β) (hg : g.playable)
+  (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (len : List.length hist = t) (T : Turn_fst (t+1))
+  (main : ∀ (f_act : β) (al : g.fst_legal g.init_game_state hist f_act), g.is_snd_staged_win (f_act :: hist) (Hist_legal.cons hist f_act (by rw [len,if_pos T] ; exact al) leg))
+  (f_strat : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) :
+  let f_act := f_strat.val hist (by rw [len] ; exact T) leg
+  let ws := Classical.choose (main f_act.val f_act.prop)
+  g.state_on_turn f_strat.val (sStrat_winner g hg hist leg len T main).val = g.state_on_turn f_strat.val ws.val :=
+  by
+  intro f_act ws
+  funext n
+  cases' n with n
+  · rfl
+  · dsimp [Game_World.state_on_turn]
+    split_ifs with tu
+    · -- rw history thenrfl
+
+#exit
 
 lemma sStrat_winner_wins [DecidableEq β] (g : Game_World α β) (hg : g.playable)
   (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (len : List.length hist = t) (T : Turn_fst (t+1))
@@ -374,11 +426,20 @@ lemma sStrat_winner_wins [DecidableEq β] (g : Game_World α β) (hg : g.playabl
   let ws := Classical.choose (main f_act.val f_act.prop)
   let ws_prop := Classical.choose_spec (main f_act.val f_act.prop)
   specialize ws_prop ⟨f_strat.val, (fStrat_staged_cons_f_act _ _ _ _ _ leg len T f_strat.prop)⟩
-  convert ws_prop using 2
-  sorry
-  -- show that f_strat is staged for f_act :: hist as well
-  -- use this to specialize ws_prop
-  -- show that sStrat_winner is equal to ws in that game ?? Propbably requires unpacking defs and showing that states are equal ...
+  obtain ⟨τ, τT, τw, τn⟩ := ws_prop
+  dsimp at τw τn
+  -- ↓ works!
+  --rw [Game.state_on_turn, ← sStrat_winner_help_state] at τw
+
+  -- conversion appraoch is doomed
+  -- convert ws_prop using 2
+  -- dsimp [sStrat_winner]
+  -- funext h ht hl
+  -- split_ifs with A B
+  -- · sorry
+  -- · sorry
+  -- · sorry
+
 
 
 
