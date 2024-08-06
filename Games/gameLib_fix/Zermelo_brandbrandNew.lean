@@ -8,6 +8,7 @@ open Lean
 lemma List.length_rtake {l : List α} {t : Nat} (ht : t ≤ l.length) : (l.rtake t).length = t := by
   unfold List.rtake ; rw [List.length_drop] ; apply Nat.sub_sub_self ht
 
+
 def List.rget (l : List α) (t : Fin l.length) := l.get ⟨l.length - 1 - t, (by rw [Nat.sub_sub] ; apply Nat.sub_lt_self (by apply Nat.add_pos_left ; exact zero_lt_one) (by rw [add_comm, Nat.succ_le] ; apply t.prop) )⟩
 
 lemma List.rget_cons_rtake {l : List α} {t : Fin l.length} : l.rtake (t+1) = (l.rget t) :: (l.rtake t) := by
@@ -44,6 +45,9 @@ lemma List.rtake_length {l : List α}  : l.rtake l.length = l := by
   unfold List.rtake ; rw [Nat.sub_self] ; apply List.drop_zero
 
 
+
+
+--#exit
 
 -- # Staging
 
@@ -667,6 +671,123 @@ structure Rdef (g : Game_World α β) (h H : List β) : Prop where
 
 def R  (g : Game_World α β) : List β → List β → Prop := fun H h =>  Rdef g h H
 
+lemma Rdef_leg (g : Game_World α β) (h H : List β) (main : Rdef g h H) : Hist_legal g.init_game_state g.fst_legal g.snd_legal h :=
+  by
+  obtain ⟨a, m⟩ := main.extend
+  replace main := main.leg
+  rw [m] at main
+  cases' main
+  rename_i now sofar
+  exact now
+
+lemma Rdef_neutral (g : Game_World α β) (hgn : g.coherent_end) (h H : List β) (main : Rdef g h H) : State_from_history_neutral g.init_game_state g.fst_transition g.snd_transition g.fst_win_states g.snd_win_states h :=
+  by
+  rw [State_from_history_neutral, ← not_or]
+  intro con
+  cases' con with con con
+  · have := hgn.fst h (Rdef_leg g h H main) con
+    obtain ⟨a,adef⟩ := main.extend
+    have that := main.leg
+    rw [adef] at that
+    cases' that
+    rename_i _ now
+    split_ifs at now with T
+    · replace this := (this a) ⟨fun _ => now, fun no => by exfalso ; rw [Turn_snd_iff_not_fst] at no ; exact no T⟩
+      replace main := main.neutral
+      rw [State_from_history_neutral, adef] at main
+      exact main.1 this
+    · replace this := (this a) ⟨fun no => by exfalso ; exact T no, fun _ => now⟩
+      replace main := main.neutral
+      rw [State_from_history_neutral, adef] at main
+      exact main.1 this
+  · have := hgn.snd h (Rdef_leg g h H main) con
+    obtain ⟨a,adef⟩ := main.extend
+    have that := main.leg
+    rw [adef] at that
+    cases' that
+    rename_i _ now
+    split_ifs at now with T
+    · replace this := (this a) ⟨fun _ => now, fun no => by exfalso ; rw [Turn_snd_iff_not_fst] at no ; exact no T⟩
+      replace main := main.neutral
+      rw [State_from_history_neutral, adef] at main
+      exact main.2 this
+    · replace this := (this a) ⟨fun no => by exfalso ; exact T no, fun _ => now⟩
+      replace main := main.neutral
+      rw [State_from_history_neutral, adef] at main
+      exact main.2 this
+
+#exit
+
+
+lemma wfR_hist_small [DecidableEq β] (h : List β)
+  (Y : ℕ → List β) (Yne : ∀ (n : ℕ), Y (n + 1) ≠ []) :
+  let moves : ℕ → β := fun n => if Q : n < List.length h then List.rget h { val := n, isLt := Q } else List.head (Y (n - List.length h + 1)) (Yne (n - List.length h))
+  ∀ (t : ℕ), t < List.length h → (Hist_from_moves moves t) = h.rtake t :=
+  by
+  intro moves t tb
+  induction' t with t ih
+  · rw [Hist_from_moves_zero, List.rtake_zero]
+  · rw [Hist_from_moves_succ]
+    have : t < List.length h := lt_trans (Nat.lt_succ_self t) tb
+    rw [@List.rget_cons_rtake _ _ ⟨t, this⟩, ih this]
+    congr
+    dsimp [moves]
+    rw [dif_pos this]
+
+
+lemma wfR_hist_big [DecidableEq β] (h : List β)
+  (Y : ℕ → List β) (Y0 : Y 0 = h) (Yp : ∀ (n : ℕ), R g (Y (n + 1)) (Y n)) (Yne : ∀ (n : ℕ), Y (n + 1) ≠ []) :
+  let moves : ℕ → β := fun n => if Q : n < List.length h then List.rget h { val := n, isLt := Q } else List.head (Y (n - List.length h + 1)) (Yne (n - List.length h))
+  ∀ (t : ℕ), t ≥ List.length h → (Hist_from_moves moves t) = Y (t - List.length h) :=
+  by
+  intro moves t tb
+  induction' t with t ih
+  · simp_rw [Nat.le_zero, List.length_eq_zero] at tb
+    simp_rw [tb] at *
+    rw [Hist_from_moves_zero]
+    dsimp
+    exact Y0.symm
+  · rw [Hist_from_moves_succ]
+    by_cases q : t+1 > h.length
+    · have : t ≥ h.length := by simp_rw [Nat.lt_succ] at q ; apply q
+      rw [Nat.succ_sub this]
+      obtain ⟨a, Yh⟩ := (Yp (t - h.length)).extend
+      rw [Yh, ih this]
+      congr
+      dsimp [moves]
+      rw [dif_neg (by rw [not_lt] ; apply this)]
+      simp_rw [Yh, List.head_cons]
+    · have := eq_of_ge_of_not_gt tb q
+      have that : t < h.length := by rw [← this] ; apply (Nat.lt_succ_self t)
+      rw [wfR_hist_small h Y Yne _ that]
+      dsimp [moves]
+      rw [dif_pos that, ← @List.rget_cons_rtake _ _ ⟨t, that⟩, this, Nat.sub_self, Y0]
+      convert List.rtake_length
+
+
+
+lemma wfR_legal [DecidableEq β] (g : Game_World α β) (h : List β)
+  (Y : ℕ → List β) (Y0 : Y 0 = h) (Yp : ∀ (n : ℕ), R g (Y (n + 1)) (Y n)) (Yne : ∀ (n : ℕ), Y (n + 1) ≠ []) :
+  let moves : ℕ → β := fun n => if Q : n < List.length h then List.rget h { val := n, isLt := Q } else List.head (Y (n - List.length h + 1)) (Yne (n - List.length h))
+  ∀ (t : ℕ), Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t) :=
+  by
+  intro moves t
+  by_cases q : t < List.length h
+  · rw [wfR_hist_small h _ Yne _ q]
+    apply Hist_legal_rtake
+    apply Rdef_leg g _ (Y 1)
+    specialize Yp 0
+    rw [R, Y0] at Yp
+    exact Yp
+  · rw [not_lt] at q
+    rw [wfR_hist_big h _ Y0 Yp Yne _ q]
+    apply Rdef_leg g _ (Y ((t - List.length h) + 1))
+    apply Yp (t - List.length h)
+
+
+
+--#exit
+
 lemma wfR [DecidableEq β] (g : Game_World α β) (hgw : g.isWL) (hgp : g.playable) : WellFounded (R g) := by
   apply WellFounded.intro
   intro h
@@ -678,8 +799,13 @@ lemma wfR [DecidableEq β] (g : Game_World α β) (hgw : g.isWL) (hgp : g.playab
     obtain ⟨a,yes⟩ := (Yp n).extend
     rw [yes]
     exact List.cons_ne_nil a (Y n)
-  let moves (n : Nat) := if Q : n < h.length then h.get ⟨n,Q⟩ else (Y ((n - h.length) + 1)).head (Yne (n - h.length))
-  specialize hgw moves
+  let moves (n : Nat) := if Q : n < h.length then h.rget ⟨n,Q⟩ else (Y ((n - h.length) + 1)).head (Yne (n - h.length))
+  obtain ⟨T,Tdef⟩ := hgw moves (wfR_legal g h Y Y0 Yp Yne)
+  by_cases qt : T < h.length
+  · sorry
+  · rw [not_lt] at qt
+    rw [wfR_hist_big h _ Y0 Yp Yne _ qt] at Tdef
+
 
 
 #exit
