@@ -47,8 +47,6 @@ lemma List.rtake_length {l : List α}  : l.rtake l.length = l := by
 
 
 
---#exit
-
 -- # Staging
 
 lemma Hist_legal_rtake_fst (ini : α) (f_law s_law : α → List β → (β → Prop)) (hist : List β) (t : Nat) (htT : Turn_fst (t+1)) (htL : t < hist.length)
@@ -716,7 +714,7 @@ lemma Rdef_neutral (g : Game_World α β) (hgn : g.coherent_end) (h H : List β)
       rw [State_from_history_neutral, adef] at main
       exact main.2 this
 
-#exit
+
 
 
 lemma wfR_hist_small [DecidableEq β] (h : List β)
@@ -786,9 +784,23 @@ lemma wfR_legal [DecidableEq β] (g : Game_World α β) (h : List β)
 
 
 
+lemma wfR_hist_extend [DecidableEq β] (h : List β)
+  (Y : ℕ → List β) (Y0 : Y 0 = h) (Yp : ∀ (n : ℕ), R g (Y (n + 1)) (Y n)) :
+  ∀ (n : ℕ), ∃ f, Y n = f ++ h :=
+  by
+  intro n
+  induction' n with n ih
+  · use []
+    rw [Y0, List.nil_append]
+  · obtain ⟨a,adef⟩ := (Yp n).extend
+    obtain ⟨f,fdef⟩ := ih
+    use (a :: f)
+    rw [adef,fdef, List.cons_append]
+
+
 --#exit
 
-lemma wfR [DecidableEq β] (g : Game_World α β) (hgw : g.isWL) (hgp : g.playable) : WellFounded (R g) := by
+lemma wfR [DecidableEq β] (g : Game_World α β) (hgw : g.isWL) (hgp : g.playable) (hgn : Game_World.coherent_end g) : WellFounded (R g) := by
   apply WellFounded.intro
   intro h
   by_contra con
@@ -802,9 +814,77 @@ lemma wfR [DecidableEq β] (g : Game_World α β) (hgw : g.isWL) (hgp : g.playab
   let moves (n : Nat) := if Q : n < h.length then h.rget ⟨n,Q⟩ else (Y ((n - h.length) + 1)).head (Yne (n - h.length))
   obtain ⟨T,Tdef⟩ := hgw moves (wfR_legal g h Y Y0 Yp Yne)
   by_cases qt : T < h.length
-  · sorry
+  · rw [wfR_hist_small h _ Yne _ qt] at Tdef
+    rw [← List.rdrop_append_rtake T h] at Y0
+    cases' Tdef with N N
+    · apply (Rdef_neutral g hgn (Y 0) (Y (01)) (Yp (0))).1
+      rw [Y0]
+      apply g.coherent_end_all_fst hgn _ N.2
+      rw [← Y0]
+      apply Rdef_leg g _ (Y 1) (Yp 0)
+    · apply (Rdef_neutral g hgn (Y 0) (Y (01)) (Yp (0))).2
+      rw [Y0]
+      apply g.coherent_end_all_snd hgn _ N.2
+      rw [← Y0]
+      apply Rdef_leg g _ (Y 1) (Yp 0)
   · rw [not_lt] at qt
     rw [wfR_hist_big h _ Y0 Yp Yne _ qt] at Tdef
+    cases' Tdef with N N
+    · exact (Rdef_neutral g hgn (Y (T - List.length h)) (Y (T - List.length h + 1)) (Yp (T - List.length h))).1 N.2
+    · exact (Rdef_neutral g hgn (Y (T - List.length h)) (Y (T - List.length h + 1)) (Yp (T - List.length h))).2 N.2
+
+
+
+
+lemma Game_World.staged_WL_of_win_state (g : Game_World α β) (hgp : g.playable) (hgn : Game_World.coherent_end g)
+  (h : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal h)
+  (N : fst_win_states g (State_from_history g.init_game_state g.fst_transition g.snd_transition h) ∨
+  snd_win_states g (State_from_history g.init_game_state g.fst_transition g.snd_transition h)) :
+  g.has_staged_WL h leg :=
+  by
+  cases' N with N N
+  · apply Game_World.has_staged_WL.wf
+    sorry
+  · apply Game_World.has_staged_WL.ws
+    sorry
+
+#exit
+
+lemma Game_World.conditioning_step [DecidableEq β] (g : Game_World α β) (hgw : g.isWL) (hgp : g.playable) (hgn : Game_World.coherent_end g)
+  (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) :
+  g.has_staged_WL hist leg :=
+  by
+  revert leg
+  apply @WellFounded.induction _ _ (wfR g hgw hgp hgn) (fun x => ∀ (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal x),g.has_staged_WL x leg) hist
+  intro h ih leg
+  replace ih : ∀ (y : List β), (rel : R g y h) → has_staged_WL g y (rel.leg) := by
+    intro y rel ; apply ih _ rel
+  by_cases N : State_from_history_neutral g.init_game_state g.fst_transition g.snd_transition g.fst_win_states g.snd_win_states h
+  · by_cases T : Turn_fst (h.length+1)
+    · by_cases q : ∃ f_act : β, ∃ (al : g.fst_legal g.init_game_state h f_act), (g.is_fst_staged_win (f_act :: h) (Hist_legal.cons h f_act (by rw [if_pos T] ; exact al) leg))
+      · obtain ⟨f_act, al, ws, ws_prop⟩ := q
+        apply Game_World.has_staged_WL.wf
+        set ws' : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal h leg := ⟨ws.val , (fStrat_staged_cons _ _ _ _ _ _ leg al rfl T ws.prop)⟩ with ws'_def
+        use ws'
+        intro s_strat
+        specialize ws_prop ⟨s_strat.val, by apply sStrat_staged_cons' _ _ _ _ _ _ leg al rfl T s_strat.prop⟩
+        apply ws_prop
+      · push_neg at q
+        have main' : ∀ (f_act : β) (al : fst_legal g g.init_game_state h f_act), g.is_snd_staged_win (f_act :: h) (Hist_legal.cons h f_act (by rw [if_pos T] ; exact al) leg) :=
+          by
+          intro f_act al
+          have leg' := (Hist_legal.cons h f_act (by rw [if_pos T] ; exact al) leg)
+          specialize ih (f_act :: h)
+          -- specialize q f_act al
+          -- exact g.has_WL_helper (f_act :: h) leg' (by ) q
+          sorry
+        -- apply Game_World.has_staged_WL.ws
+        -- use sStrat_winner g hg hist leg len T main'
+        -- intro f_strat
+        sorry
+    · sorry
+  · unfold State_from_history_neutral at N
+    simp_rw [not_and_or, not_not] at N
 
 
 

@@ -121,6 +121,47 @@ structure Game_World.coherent_end (g : Game_World α β) : Prop where
             g.snd_win_states ((State_from_history g.init_game_state g.fst_transition g.snd_transition (act :: hist))))
 
 
+lemma Game_World.coherent_end_all_fst (g : Game_World α β)  (h : g.coherent_end)
+  (hist : List β) (hw : g.fst_win_states (State_from_history g.init_game_state g.fst_transition g.snd_transition hist))
+  (future : List β) (fleg : Hist_legal g.init_game_state g.fst_legal g.snd_legal (future ++ hist)) :
+  g.fst_win_states (State_from_history g.init_game_state g.fst_transition g.snd_transition (future ++ hist)) :=
+  by
+  induction' future with x l ih
+  · apply hw
+  · cases' fleg
+    rename_i sofar now
+    rw [List.cons_append]
+    apply h.fst _ sofar (ih sofar)
+    constructor
+    · intro T
+      rw [if_pos T] at now
+      exact now
+    · intro T
+      rw [Turn_snd_iff_not_fst] at T
+      rw [if_neg T] at now
+      exact now
+
+
+lemma Game_World.coherent_end_all_snd (g : Game_World α β)  (h : g.coherent_end)
+  (hist : List β) (hw : g.snd_win_states (State_from_history g.init_game_state g.fst_transition g.snd_transition hist))
+  (future : List β) (fleg : Hist_legal g.init_game_state g.fst_legal g.snd_legal (future ++ hist)) :
+  g.snd_win_states (State_from_history g.init_game_state g.fst_transition g.snd_transition (future ++ hist)) :=
+  by
+  induction' future with x l ih
+  · apply hw
+  · cases' fleg
+    rename_i sofar now
+    rw [List.cons_append]
+    apply h.snd _ sofar (ih sofar)
+    constructor
+    · intro T
+      rw [if_pos T] at now
+      exact now
+    · intro T
+      rw [Turn_snd_iff_not_fst] at T
+      rw [if_neg T] at now
+      exact now
+
 
 
 -- TODO : Refactor ↓
