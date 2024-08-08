@@ -5,8 +5,8 @@ import Games.gameLib_fix.Basic
 inductive Game_World.Turn_isWL (g : Game_World α β)
   (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal)
   (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) (turn : ℕ) : Prop where
-| wf : Turn_fst turn → g.fst_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWL f_strat s_strat turn
-| ws : Turn_snd turn → g.snd_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWL f_strat s_strat turn
+| wf : g.fst_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWL f_strat s_strat turn
+| ws : g.snd_win_states (g.state_on_turn f_strat s_strat turn) → g.Turn_isWL f_strat s_strat turn
 
 
 def Symm_Game_World.Turn_isWL (g : Symm_Game_World α β)
@@ -73,11 +73,11 @@ lemma Game_World.state_on_turn_neutral_State_from_history_neutral (g : Game_Worl
 
 
 def Game.fst_win  {α β : Type _} (g : Game α β) : Prop :=
-  ∃ turn : ℕ, Turn_fst turn ∧ g.fst_win_states (g.state_on_turn turn) ∧
+  ∃ turn : ℕ, g.fst_win_states (g.state_on_turn turn) ∧
     (∀ t < turn, g.state_on_turn_neutral t)
 
 def Game.snd_win  {α β : Type _} (g : Game α β) : Prop :=
-  ∃ turn : ℕ, Turn_snd turn  ∧ g.snd_win_states (g.state_on_turn turn) ∧
+  ∃ turn : ℕ, g.snd_win_states (g.state_on_turn turn) ∧
     (∀ t < turn, g.state_on_turn_neutral t)
 
 def Symm_Game.fst_win  {α β : Type _} (g : Symm_Game α β) : Prop :=
@@ -113,6 +113,7 @@ def Symm_Game_World.has_WL (g : Symm_Game_World α β) := g.toGame_World.has_WL
 -- # Coherent end
 
 structure Game_World.coherent_end (g : Game_World α β) : Prop where
+  em : ∀ s : α, ¬ (g.fst_win_states s ∧ g.snd_win_states s)
   fst : ∀ hist, Hist_legal g.init_game_state g.fst_legal g.snd_legal hist → (g.fst_win_states (State_from_history g.init_game_state g.fst_transition g.snd_transition hist) →
           ∀ act, ((Turn_fst (hist.length+1) → g.fst_legal g.init_game_state hist act) ∧ (Turn_snd (hist.length+1) → g.snd_legal g.init_game_state hist act)) →
             g.fst_win_states ((State_from_history g.init_game_state g.fst_transition g.snd_transition (act :: hist))))
@@ -163,21 +164,68 @@ lemma Game_World.coherent_end_all_snd (g : Game_World α β)  (h : g.coherent_en
       exact now
 
 
-
--- TODO : Refactor ↓
-#exit
-
-def Game_World.coherent_end (g : Game_World α β) : Prop :=
+lemma Game_World.coherent_end_for_starts (g : Game_World α β) (hg : g.coherent_end) :
   ∀ (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal) (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) (t : ℕ),
     (g.fst_win_states (g.state_on_turn f_strat s_strat t) → g.fst_win_states (g.state_on_turn f_strat s_strat (t+1))) ∧
-      (g.snd_win_states (g.state_on_turn f_strat s_strat t) → g.snd_win_states (g.state_on_turn f_strat s_strat (t+1)))
+      (g.snd_win_states (g.state_on_turn f_strat s_strat t) → g.snd_win_states (g.state_on_turn f_strat s_strat (t+1))) :=
+  by
+  intro f_strat s_strat t
+  constructor
+  · intro fw
+    rw [g.state_on_turn_State_from_history]
+    dsimp [History_on_turn]
+    split_ifs with T
+    · apply hg.fst _ (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.1
+      · rw [← g.state_on_turn_State_from_history]
+        exact fw
+      · constructor
+        · intro T'
+          apply (f_strat (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).val T' (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.1).prop
+        · intro no
+          rw [(History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.2, Turn_snd_iff_not_fst] at no
+          exfalso
+          exact no T
+    · apply hg.fst _ (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.1
+      · rw [← g.state_on_turn_State_from_history]
+        exact fw
+      · constructor
+        · intro no
+          rw [(History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.2, Turn_fst_iff_not_snd] at no
+          exfalso
+          exact no T
+        · intro T'
+          apply (s_strat (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).val T' (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.1).prop
+  · intro fw
+    rw [g.state_on_turn_State_from_history]
+    dsimp [History_on_turn]
+    split_ifs with T
+    · apply hg.snd _ (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.1
+      · rw [← g.state_on_turn_State_from_history]
+        exact fw
+      · constructor
+        · intro T'
+          apply (f_strat (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).val T' (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.1).prop
+        · intro no
+          rw [(History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.2, Turn_snd_iff_not_fst] at no
+          exfalso
+          exact no T
+    · apply hg.snd _ (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.1
+      · rw [← g.state_on_turn_State_from_history]
+        exact fw
+      · constructor
+        · intro no
+          rw [(History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.2, Turn_fst_iff_not_snd] at no
+          exfalso
+          exact no T
+        · intro T'
+          apply (s_strat (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).val T' (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat t).prop.1).prop
 
-
-lemma Game_World.coherent_end_all (g : Game_World α β)  (h : g.coherent_end)
+lemma Game_World.coherent_end_all_for_strats (g : Game_World α β)  (h : g.coherent_end)
   (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal) (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) (t n : ℕ) :
   (g.fst_win_states (g.state_on_turn f_strat s_strat t) → g.fst_win_states (g.state_on_turn f_strat s_strat (t+n))) ∧
     (g.snd_win_states (g.state_on_turn f_strat s_strat t) → g.snd_win_states (g.state_on_turn f_strat s_strat (t+n))) :=
   by
+  replace h := g.coherent_end_for_starts h
   constructor
   · intro H
     induction' n with n ih
@@ -192,6 +240,56 @@ lemma Game_World.coherent_end_all (g : Game_World α β)  (h : g.coherent_end)
     · apply (h f_strat s_strat (t+n)).2
       exact ih
 
+
+
+lemma Game.coherent_end_fst_win (g : Game α β) (hg : g.coherent_end)
+  (main : ∃ turn : ℕ, g.fst_win_states (g.state_on_turn turn)) :
+  g.fst_win :=
+  by
+  obtain ⟨t,fw⟩ := main
+  let S : Set Nat := {n : Nat | g.fst_win_states (g.state_on_turn n)}
+  obtain ⟨m,mdef,mm⟩ := WellFounded.wellFounded_iff_has_min.mp Nat.lt_wfRel.wf S (by use t ; apply fw)
+  use m
+  constructor
+  · apply mdef
+  · intro n nlm
+    unfold state_on_turn_neutral Game_World.state_on_turn_neutral
+    by_contra con
+    simp_rw [not_and_or,not_not] at con
+    cases' con with con con
+    · apply mm n con nlm
+    · replace con := (g.coherent_end_all_for_strats hg g.fst_strat g.snd_strat n (m - n)).2 con
+      rw [← Nat.add_sub_assoc (le_of_lt nlm), Nat.add_sub_self_left] at con
+      apply hg.em _ ⟨mdef,con⟩
+
+
+
+lemma Game.coherent_end_snd_win (g : Game α β) (hg : g.coherent_end)
+  (main : ∃ turn : ℕ, g.snd_win_states (g.state_on_turn turn)) :
+  g.snd_win :=
+  by
+  obtain ⟨t,fw⟩ := main
+  let S : Set Nat := {n : Nat | g.snd_win_states (g.state_on_turn n)}
+  obtain ⟨m,mdef,mm⟩ := WellFounded.wellFounded_iff_has_min.mp Nat.lt_wfRel.wf S (by use t ; apply fw)
+  use m
+  constructor
+  · apply mdef
+  · intro n nlm
+    unfold state_on_turn_neutral Game_World.state_on_turn_neutral
+    by_contra con
+    simp_rw [not_and_or,not_not] at con
+    cases' con with con con
+    · replace con := (g.coherent_end_all_for_strats hg g.fst_strat g.snd_strat n (m - n)).1 con
+      rw [← Nat.add_sub_assoc (le_of_lt nlm), Nat.add_sub_self_left] at con
+      apply hg.em _ ⟨con, mdef⟩
+    · apply mm n con nlm
+
+
+
+
+
+-- TODO : Refactor ↓
+#exit
 
 def Symm_Game_World.coherent_end (g : Symm_Game_World α β) : Prop :=
   ∀ (f_strat : fStrategy g.init_game_state g.law g.law) (s_strat : sStrategy g.init_game_state g.law g.law) (t : ℕ),

@@ -98,6 +98,7 @@ def Game_World.is_snd_staged_win  {α β : Type _} (g : Game_World α β) (hist 
   ({g with fst_strat := fst_s.val, snd_strat := ws.val} : Game α β).snd_win
 
 
+
 inductive Game_World.has_staged_WL (g : Game_World α β) (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) : Prop where
 | wf (h : g.is_fst_staged_win hist leg)
 | ws (h : g.is_snd_staged_win hist leg)
@@ -142,6 +143,43 @@ lemma Game_World.has_WL_iff_has_staged_WL_empty (g : Game_World α β) :
       exact ws_prop ⟨s_strat, fStrat_staged_empty g.init_game_state g.fst_legal g.snd_legal s_strat⟩
 
 
+
+noncomputable
+def exStrat_staged_fst [DecidableEq β] (g : Game_World α β) (hg : g.playable) (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg :=
+   ⟨fun h ht hl =>
+      if M : (h = (hist.rtake h.length)) ∧ (h.length < hist.length)
+      then ⟨hist.rget ⟨h.length, M.2⟩, (by convert Hist_legal_rtake_fst g.init_game_state g.fst_legal g.snd_legal hist h.length ht M.2 leg ; exact M.1)⟩
+      else ⟨Classical.choose ((hg h hl).1 ht), Classical.choose_spec ((hg h hl).1 ht)⟩
+   ,
+   (by
+    intro t' hl' ht'
+    dsimp
+    rw [dif_pos]
+    · congr
+      rw [List.length_rtake (le_of_lt hl')]
+    · rw [List.length_rtake (le_of_lt hl')]
+      exact ⟨rfl, hl'⟩
+   )⟩
+
+
+noncomputable
+def exStrat_staged_snd [DecidableEq β] (g : Game_World α β) (hg : g.playable) (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) : sStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg :=
+   ⟨fun h ht hl =>
+      if M : (h = (hist.rtake h.length)) ∧ (h.length < hist.length)
+      then ⟨hist.rget ⟨h.length, M.2⟩, (by convert Hist_legal_rtake_snd g.init_game_state g.fst_legal g.snd_legal hist h.length ht M.2 leg ; exact M.1)⟩
+      else ⟨Classical.choose ((hg h hl).2 ht), Classical.choose_spec ((hg h hl).2 ht)⟩
+   ,
+   (by
+    intro t' hl' ht'
+    dsimp
+    rw [dif_pos]
+    · congr
+      rw [List.length_rtake (le_of_lt hl')]
+    · rw [List.length_rtake (le_of_lt hl')]
+      exact ⟨rfl, hl'⟩
+   )⟩
+
+
 lemma Game_World.has_WL_helper (g : Game_World α β) (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) :
   g.has_staged_WL hist leg → (¬ g.is_fst_staged_win hist leg) → g.is_snd_staged_win hist leg := by
   intro m c
@@ -172,6 +210,24 @@ lemma sStrat_staged_cons (ini : α) (f_law s_law : α → List β → (β → Pr
   (leg : Hist_legal ini f_law s_law (hist)) (al : s_law ini hist act) (len : List.length hist = t) (T : Turn_snd (t+1))
   (st : sStrat_staged ini f_law s_law s_strat (act :: hist) (Hist_legal.cons hist act (by rw [Turn_snd_iff_not_fst] at T ; rw [len, if_neg T] ; exact al) leg)) :
   sStrat_staged ini f_law s_law s_strat hist leg := by
+  intro t tl tf
+  specialize st t (by rw [List.length_cons] ; apply lt_trans tl ; apply Nat.lt_succ_self) tf
+  convert st using 2
+  · funext _
+    rw [List.rtake_cons_eq_self]
+    exact le_of_lt tl
+  · rw [List.rtake_cons_eq_self]
+    exact le_of_lt tl
+  · funext _
+    rw [List.rtake_cons_eq_self]
+    exact le_of_lt tl
+  · rw [eq_comm]
+    apply @List.rget_cons_eq_self _ hist act ⟨t,tl⟩
+
+lemma fStrat_staged_cons''' (ini : α) (f_law s_law : α → List β → (β → Prop)) (f_strat : fStrategy ini f_law s_law) (act : β) (hist : List β)
+  (leg : Hist_legal ini f_law s_law (hist)) (al : s_law ini hist act) (len : List.length hist = t) (T : Turn_snd (t+1))
+  (st : fStrat_staged ini f_law s_law f_strat (act :: hist) (Hist_legal.cons hist act (by rw [Turn_snd_iff_not_fst] at T ; rw [len, if_neg T] ; exact al) leg)) :
+  fStrat_staged ini f_law s_law f_strat hist leg := by
   intro t tl tf
   specialize st t (by rw [List.length_cons] ; apply lt_trans tl ; apply Nat.lt_succ_self) tf
   convert st using 2
@@ -302,6 +358,59 @@ lemma fStrat_staged_cons'' (ini : α) (f_law s_law : α → List β → (β → 
     apply @List.rget_cons_eq_self _ hist act ⟨t', t'l⟩
 
 
+
+lemma Game_World.History_of_staged_length (g : Game_World α β) (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist)
+  (f_strat : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) (s_strat : sStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) :
+  (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val s_strat.val hist.length).val = hist := by
+  induction' hist with x l ih
+  · rfl
+  · cases' leg
+    rename_i sofar now
+    dsimp [History_on_turn]
+    split_ifs with T
+    · rw [if_pos T] at now
+      dsimp
+      have main : ↑(History_on_turn g.init_game_state g.fst_legal g.snd_legal (f_strat.val) (s_strat.val) (List.length l)) = l := ih sofar ⟨f_strat.val, fStrat_staged_cons'' _ _ _ _ _ _ sofar now rfl T f_strat.prop⟩ ⟨s_strat.val, sStrat_staged_cons'' _ _ _ _ _ _ sofar now rfl T s_strat.prop⟩
+      congr
+      · have := (f_strat).prop l.length (by dsimp ; apply Nat.lt_succ_self) T
+        have that := @List.rtake_cons_eq_self _ l x _ (le_refl l.length)
+        rw [List.rtake_length] at that
+        replace this := congr_arg Subtype.val this
+        convert this
+        · rw [that]
+          apply main
+        · rw [that]
+          apply main
+        · dsimp
+          unfold List.rget
+          dsimp!
+          simp_rw [Nat.succ_sub_one, Nat.sub_self]
+          rfl
+      --· apply main -- congr magic
+    · rw [if_neg T] at now
+      rw [← Turn_snd_iff_not_fst] at T
+      dsimp
+      have main : ↑(History_on_turn g.init_game_state g.fst_legal g.snd_legal (f_strat.val) (s_strat.val) (List.length l)) = l := ih sofar ⟨f_strat.val, fStrat_staged_cons''' _ _ _ _ _ _ sofar now rfl T f_strat.prop⟩ ⟨s_strat.val, sStrat_staged_cons _ _ _ _ _ _ sofar now rfl T s_strat.prop⟩
+      congr
+      · have := (s_strat).prop l.length (by dsimp ; apply Nat.lt_succ_self) T
+        have that := @List.rtake_cons_eq_self _ l x _ (le_refl l.length)
+        rw [List.rtake_length] at that
+        replace this := congr_arg Subtype.val this
+        convert this
+        · rw [that]
+          apply main
+        · rw [that]
+          apply main
+        · dsimp
+          unfold List.rget
+          dsimp!
+          simp_rw [Nat.succ_sub_one, Nat.sub_self]
+          rfl
+
+
+
+
+--#exit
 
 open Classical
 
@@ -596,7 +705,7 @@ lemma States_moves_strats [DecidableEq β] (g : Game_World α β) (hg : g.playab
 
 def Game_World.isWL_alt (g : Game_World α β) : Prop :=
   ∀ moves : ℕ → β, (∀ t, Hist_legal g.init_game_state g.fst_legal g.snd_legal (Hist_from_moves moves t)) →
-    ∃ T, (Turn_fst T ∧ g.fst_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition (Hist_from_moves moves T))) ∨ (Turn_snd T ∧ g.snd_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition (Hist_from_moves moves T)))
+    ∃ T, (g.fst_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition (Hist_from_moves moves T))) ∨ (g.snd_win_states (State_from_history g.init_game_state  g.fst_transition g.snd_transition (Hist_from_moves moves T)))
 
 
 lemma Game_World.isWL_iff_isWL_alt [DecidableEq β] (g : Game_World α β) (hg : g.playable) : g.isWL ↔ g.isWL_alt :=
@@ -606,29 +715,26 @@ lemma Game_World.isWL_iff_isWL_alt [DecidableEq β] (g : Game_World α β) (hg :
     specialize h (fStrategy_from_moves g hg moves leg) (sStrategy_from_moves g hg moves leg)
     obtain ⟨ T,Tp⟩ := h
     use T
-    cases' Tp with TF Tp TS Tp
+    cases' Tp with TF TS
     · left
-      refine' ⟨TF,_⟩
-      convert Tp
+      convert TF
       apply States_moves_strats
     · right
-      refine' ⟨TS,_⟩
-      convert Tp
+      convert TS
       apply States_moves_strats
   · intro h f_strat s_strat
     specialize h (moves_from_strats g f_strat s_strat) (moves_from_strats_Hist_legal g f_strat s_strat)
     obtain ⟨T,q⟩ := h
     use T
     cases' q with F S
-    · apply Turn_isWL.wf F.1
+    · apply Turn_isWL.wf
       rw [← moves_from_strats_history g f_strat s_strat] at F
       rw [Game_World.state_on_turn_State_from_history]
-      exact F.2
-    · apply Turn_isWL.ws S.1
+      exact F
+    · apply Turn_isWL.ws
       rw [← moves_from_strats_history g f_strat s_strat] at S
       rw [Game_World.state_on_turn_State_from_history]
-      exact S.2
-
+      exact S
 
 
 -- # experimental
@@ -819,19 +925,19 @@ lemma wfR [DecidableEq β] (g : Game_World α β) (hgw : g.isWL) (hgp : g.playab
     cases' Tdef with N N
     · apply (Rdef_neutral g hgn (Y 0) (Y (01)) (Yp (0))).1
       rw [Y0]
-      apply g.coherent_end_all_fst hgn _ N.2
+      apply g.coherent_end_all_fst hgn _ N
       rw [← Y0]
       apply Rdef_leg g _ (Y 1) (Yp 0)
     · apply (Rdef_neutral g hgn (Y 0) (Y (01)) (Yp (0))).2
       rw [Y0]
-      apply g.coherent_end_all_snd hgn _ N.2
+      apply g.coherent_end_all_snd hgn _ N
       rw [← Y0]
       apply Rdef_leg g _ (Y 1) (Yp 0)
   · rw [not_lt] at qt
     rw [wfR_hist_big h _ Y0 Yp Yne _ qt] at Tdef
     cases' Tdef with N N
-    · exact (Rdef_neutral g hgn (Y (T - List.length h)) (Y (T - List.length h + 1)) (Yp (T - List.length h))).1 N.2
-    · exact (Rdef_neutral g hgn (Y (T - List.length h)) (Y (T - List.length h + 1)) (Yp (T - List.length h))).2 N.2
+    · exact (Rdef_neutral g hgn (Y (T - List.length h)) (Y (T - List.length h + 1)) (Yp (T - List.length h))).1 N
+    · exact (Rdef_neutral g hgn (Y (T - List.length h)) (Y (T - List.length h + 1)) (Yp (T - List.length h))).2 N
 
 
 
@@ -844,11 +950,25 @@ lemma Game_World.staged_WL_of_win_state (g : Game_World α β) (hgp : g.playable
   by
   cases' N with N N
   · apply Game_World.has_staged_WL.wf
-    sorry
+    use (exStrat_staged_fst g hgp h leg)
+    intro s_strat
+    apply Game.coherent_end_fst_win _ (by apply hgn)
+    use h.length
+    dsimp [Game.state_on_turn]
+    rw [g.state_on_turn_State_from_history]
+    convert N
+    apply g.History_of_staged_length
   · apply Game_World.has_staged_WL.ws
-    sorry
+    use (exStrat_staged_snd g hgp h leg)
+    intro s_strat
+    apply Game.coherent_end_snd_win _ (by apply hgn)
+    use h.length
+    dsimp [Game.state_on_turn]
+    rw [g.state_on_turn_State_from_history]
+    convert N
+    apply g.History_of_staged_length
 
-#exit
+
 
 lemma Game_World.conditioning_step [DecidableEq β] (g : Game_World α β) (hgw : g.isWL) (hgp : g.playable) (hgn : Game_World.coherent_end g)
   (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) :
@@ -885,6 +1005,7 @@ lemma Game_World.conditioning_step [DecidableEq β] (g : Game_World α β) (hgw 
     · sorry
   · unfold State_from_history_neutral at N
     simp_rw [not_and_or, not_not] at N
+    apply g.staged_WL_of_win_state hgp hgn _ _ N
 
 
 
