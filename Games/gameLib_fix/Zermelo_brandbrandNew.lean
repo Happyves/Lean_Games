@@ -407,10 +407,21 @@ lemma Game_World.History_of_staged_length (g : Game_World α β) (hist : List β
           simp_rw [Nat.succ_sub_one, Nat.sub_self]
           rfl
 
+lemma Game_World.History_of_staged_rtake (g : Game_World α β) (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist)
+  (f_strat : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) (s_strat : sStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg)
+  (n : Nat) (nbnd : n < hist.length) :
+  (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val s_strat.val n).val = hist.rtake n := by
+  induction' hist with x l ih
+  · rfl
+  · by_cases q : n < List.length l
+    · sorry
+    · replace q : n = l.length := by apply Nat.eq_of_le_of_lt_succ (not_lt.mp q) nbnd
+      rw [q, List.rtake_cons_eq_self (le_refl _), List.rtake_length]
+      cases' leg
+      rename_i sofar now
+      apply g.History_of_staged_length l
 
-
-
---#exit
+#exit
 
 open Classical
 
@@ -485,6 +496,36 @@ lemma fStrat_eq_of_hist_eq (ini : α) (f_law s_law : α → List β → β → P
   · apply heq_prop
   · apply heq_prop
 
+lemma sStrat_eq_of_hist_eq (ini : α) (f_law s_law : α → List β → β → Prop) (fs : sStrategy ini f_law s_law)
+  (h H : List β) (hh : Hist_legal ini f_law s_law h) (hH : Hist_legal ini f_law s_law H) (Th : Turn_snd (h.length + 1)) (TH : Turn_snd (H.length + 1))
+  (main : h = H) : (fs h Th hh ).val = (fs H TH hH).val :=
+  by
+  congr
+  · rw [main]
+  · apply heq_prop
+  · apply heq_prop
+
+
+lemma oddly_specific (g : Game_World α β) (act : β) (hist : List β)
+  (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal (hist)) (al : g.fst_legal g.init_game_state hist act) (T : Turn_fst (List.length hist + 1))
+  (s_strat : sStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) (snd_s : sStrat_wHist g.init_game_state g.fst_legal g.snd_legal (act :: hist) (Hist_legal.cons hist act (by rw [if_pos T] ; exact al) leg))
+  (f_strat : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) (n : Nat) (tu : Turn_snd (n+1))
+  (eq : History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val s_strat.val n = History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val snd_s.val n)
+  (main : let h := History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val s_strat.val n
+          let H := History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val snd_s.val n
+      n ≥ hist.length → (s_strat.val h.val (by rw [h.prop.2] ; exact tu) h.prop.1).val = (snd_s.val H.val (by rw [H.prop.2] ; exact tu)  H.prop.1).val ) :
+  let h := History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val s_strat.val n
+  let H := History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val snd_s.val n
+  (s_strat.val h.val (by rw [h.prop.2] ; exact tu) h.prop.1).val = (snd_s.val H.val (by rw [H.prop.2] ; exact tu)  H.prop.1).val :=
+  by
+  intro h H
+  by_cases q : n ≥ List.length hist
+  · exact main q
+  · push_neg at q
+    have := s_strat.prop n q tu
+    have that := snd_s.prop n (lt_trans q (Nat.lt_succ_self _) ) tu
+
+#exit
 
 lemma sStrat_winner_help_history [DecidableEq β] (g : Game_World α β) (hg : g.playable)
   (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (T : Turn_fst (List.length hist + 1))
@@ -507,10 +548,13 @@ lemma sStrat_winner_help_history [DecidableEq β] (g : Game_World α β) (hg : g
       · apply fStrat_eq_of_hist_eq
         rw [ih]
       · rw [ih]
-    · apply Subtype.eq
+    · rw [Turn_not_fst_iff_snd] at tu
+      apply Subtype.eq
       dsimp!
       congr 1
-      · -- wlog n ≥ hist.length
+      · apply oddly_specific g f_act.val hist leg f_act.prop T _ _ _ n tu ih
+        intro h H n_bnd
+        -- wlog n ≥ hist.length
         dsimp [sStrat_winner]
         -- show that eq follows from eq ≥ hist.length, as both are staged
         -- use ↑ to rw sStrat_winner with a first dif_neg
