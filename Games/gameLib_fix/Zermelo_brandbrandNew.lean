@@ -436,7 +436,6 @@ lemma Game_World.History_of_staged_rtake (g : Game_World α β) (hist : List β)
 
 
 
-
 open Classical
 
 noncomputable
@@ -446,13 +445,16 @@ def sStrat_winner [DecidableEq β] (g : Game_World α β) (hg : g.playable)
   sStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg :=
   ⟨fun h ht hl =>
       --if M : (h = (hist.rtake h.length)) ∧ (h.length < hist.length)
-      if M : (h = (hist.rtake h.length))
+      if M : ((hist.rtake h.length) <+: h)
       then
         if L : (h.length < hist.length)
-        then ⟨hist.rget ⟨h.length, L⟩, (by convert Hist_legal_rtake_snd g.init_game_state g.fst_legal g.snd_legal hist h.length ht L leg ; exact M)⟩
+        then ⟨hist.rget ⟨h.length, L⟩, (by convert Hist_legal_rtake_snd g.init_game_state g.fst_legal g.snd_legal hist h.length ht L leg ; rw [eq_comm] ; apply List.eq_of_prefix_of_length_eq M ; rw [List.length_rtake (le_of_lt L)])⟩
         else
-          let f_act := h.rget ⟨hist.length, (by sorry)⟩
-          have f_act_leg : g.fst_legal g.init_game_state hist f_act := sorry -- something with hl
+          let f_act := h.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp L) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T ht)⟩
+          have f_act_leg : g.fst_legal g.init_game_state hist f_act := by
+            convert Hist_legal_rtake_fst g.init_game_state g.fst_legal g.snd_legal h hist.length T _ hl
+            · sorry -- make aux lemma, probably an induction
+            · apply lt_of_le_of_ne (not_lt.mp L) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T ht
           (Classical.choose (main f_act f_act_leg)).val h ht hl
 
 
@@ -482,6 +484,8 @@ def sStrat_winner [DecidableEq β] (g : Game_World α β) (hg : g.playable)
     -- · rw [List.length_rtake (le_of_lt hl')]
     --   exact ⟨rfl, hl'⟩
    )⟩
+
+#check not_lt
 
 #exit
 
