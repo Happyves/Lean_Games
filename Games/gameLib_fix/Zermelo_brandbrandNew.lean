@@ -47,6 +47,78 @@ lemma List.rtake_length {l : List α}  : l.rtake l.length = l := by
 
 
 
+lemma List.rtake_all_of_le {α : Type _} {n : ℕ} {l : List α} (h : List.length l ≤ n) : l.rtake n  = l := by
+  unfold List.rtake ; rw [Nat.sub_eq_zero_of_le h]  ; apply List.drop_zero
+
+lemma List.length_le_of_suffix (m : l <:+ L) : l.length ≤ L.length := by
+  rw [List.suffix_iff_eq_append] at m
+  rw [← m, List.length_append]
+  exact Nat.le_add_left (length l) (length (take (length L - length l) L))
+
+
+
+
+lemma List.rget_suffix {α : Type _} {l L : List α} (m : l <:+ L) (n : Fin l.length) : L.rget ⟨n.val, by apply lt_of_lt_of_le n.prop (List.length_le_of_suffix m)⟩ = l.rget n := by
+  rw [List.suffix_iff_eq_append] at m
+  have : (take (length L - length l) L ++ l).rget { val := ↑n, isLt := by rw [m] ; rw [← List.suffix_iff_eq_append] at m ; apply lt_of_lt_of_le n.prop (List.length_le_of_suffix m) } = rget l n := by
+    unfold List.rget
+    rw [List.get_append_right]
+    · dsimp
+      congr 2
+      simp_rw [List.length_append]
+      cases' l with x l
+      · have := n.prop
+        contradiction
+      · rw [Nat.add_sub_assoc (by rw [List.length_cons] ; linarith)]
+        rw [Nat.add_sub_assoc (by rw [← Nat.pred_eq_sub_one] ; apply Nat.le_pred_of_lt ; exact n.prop )]
+        rw [Nat.add_sub_cancel_left]
+    · dsimp
+      simp_rw [List.length_append, not_lt]
+      cases' l with x l
+      · have := n.prop
+        contradiction
+      · rw [Nat.add_sub_assoc (by rw [List.length_cons] ; linarith)]
+        rw [Nat.add_sub_assoc (by rw [← Nat.pred_eq_sub_one] ; apply Nat.le_pred_of_lt ; exact n.prop )]
+        exact Nat.le_add_right (length (take (length L - length (x :: l)) L)) (length (x :: l) - 1 - ↑n)
+    · dsimp
+      simp_rw [List.length_append]
+      cases' l with x l
+      · have := n.prop
+        contradiction
+      · rw [Nat.add_sub_assoc (by rw [List.length_cons] ; linarith)]
+        rw [Nat.add_sub_assoc (by rw [← Nat.pred_eq_sub_one] ; apply Nat.le_pred_of_lt ; exact n.prop )]
+        rw [Nat.add_sub_cancel_left]
+        rw [Nat.sub_sub]
+        apply Nat.sub_lt
+        · rw [List.length_cons] ; linarith
+        · rw [add_comm]
+          apply Nat.zero_lt_succ
+  convert this
+  rw [m]
+
+
+
+lemma List.rtake_suffix_comm (M : List.rtake hist (List.length h) <:+ h) (L : List.length hist ≤ List.length h) : hist = List.rtake h (List.length hist) := by
+  rw [List.rtake_all_of_le L] at M
+  induction' hist with x l ih
+  · dsimp ; rw [List.rtake_zero]
+  · rw [List.length_cons]
+    have : length l < length h := by apply lt_of_lt_of_le _ L ; rw [List.length_cons] ; apply Nat.lt_succ_self
+    rw [@List.rget_cons_rtake _ _ ⟨l.length, this ⟩]
+    congr
+    · rw [eq_comm]
+      rw [List.rget_suffix M ⟨l.length, by rw [List.length_cons] ; linarith⟩ ]
+      apply List.rget_cons_length
+    · apply ih _ (le_of_lt this)
+      apply IsSuffix.trans _ M
+      exact suffix_cons x l
+
+
+
+
+
+
+
 -- # Staging
 
 lemma Hist_legal_rtake_fst (ini : α) (f_law s_law : α → List β → (β → Prop)) (hist : List β) (t : Nat) (htT : Turn_fst (t+1)) (htL : t < hist.length)
@@ -445,20 +517,18 @@ def sStrat_winner [DecidableEq β] (g : Game_World α β) (hg : g.playable)
   sStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg :=
   ⟨fun h ht hl =>
       --if M : (h = (hist.rtake h.length)) ∧ (h.length < hist.length)
-      if M : ((hist.rtake h.length) <+: h)
+      if M : ((hist.rtake h.length) <:+ h)
       then
         if L : (h.length < hist.length)
-        then ⟨hist.rget ⟨h.length, L⟩, (by convert Hist_legal_rtake_snd g.init_game_state g.fst_legal g.snd_legal hist h.length ht L leg ; rw [eq_comm] ; apply List.eq_of_prefix_of_length_eq M ; rw [List.length_rtake (le_of_lt L)])⟩
+        then ⟨hist.rget ⟨h.length, L⟩, (by convert Hist_legal_rtake_snd g.init_game_state g.fst_legal g.snd_legal hist h.length ht L leg ; rw [eq_comm] ; apply List.eq_of_suffix_of_length_eq M ; rw [List.length_rtake (le_of_lt L)])⟩
         else
           let f_act := h.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp L) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T ht)⟩
           have f_act_leg : g.fst_legal g.init_game_state hist f_act := by
             convert Hist_legal_rtake_fst g.init_game_state g.fst_legal g.snd_legal h hist.length T _ hl
-            · sorry -- make aux lemma, probably an induction
+            · rw [not_lt] at L
+              apply List.rtake_suffix_comm M L
             · apply lt_of_le_of_ne (not_lt.mp L) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T ht
           (Classical.choose (main f_act f_act_leg)).val h ht hl
-
-
-
       else ⟨Classical.choose ((hg h hl).2 ht), Classical.choose_spec ((hg h hl).2 ht)⟩
   --       if W : (∃ f_act : β, (g.fst_legal g.init_game_state hist f_act) ∧ f_act :: hist <+: h)
   --       then
@@ -478,16 +548,12 @@ def sStrat_winner [DecidableEq β] (g : Game_World α β) (hg : g.playable)
     · rw [List.length_rtake (le_of_lt hl')]
       exact hl'
     · rw [List.length_rtake (le_of_lt hl')]
-    -- rw [dif_pos]
-    -- · congr
-    --   rw [List.length_rtake (le_of_lt hl')]
-    -- · rw [List.length_rtake (le_of_lt hl')]
-    --   exact ⟨rfl, hl'⟩
+      exact Exists.intro [] rfl
    )⟩
 
-#check not_lt
 
-#exit
+
+
 
 lemma fStrat_staged_cons_f_act (ini : α) (f_law s_law : α → List β → (β → Prop)) (f_strat : fStrategy ini f_law s_law) (hist : List β)
   (leg : Hist_legal ini f_law s_law (hist)) (T : Turn_fst (List.length hist + 1))
@@ -601,7 +667,9 @@ lemma more_help (g : Game_World α β) (hist : List β)
     -- n_bnd not tight else contra with T and tu
     sorry
 
---#exit
+example {P Q : α → Prop} (a : ∃ ) : Classical.choose ()
+
+#exit
 
 lemma sStrat_winner_help_history [DecidableEq β] (g : Game_World α β) (hg : g.playable)
   (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (T : Turn_fst (List.length hist + 1))
@@ -631,19 +699,28 @@ lemma sStrat_winner_help_history [DecidableEq β] (g : Game_World α β) (hg : g
       · apply oddly_specific g f_act.val hist leg f_act.prop T _ _ _ n tu
         intro h H n_bnd
         dsimp [sStrat_winner]
-        rw [dif_neg]
+        rw [dif_pos]
         swap
-        · rw [and_comm]
-          push_neg
-          intro no
-          rw [History_on_turn_length] at no
-          exfalso
-          apply (not_lt_of_ge n_bnd) no
-        · rw [dif_pos ⟨f_act.val, f_act.prop, more_help g hist leg T f_strat (sStrat_winner g hg hist leg T main) n tu n_bnd ⟩]
+        · simp_rw [History_on_turn_length]
+          sorry
+          -- rw [and_comm]
+          -- push_neg
+          -- intro no
+          -- rw [History_on_turn_length] at no
+          -- exfalso
+          -- apply (not_lt_of_ge n_bnd) no
+        · rw [dif_neg]
+          swap
+          · simp_rw [History_on_turn_length, not_lt]
+            exact n_bnd
+          · rw [ih]
+          sorry
+          --rw [dif_pos ⟨f_act.val, f_act.prop, more_help g hist leg T f_strat (sStrat_winner g hg hist leg T main) n tu n_bnd ⟩]
         -- show that eq follows from eq ≥ hist.length, as both are staged
         -- use ↑ to rw sStrat_winner with a first dif_neg
       · replace ih := congr_arg Subtype.val ih
         exact ih
+
 
 
 #exit
