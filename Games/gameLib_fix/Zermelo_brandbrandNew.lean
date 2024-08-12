@@ -667,7 +667,10 @@ lemma more_help (g : Game_World α β) (hist : List β)
     -- n_bnd not tight else contra with T and tu
     sorry
 
-example {P Q : α → Prop} (a : ∃ ) : Classical.choose ()
+example {P Q : α → Prop} (a : ∃ p, P p) (b : ∃ q, Q q) (h : ∀ x, P x ↔ Q x) : Classical.choose a = Classical.choose b :=
+  by congr ; funext x ; rw [h]
+
+-- Probably stay in dtt hell for a week
 
 #exit
 
