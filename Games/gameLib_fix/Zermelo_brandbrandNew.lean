@@ -708,7 +708,17 @@ lemma more_help (g : Game_World α β) (hist : List β)
     sorry
 
 
--- Probably stay in dtt hell for a week
+lemma sStrat_winner_help_rget [DecidableEq β] (g : Game_World α β) (hg : g.playable)
+  (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (T : Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.fst_legal g.init_game_state hist f_act), g.is_snd_staged_win (f_act :: hist) (Hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
+  (f_strat : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) {n : Nat} (n_bnd : n ≥ List.length hist) (tu : Turn_snd (n+1))
+  (difp_2 : ¬ List.length (History_on_turn g.init_game_state g.fst_legal g.snd_legal (f_strat.val) ((sStrat_winner g hg hist leg T main).val) n).val < List.length hist) :
+  let h := (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val (sStrat_winner g hg hist leg T main).val n)
+  h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩ = (f_strat.val hist T leg).val :=
+  by
+  intro h
+  rw [List.rget_suffix (more_help g hist leg T _ _ n tu n_bnd) ⟨hist.length, (by rw [List.length_cons] ; apply Nat.lt_succ_self)⟩]
+  rw [List.rget_cons_length]
 
 --#exit
 
@@ -787,6 +797,20 @@ lemma sStrat_winner_help_history [DecidableEq β] (g : Game_World α β) (hg : g
               · intro ws ; rfl
               · intro ws ; rfl
               · intro ws
+                have := sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2
+                simp_rw [this]
+              · intro ws
+                constructor
+                · intro W fs
+                  simp_rw [← sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] at fs
+                  convert W fs
+                  · rw [eq_comm]
+                    apply sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2
+                  · rw [Subtype.heq_iff_coe_eq]
+                    · dsimp
+                    · simp_rw [sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2]
+
+
             · replace ih := congr_arg Subtype.val ih
               convert ih -- rw fails
           --rw [dif_pos ⟨f_act.val, f_act.prop, more_help g hist leg T f_strat (sStrat_winner g hg hist leg T main) n tu n_bnd ⟩]
@@ -796,37 +820,6 @@ lemma sStrat_winner_help_history [DecidableEq β] (g : Game_World α β) (hg : g
         exact ih
 
 
-lemma sStrat_winner_help_rget [DecidableEq β] (g : Game_World α β) (hg : g.playable)
-  (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (T : Turn_fst (List.length hist + 1))
-  (main : ∀ (f_act : β) (al : g.fst_legal g.init_game_state hist f_act), g.is_snd_staged_win (f_act :: hist) (Hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
-  (f_strat : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) {n : Nat} (n_bnd : n ≥ List.length hist) (tu : Turn_snd (n+1))
-  (difp_2 : ¬ List.length (History_on_turn g.init_game_state g.fst_legal g.snd_legal (f_strat.val) ((sStrat_winner g hg hist leg T main).val) n).val < List.length hist) :
-  let h := (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val (sStrat_winner g hg hist leg T main).val n)
-  h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩ = (f_strat.val hist T leg).val :=
-  by
-  intro h
-  rw [List.rget_suffix (more_help g hist leg T _ _ n tu n_bnd) ⟨hist.length, (by sorry)⟩]
-  -- revert n
-  -- apply Nat.twoStepInduction
-  -- · intro _ no
-  --   contradiction
-  -- · intro q _ _ h
-  --   simp_rw [Nat.le_one_iff_eq_zero_or_eq_one] at q
-  --   cases' q with q q
-  --   · dsimp [h, History_on_turn]
-  --     --simp_rw [dif_pos (show Turn_fst (0+1) by decide)]
-  --     simp_rw [q]
-  --     rw [List.length_eq_zero] at q
-  --     --rw [q] at T leg
-  --     have pain : (f_strat.val hist T leg).val = (f_strat.val [] (by dsimp ; decide)) (by apply Hist_legal.nil) := by
-  --       apply fStrat_eq_of_hist_eq ; exact q
-  --     rw [pain]
-  --     have : [((f_strat.val [] (by dsimp ; decide)) (by apply Hist_legal.nil)).val].rget ⟨0, (by dsimp ; apply zero_lt_one)⟩ = (f_strat.val [] (by dsimp ; decide) (by apply Hist_legal.nil)).val :=
-  --       by apply List.rget_singleton
-  --     convert this
-  --   · rw [q] at T
-  --     contradiction
-  -- · intro n ih1 ih2 nl nt _ h
 
 
 
