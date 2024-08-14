@@ -678,7 +678,53 @@ lemma sStrat_wHist_eq_of_eq_after (g : Game_World α β) (act : β) (hist : List
       rw [g.History_of_staged_rtake hist leg _ ⟨snd_s.val, sStrat_staged_cons'' _ _ _ _ act hist leg al rfl T snd_s.prop⟩ _ q]
 
 
-lemma more_help (g : Game_World α β) (hist : List β)
+-- show that History_on_turn are suffixes of one another, then use tranisitvity and the fact that (f_act.val :: hist) = History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val s_strat.val (hist.length+1)
+
+#exit
+
+lemma Strat_wHist_f_act_cons_suffix_Hist_helper (g : Game_World α β) (hist : List β)
+  (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal (hist)) (T : Turn_fst (List.length hist + 1))
+  (f_strat : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) (s_strat : sStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg)
+  (n : Nat) (n_bnd : n+1 ≥ hist.length):
+  let f_act := f_strat.val hist T leg
+  (f_act.val :: hist) <:+ History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val s_strat.val (n+1) :=
+  by sorry
+  -- intro f_act
+  -- induction' n with n ih
+  -- · rw [ge_iff_le, Nat.le_one_iff_eq_zero_or_eq_one] at n_bnd
+  --   cases' n_bnd with L L
+  --   · rw [List.length_eq_zero] at L
+  --     simp_rw [L, History_on_turn, dif_pos (show Turn_fst (0 + 1) from (by decide))]
+  --     convert (List.suffix_refl [(f_strat.val hist T leg).val])
+  --     · exact L.symm
+  --     · exact L.symm
+  --   · rw [L] at T
+  --     contradiction
+  -- ·
+
+  -- intro f_act
+  -- revert tu n_bnd
+  -- apply @Nat.twoStepInduction (fun n =>
+  --   Turn_snd (n + 1) →
+  --     n ≥ List.length hist →
+  --       ↑f_act :: hist <:+ ↑(History_on_turn g.init_game_state g.fst_legal g.snd_legal (f_strat.val) (s_strat.val) n))
+  -- · intro no
+  --   contradiction
+  -- · intro _ L
+  --   rw [ge_iff_le, Nat.le_one_iff_eq_zero_or_eq_one] at L
+  --   cases' L with L L
+  --   · rw [List.length_eq_zero] at L
+  --     simp_rw [L, History_on_turn, dif_pos (show Turn_fst (0 + 1) from (by decide))]
+  --     convert (List.suffix_refl [(f_strat.val hist T leg).val])
+  --     · exact L.symm
+  --     · exact L.symm
+  --   · rw [L] at T
+  --     contradiction
+  -- · intro n ih1 ih2 tu n_bnd
+  --   -- n_bnd not tight else contra with T and tu
+  --   sorry
+
+lemma Strat_wHist_f_act_cons_suffix_Hist (g : Game_World α β) (hist : List β)
   (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal (hist)) (T : Turn_fst (List.length hist + 1))
   (f_strat : fStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg) (s_strat : sStrat_wHist g.init_game_state g.fst_legal g.snd_legal hist leg)
   (n : Nat) (tu : Turn_snd (n+1)) (n_bnd : n ≥ hist.length):
@@ -686,27 +732,23 @@ lemma more_help (g : Game_World α β) (hist : List β)
   (f_act.val :: hist) <:+ History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val s_strat.val n :=
   by
   intro f_act
-  revert tu n_bnd
-  apply @Nat.twoStepInduction (fun n =>
-    Turn_snd (n + 1) →
-      n ≥ List.length hist →
-        ↑f_act :: hist <:+ ↑(History_on_turn g.init_game_state g.fst_legal g.snd_legal (f_strat.val) (s_strat.val) n))
-  · intro no
-    contradiction
-  · intro _ L
-    rw [ge_iff_le, Nat.le_one_iff_eq_zero_or_eq_one] at L
-    cases' L with L L
-    · rw [List.length_eq_zero] at L
-      simp_rw [L, History_on_turn, dif_pos (show Turn_fst (0 + 1) from (by decide))]
-      convert (List.suffix_refl [(f_strat.val hist T leg).val])
-      · exact L.symm
-      · exact L.symm
-    · rw [L] at T
-      contradiction
-  · intro n ih1 ih2 tu n_bnd
-    -- n_bnd not tight else contra with T and tu
-    sorry
+  cases' n with n
+  · contradiction
+  · apply Strat_wHist_f_act_cons_suffix_Hist_helper
+    exact n_bnd
+  -- · dsimp [History_on_turn]
+  --   split_ifs with q
+  --   · dsimp
+  --     apply List.IsSuffix.trans _ (by apply List.suffix_cons)
+  --     apply Strat_wHist_f_act_cons_suffix_Hist_helper
+  --     exact n_bnd
+  --   · dsimp
+  --     apply List.IsSuffix.trans _ (by apply List.suffix_cons)
+  --     apply Strat_wHist_f_act_cons_suffix_Hist_helper
+  --     exact n_bnd
 
+
+#exit
 
 lemma sStrat_winner_help_rget [DecidableEq β] (g : Game_World α β) (hg : g.playable)
   (hist : List β) (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) (T : Turn_fst (List.length hist + 1))
@@ -717,7 +759,7 @@ lemma sStrat_winner_help_rget [DecidableEq β] (g : Game_World α β) (hg : g.pl
   h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩ = (f_strat.val hist T leg).val :=
   by
   intro h
-  rw [List.rget_suffix (more_help g hist leg T _ _ n tu n_bnd) ⟨hist.length, (by rw [List.length_cons] ; apply Nat.lt_succ_self)⟩]
+  rw [List.rget_suffix (Strat_wHist_f_act_cons_suffix_Hist g hist leg T _ _ n tu n_bnd) ⟨hist.length, (by rw [List.length_cons] ; apply Nat.lt_succ_self)⟩]
   rw [List.rget_cons_length]
 
 --#exit
@@ -753,9 +795,9 @@ lemma sStrat_winner_help_history [DecidableEq β] (g : Game_World α β) (hg : g
         have difp_1 : hist.rtake (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val (sStrat_winner g hg hist leg T main).val n).val.length <:+ (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat.val (sStrat_winner g hg hist leg T main).val n).val :=
           by
           simp_rw [History_on_turn_length]
-          -- use more_help
-          sorry
-
+          apply List.IsSuffix.trans _ (Strat_wHist_f_act_cons_suffix_Hist g hist leg T f_strat (sStrat_winner g hg hist leg T main) n tu n_bnd)
+          rw [List.rtake_all_of_le n_bnd]
+          apply List.suffix_cons
         rw [dif_pos]
         swap
         · apply difp_1
@@ -802,29 +844,15 @@ lemma sStrat_winner_help_history [DecidableEq β] (g : Game_World α β) (hg : g
               · intro ws
                 constructor
                 · intro W fs
-                  simp_rw [← sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] at fs
-                  convert W fs
-                  · rw [eq_comm]
-                    apply sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2
-                  · rw [Subtype.heq_iff_coe_eq]
-                    · dsimp
-                    · simp_rw [sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2]
-
-
+                  convert W ⟨fs.val, (by simp_rw [sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+                · intro W fs
+                  convert W ⟨fs.val, (by simp_rw [← sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
             · replace ih := congr_arg Subtype.val ih
-              convert ih -- rw fails
-          --rw [dif_pos ⟨f_act.val, f_act.prop, more_help g hist leg T f_strat (sStrat_winner g hg hist leg T main) n tu n_bnd ⟩]
-        -- show that eq follows from eq ≥ hist.length, as both are staged
-        -- use ↑ to rw sStrat_winner with a first dif_neg
+              convert ih
       · replace ih := congr_arg Subtype.val ih
         exact ih
 
 
-
-
-
-
-#check Nat.twoStepInduction
 
 #exit
 
