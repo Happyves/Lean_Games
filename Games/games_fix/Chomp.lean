@@ -4,11 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Yves Jäckle.
 -/
 
-import Mathlib.Tactic
+import Games.gameLib_fixfix.Stealing
 
 
 
--- # Chomp setup
+-- # Chomp state lemmata
 
 def domi (p q : ℕ × ℕ) : Prop := p.1 ≤ q.1 ∧ p.2 ≤ q.2
 
@@ -283,6 +283,30 @@ lemma Chomp_not_mem_state_of_mem_hist (ini : (Finset (ℕ × ℕ))) (hist : (Lis
 
 
 
+-- # Chomp law lemmata
+
+structure Chomp_law (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ) : Prop where
+  act_mem : act ∈ ini
+  nd : ∀ q ∈ hist, nondomi q act
+
+
+
+
+
+-- # Chomp win states lemmata
+
+
+structure Chomp_win_final (ini : Finset (ℕ × ℕ)) (hist final_h : List (ℕ × ℕ)) (final_a : ℕ × ℕ) : Prop where
+  N : Chomp_state ini final_h ≠ ∅
+  F : Chomp_state ini (final_a :: final_h) = ∅
+  ref : (final_a :: final_h) <:+ hist
+
+
+def Chomp_win_fst (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Prop :=
+  ∃ final_h : List (ℕ × ℕ), ∃ final_a : (ℕ × ℕ), Turn_snd (final_h.length + 1) ∧ Chomp_win_final ini hist final_h final_a
+
+def Chomp_win_snd (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Prop :=
+  ∃ final_h : List (ℕ × ℕ), ∃ final_a : (ℕ × ℕ), Turn_fst (final_h.length + 1) ∧ Chomp_win_final ini hist final_h final_a
 
 
 
@@ -294,12 +318,33 @@ lemma Chomp_not_mem_state_of_mem_hist (ini : (Finset (ℕ × ℕ))) (hist : (Lis
 
 
 
+-- # Chomp
+
+
+def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
+  init_game_state := Chomp_init height length
+  fst_win_states := fun ini hist => Chomp_win_fst ini hist
+  snd_win_states := fun ini hist => Chomp_win_snd ini hist
+  transition := fun ini hist act => Chomp_state ini (act :: hist)
+  law := fun ini hist act =>  if Chomp_state ini hist ≠ ∅
+                              then Chomp_law ini hist act
+                              else True
 
 
 
+-- # Chomp is WL
 
 
+-- # Chomp is playable
 
+
+-- # Chomp has a coherent end
+
+lemma preChomp_coherent_end (height length : ℕ) : (preChomp height length).coherent_end :=
+  by
+  constructor
+  · intro h leg con
+    dsimp [preChomp, Chomp_win_fst, Chomp_win_snd] at con
 
 
 

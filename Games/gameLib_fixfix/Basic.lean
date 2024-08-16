@@ -23,9 +23,9 @@ structure Game_World (α β : Type u) where
   /-- Inital state-/
   init_game_state : α
   /-- A predicate that decides in which states the game is won for the first player-/
-  fst_win_states : α → Prop
+  fst_win_states : α → List β →  Prop
   /-- A predicate that decides in which states the game is won for the second player-/
-  snd_win_states : α → Prop
+  snd_win_states : α → List β → Prop
   /-- Given the initial state and the history, return a predicate
   that determines the legal actions for the first player-/
   fst_legal : α → List β → (β → Prop)
@@ -52,7 +52,9 @@ structure Symm_Game_World (α β : Type u) where
   /-- Inital state-/
   init_game_state : α
   /-- A predicate that decides in which states the game is won for the players-/
-  win_states : α → Prop
+  fst_win_states : α → List β →  Prop
+  /-- A predicate that decides in which states the game is won for the second player-/
+  snd_win_states : α → List β → Prop
   /-- Given  the history, and an action of the player, return next state-/
   transition : α → List β → β → α
   /-- A predicate that decides in which states the game is won for the players-/
@@ -67,10 +69,10 @@ Produce a `Game_World` from a `Symm_Game_World`.
 -/
 def Symm_Game_World.toGame_World {α β : Type u} (g : Symm_Game_World α β) : Game_World α β :=
   {init_game_state := g.init_game_state
-   fst_win_states := g.win_states
+   fst_win_states := g.fst_win_states
    fst_transition := g.transition
    fst_legal := g.law
-   snd_win_states := g.win_states
+   snd_win_states := g.snd_win_states
    snd_transition := g.transition
    snd_legal := g.law
    }
@@ -87,13 +89,13 @@ lemma Symm_Game_World.toGame_World_ini {α β : Type u} (g : Symm_Game_World α 
 
 @[simp]
 lemma Symm_Game_World.toGame_World_fst_win {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.fst_win_states = g.win_states :=
+  g.toGame_World.fst_win_states = g.fst_win_states :=
   by
   rfl
 
 @[simp]
 lemma Symm_Game_World.toGame_World_snd_win {α β : Type u} (g : Symm_Game_World α β) :
-  g.toGame_World.snd_win_states = g.win_states :=
+  g.toGame_World.snd_win_states = g.snd_win_states :=
   by
   rfl
 
@@ -457,13 +459,13 @@ lemma Symm_Game.toGame_ini {α β : Type u} (g : Symm_Game α β) :
 
 @[simp]
 lemma Symm_Game.toGame_fst_win {α β : Type u} (g : Symm_Game α β) :
-  g.toGame.fst_win_states = g.win_states :=
+  g.toGame.fst_win_states = g.fst_win_states :=
   by
   rfl
 
 @[simp]
 lemma Symm_Game.toGame_snd_win {α β : Type u} (g : Symm_Game α β) :
-  g.toGame.snd_win_states = g.win_states :=
+  g.toGame.snd_win_states = g.snd_win_states :=
   by
   rfl
 
