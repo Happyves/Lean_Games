@@ -83,6 +83,20 @@ lemma Chomp_state_sub_of_hist_sub (ini : Finset (ℕ × ℕ)) (l L :  List (ℕ 
     apply xdef.2
     exact h ql
 
+-- to mathlib
+lemma List.mem_of_suffix  {a b : List α} {x : α} (ha : a <:+ b) (hx : x ∈ a) : x ∈ b := by
+  obtain ⟨t,tdef⟩ := ha ; rw [← tdef, List.mem_append] ; right ; exact hx
+
+-- to mathlib
+lemma List.subset_of_suffix  {a b : List α} (ha : a <:+ b) : a ⊆ b := by
+  intro x xa ; apply List.mem_of_suffix ha xa
+
+
+lemma Chomp_state_sub_of_hist_suffix (ini : Finset (ℕ × ℕ)) (l L :  List (ℕ × ℕ)) (h : l <:+ L) :
+  Chomp_state ini (L) ⊆ Chomp_state ini l :=
+  by apply Chomp_state_sub_of_hist_sub ; apply List.subset_of_suffix h
+
+
 
 def Chomp_init (height length : ℕ) := (Finset.range (length+1)) ×ˢ (Finset.range (height+1))
 
@@ -309,12 +323,24 @@ def Chomp_win_snd (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) : Prop 
   ∃ final_h : List (ℕ × ℕ), ∃ final_a : (ℕ × ℕ), Turn_fst (final_h.length + 1) ∧ Chomp_win_final ini hist final_h final_a
 
 
+lemma Chomp_win_final_ext (ini : Finset (ℕ × ℕ)) (hist final_h : List (ℕ × ℕ)) (final_a act: ℕ × ℕ) :
+  Chomp_win_final ini hist final_h final_a → Chomp_win_final ini (act :: hist) final_h final_a := by
+  intro main
+  constructor
+  · exact main.N
+  · exact main.F
+  · apply List.IsSuffix.trans main.ref
+    exact List.suffix_cons act hist
 
+lemma Chomp_win_fst_ext (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act: ℕ × ℕ) :
+  Chomp_win_fst ini hist → Chomp_win_fst ini (act :: hist) := by
+  rintro ⟨h, a, t, p⟩
+  exact ⟨h,a,t, Chomp_win_final_ext ini hist h a act p⟩
 
-
-
-
-
+lemma Chomp_win_snd_ext (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (act: ℕ × ℕ) :
+  Chomp_win_snd ini hist → Chomp_win_snd ini (act :: hist) := by
+  rintro ⟨h, a, t, p⟩
+  exact ⟨h,a,t, Chomp_win_final_ext ini hist h a act p⟩
 
 
 
@@ -334,20 +360,162 @@ def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ 
 
 -- # Chomp is WL
 
+lemma preChomp_reaches_empty {height length : ℕ}
+  (f_strat : fStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law)
+  (s_strat : sStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law) :
+  ∃ n, Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n+1)) = ∅ ∧
+    ∀ m ≤ n, Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (m)) ≠ ∅ := by
+  sorry
+
+#exit
+
+lemma preChomp_isWL (height length : ℕ) : (preChomp height length).isWL :=
+  by
+  intro f_strat s_strat
+  obtain ⟨T,Tdef⟩ := preChomp_reaches_empty f_strat s_strat
+  use (T+1)
+  by_cases Tt : Turn_fst (T+1)
+  · apply Game_World.Turn_isWL.ws
+    dsimp [preChomp, Chomp_win_snd]
+    use (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat T)
+    use f_strat (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat T).val (by rw [History_on_turn_length] ; exact Tt) (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat T).prop.1
+    constructor
+    · rw [History_on_turn_length] ; exact Tt
+    · constructor
+      · apply Tdef.2
+        apply le_refl
+      · convert Tdef.1
+        dsimp [History_on_turn]
+        rw [dif_pos Tt]
+      · dsimp [History_on_turn]
+        rw [dif_pos Tt]
+        apply List.suffix_refl
+  · apply Game_World.Turn_isWL.wf
+    dsimp [preChomp, Chomp_win_snd]
+    use (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat T)
+    use s_strat (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat T).val (by rw [History_on_turn_length] ; exact Tt) (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat T).prop.1
+    constructor
+    · rw [History_on_turn_length] ; exact Tt
+    · constructor
+      · apply Tdef.2
+        apply le_refl
+      · convert Tdef.1
+        dsimp [History_on_turn]
+        rw [dif_neg Tt]
+      · dsimp [History_on_turn]
+        rw [dif_neg Tt]
+        apply List.suffix_refl
+
+
+
+
 
 -- # Chomp is playable
 
 
+lemma preChomp_playable (height length : ℕ) : (preChomp height length).playable :=
+  by
+  intro h _
+  constructor
+  · intro _
+    by_cases q : Chomp_state (Chomp_init height length) h ≠ ∅
+    · dsimp [preChomp]
+      simp_rw [if_pos q]
+      use (0,0)
+      constructor
+      · apply Chomp_init_has_zero
+      · intro x xh
+        rw [nondomi_zero]
+        intro con
+        apply q
+        apply Chomp_state_hist_zero
+        rw [con] at xh
+        exact xh
+    · dsimp [preChomp]
+      simp_rw [if_neg q]
+      use (0,0)
+  · intro _
+    by_cases q : Chomp_state (Chomp_init height length) h ≠ ∅
+    · dsimp [preChomp]
+      simp_rw [if_pos q]
+      use (0,0)
+      constructor
+      · apply Chomp_init_has_zero
+      · intro x xh
+        rw [nondomi_zero]
+        intro con
+        apply q
+        apply Chomp_state_hist_zero
+        rw [con] at xh
+        exact xh
+    · dsimp [preChomp]
+      simp_rw [if_neg q]
+      use (0,0)
+
+
+#exit
+
 -- # Chomp has a coherent end
+
+
+-- to mathlib
+lemma List.suffix_same {a b c : List α} (ha : a <:+ c) (hb : b <:+ c) : a <:+ b ∨ b <:+ a := by
+  induction' c with x l ih
+  · rw [List.suffix_nil] at ha hb
+    rw [ha,hb]
+    simp only [suffix_nil, or_self]
+  · rw [List.suffix_cons_iff] at ha hb
+    cases' ha with ha ha
+    · cases' hb with hb hb
+      · rw [ha,hb]
+        left
+        exact suffix_rfl
+      · rw [ha]
+        right
+        apply IsSuffix.trans hb
+        apply List.suffix_cons
+    · cases' hb with hb hb
+      · rw [hb]
+        left
+        apply IsSuffix.trans ha
+        apply List.suffix_cons
+      · exact ih ha hb
+
 
 lemma preChomp_coherent_end (height length : ℕ) : (preChomp height length).coherent_end :=
   by
   constructor
-  · intro h leg con
+  · intro h _ con
     dsimp [preChomp, Chomp_win_fst, Chomp_win_snd] at con
-
-
-
+    obtain ⟨fhs,fas,ts,ws⟩ := con.1
+    obtain ⟨fhf,faf,tf,wf⟩ := con.2
+    cases' List.suffix_same ws.ref wf.ref with q q
+    · rw [List.suffix_cons_iff] at q
+      cases' q with q q
+      · replace q := congrArg List.length q
+        simp_rw [List.length_cons, Nat.succ_inj] at q
+        rw [← q, Turn_fst_iff_not_snd] at tf
+        exact tf ts
+      · have := Chomp_state_sub_of_hist_suffix (Chomp_init height length) _ _ q
+        rw [ws.F, Finset.subset_empty] at this
+        exact wf.N this
+    · rw [List.suffix_cons_iff] at q
+      cases' q with q q
+      · replace q := congrArg List.length q
+        simp_rw [List.length_cons, Nat.succ_inj] at q
+        rw [← q, Turn_snd_iff_not_fst] at ts
+        exact ts tf
+      · have := Chomp_state_sub_of_hist_suffix (Chomp_init height length) _ _ q
+        rw [wf.F, Finset.subset_empty] at this
+        exact ws.N this
+  · intro h _ ws act _
+    apply Chomp_win_fst_ext
+    dsimp [preChomp] at ws
+    exact ws
+  · intro h _ ws act _
+    apply Chomp_win_snd_ext
+    dsimp [preChomp] at ws
+    exact ws
 
 
 
