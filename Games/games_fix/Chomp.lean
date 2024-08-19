@@ -344,7 +344,7 @@ lemma Chomp_win_snd_ext (ini : Finset (ℕ × ℕ)) (hist : List (ℕ × ℕ)) (
 
 
 
--- # Chomp
+-- # preChomp
 
 
 def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
@@ -360,14 +360,110 @@ def preChomp (height length : ℕ) : Symm_Game_World (Finset (ℕ × ℕ)) (ℕ 
 
 -- # Chomp is WL
 
+
+lemma preChomp_state_sub {height length : ℕ}
+  (f_strat : fStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law)
+  (s_strat : sStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law) :
+  ∀  n,  Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n+1))
+    ⊆ Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n)) :=
+    by
+    intro n
+    dsimp [History_on_turn]
+    split_ifs with T
+    · dsimp
+      apply Chomp_state_sub_cons
+    · dsimp
+      apply Chomp_state_sub_cons
+
+
+lemma preChomp_state_ssub {height length : ℕ}
+  (f_strat : fStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law)
+  (s_strat : sStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law) :
+  ∀  n,  Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n)) ≠ ∅ →
+    Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n+1))
+    ⊂ Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n)) :=
+    by
+    intro n hn
+    rw [Finset.ssubset_iff_of_subset (preChomp_state_sub f_strat s_strat n)]
+    dsimp [History_on_turn]
+    split_ifs with T
+    · dsimp
+      let act := (f_strat (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n)).val (by rw [History_on_turn_length] ; exact T) (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n)).prop.1)
+      use act.val
+      constructor
+      · rw [Chomp_state, Finset.mem_filter]
+        constructor
+        · have := act.prop
+          dsimp [preChomp] at this hn
+          rw [if_pos hn] at this
+          apply this.act_mem
+        · have := act.prop
+          dsimp [preChomp] at this hn
+          rw [if_pos hn] at this
+          apply this.nd
+      · apply Chomp_not_mem_state_of_mem_hist
+        apply List.mem_cons_self
+    · dsimp
+      let act := (s_strat (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n)).val (by rw [History_on_turn_length] ; exact T) (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n)).prop.1)
+      use act.val
+      constructor
+      · rw [Chomp_state, Finset.mem_filter]
+        constructor
+        · have := act.prop
+          dsimp [preChomp] at this hn
+          rw [if_pos hn] at this
+          apply this.act_mem
+        · have := act.prop
+          dsimp [preChomp] at this hn
+          rw [if_pos hn] at this
+          apply this.nd
+      · apply Chomp_not_mem_state_of_mem_hist
+        apply List.mem_cons_self
+
+
+
 lemma preChomp_reaches_empty {height length : ℕ}
   (f_strat : fStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law)
   (s_strat : sStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law) :
   ∃ n, Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n+1)) = ∅ ∧
-    ∀ m ≤ n, Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (m)) ≠ ∅ := by
-  sorry
+    ∀ m ≤ n, Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (m)) ≠ ∅ :=
+  by
+  let states := {s | ∃ n, s = Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n)) ∧ s ≠ ∅}
+  have lem : Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat 0).val ≠ ∅ :=
+    by
+    dsimp only [History_on_turn, Chomp_state, preChomp]
+    rw [Finset.filter_true_of_mem]
+    · rw [← Finset.nonempty_iff_ne_empty]
+      use (length, height)
+      apply Chomp_init_has_len_hei height length
+    · intro _ _ _ no
+      contradiction
+  have states_nonempty : Set.Nonempty states := by
+    use  Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat 0)
+    use 0
+    -- wow
+    -- constructor
+    -- · rfl
+    -- · apply lem
+  obtain ⟨n,ndef,ne⟩ := WellFounded.min_mem Finset.isWellFounded_ssubset.wf states states_nonempty
+  use n
+  constructor
+  · by_contra con
+    apply @WellFounded.not_lt_min _ _ Finset.isWellFounded_ssubset.wf states states_nonempty (Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n+1))) (by use n+1)
+    rw [ndef]
+    apply preChomp_state_ssub f_strat s_strat n
+    rw [← ndef]
+    exact ne
+  · intro m mln
+    contrapose ne
+    rw [ndef, not_not, ← Finset.subset_empty]
+    rw [not_not] at ne
+    rw [← ne]
+    apply Chomp_state_sub_of_hist_suffix
+    apply History_on_turn_suffix (preChomp height length).toGame_World
+    exact mln
 
-#exit
+
 
 lemma preChomp_isWL (height length : ℕ) : (preChomp height length).isWL :=
   by
@@ -453,7 +549,7 @@ lemma preChomp_playable (height length : ℕ) : (preChomp height length).playabl
       use (0,0)
 
 
-#exit
+
 
 -- # Chomp has a coherent end
 
@@ -516,6 +612,17 @@ lemma preChomp_coherent_end (height length : ℕ) : (preChomp height length).coh
     apply Chomp_win_snd_ext
     dsimp [preChomp] at ws
     exact ws
+
+
+-- # Chomp
+
+def Chomp (height length : ℕ) : zSymm_Game_World (Finset (ℕ × ℕ)) (ℕ × ℕ) where
+  toSymm_Game_World := preChomp height length
+  hgw := preChomp_isWL height length
+  hgp := preChomp_playable height length
+  hgn := preChomp_coherent_end height length
+
+
 
 
 
