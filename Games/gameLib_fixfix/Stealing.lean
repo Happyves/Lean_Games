@@ -46,6 +46,8 @@ def pre_stolen_strat (g : zSymm_Game_World α β)
 
 
 
+
+
 #exit
 
 structure Stealing_condition (g : zSymm_Game_World α β) where
