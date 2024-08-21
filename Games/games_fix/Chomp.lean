@@ -625,6 +625,128 @@ def Chomp (height length : ℕ) : zSymm_Game_World (Finset (ℕ × ℕ)) (ℕ ×
 
 
 
+-- # Bait
+
+
+lemma Chomp_state_empty_not_empty (height length : ℕ) : ¬Chomp_state (Chomp_init height length) [] = ∅ :=
+  by rw [Chomp_state_empty] ; rw [← ne_eq ,← Finset.nonempty_iff_ne_empty] ; use (length, height) ; apply Chomp_init_has_len_hei
+
+lemma Bait_leg_fst (height length : ℕ) : (Chomp height length).law (Chomp height length).init_game_state [] (length, height) :=
+  by
+  dsimp [Chomp, preChomp]
+  rw [if_pos (by apply Chomp_state_empty_not_empty)]
+  constructor
+  · apply Chomp_init_has_len_hei
+  · intro _ no
+    contradiction
+
+lemma Bait_leg_imp (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) :
+  ∀ hist, ∀ act, Hist_legal (Chomp height length).init_game_state (Chomp height length).law (Chomp height length).law (hist) →
+    (Chomp height length).law (Chomp height length).init_game_state (hist ++ [(length, height)]) act → (Chomp height length).law (Chomp height length).init_game_state (hist) act :=
+  by
+  intro hist act _ leg
+  dsimp [Chomp, preChomp]
+  dsimp [Chomp, preChomp] at leg
+  split_ifs with S
+  rw [if_pos] at leg
+  · constructor
+    · exact leg.act_mem
+    · intro q qh
+      exact leg.nd q (by apply List.mem_append_left ; exact qh)
+  · contrapose! S
+    apply Chomp_state_hist_zero
+    replace S := Chomp_state_state_empty _ (by apply Chomp_init_has_zero) _ S
+    rw [List.mem_append] at S
+    cases' S with S S
+    · exact S
+    · exfalso
+      apply helper _ _ h
+      exact S
+
+
+lemma nondomi_len_hei {height length : ℕ} (a b : Nat × Nat)
+  (adef : a ∈ Chomp_init height length) (bdef : b ∈ Chomp_init height length)
+  (main : nondomi b a) : nondomi (length, height) a :=
+  by
+  dsimp [nondomi, domi]
+  dsimp [nondomi, domi] at main
+  contrapose! main
+  simp_rw [Chomp_init, Finset.mem_product, Finset.mem_range, Nat.lt_succ] at adef bdef
+  convert bdef
+  · exact le_antisymm adef.1 main.1
+  · exact le_antisymm adef.2 main.2
+
+lemma Bait_leg_imp' (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) :
+  ∀ hist, ∀ act, Hist_legal (Chomp height length).init_game_state (Chomp height length).law (Chomp height length).law (hist) →
+    (Z : ¬ hist = []) → hist.getLast Z = (length, height) → Turn_fst (hist.length + 1) → (Chomp height length).law (Chomp height length).init_game_state hist.dropLast act → (Chomp height length).law (Chomp height length).init_game_state hist act :=
+  by
+  intro hist act hist_leg Z L T leg
+  dsimp [Chomp, preChomp]
+  dsimp [Chomp, preChomp] at leg
+  split_ifs with S
+  rw [← List.dropLast_append_getLast Z, L]
+  rw [← List.dropLast_append_getLast Z, L] at S
+  rw [if_pos] at leg
+  · constructor
+    · exact leg.act_mem
+    · intro q qh
+      rw [List.mem_append] at qh
+      cases' qh with qh qh
+      · exact leg.nd _ qh
+      · match hist with
+        | [] => contradiction
+        | [_] => dsimp at T ; contradiction
+        | x :: y :: l =>
+            rw [List.dropLast_cons_of_ne_nil (List.noConfusion)] at leg
+            cases' hist_leg
+            rename_i _ now
+            rw [ite_self] at now
+            dsimp [Chomp, preChomp] at now
+            rw [if_pos] at now
+            · replace now := now.act_mem
+              have amem := leg.act_mem
+              replace leg := leg.nd x (by apply List.mem_cons_self)
+              rw [List.mem_singleton] at qh
+              rw [qh]
+              apply nondomi_len_hei _ x amem now leg
+            · contrapose! S
+              apply Chomp_state_hist_zero
+              replace S := Chomp_state_state_empty _ (by apply Chomp_init_has_zero) _ S
+              rw [List.dropLast_cons_of_ne_nil (List.noConfusion)]
+              apply List.mem_append_left
+              apply List.mem_cons_of_mem
+              have : l ≠ [] := by
+                intro con
+                simp_rw [con] at L S
+                dsimp [List.getLast] at L
+                rw [L] at S
+                apply helper  _ _ h S
+              rw [List.dropLast_cons_of_ne_nil this]
+              rw [← List.dropLast_append_getLast this, ← List.cons_append, List.mem_append] at S
+              cases' S with S S
+              · exact S
+              · exfalso
+                rw [List.getLast_cons (List.noConfusion)] at L
+                rw [List.getLast_cons this] at L
+                rw [L] at S
+                apply helper  _ _ h S
+  · contrapose! S
+    apply Chomp_state_hist_zero
+    replace S := Chomp_state_state_empty _ (by apply Chomp_init_has_zero) _ S
+    exact List.mem_append_left [(length, height)] S
+
+
+
+
+
+
+
+#check Chomp_init_has_len_hei
+#check Chomp_state_empty
+#check Chomp_state_hist_zero
+#check Chomp_state_state_empty
+#check Chomp_init_has_zero
+#check Chomp_state_sub
 
 #exit
 
