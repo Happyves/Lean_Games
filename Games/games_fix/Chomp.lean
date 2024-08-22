@@ -640,7 +640,7 @@ lemma Bait_leg_fst (height length : ℕ) : (Chomp height length).law (Chomp heig
   · intro _ no
     contradiction
 
-lemma Bait_leg_imp (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) :
+lemma Bait_leg_imp {height length : ℕ} (h : height ≠ 0 ∨ length ≠ 0) :
   ∀ hist, ∀ act, Hist_legal (Chomp height length).init_game_state (Chomp height length).law (Chomp height length).law (hist) →
     (Chomp height length).law (Chomp height length).init_game_state (hist ++ [(length, height)]) act → (Chomp height length).law (Chomp height length).init_game_state (hist) act :=
   by
@@ -676,7 +676,7 @@ lemma nondomi_len_hei {height length : ℕ} (a b : Nat × Nat)
   · exact le_antisymm adef.1 main.1
   · exact le_antisymm adef.2 main.2
 
-lemma Bait_leg_imp' (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) :
+lemma Bait_leg_imp' {height length : ℕ} (h : height ≠ 0 ∨ length ≠ 0) :
   ∀ hist, ∀ act, Hist_legal (Chomp height length).init_game_state (Chomp height length).law (Chomp height length).law (hist) →
     (Z : ¬ hist = []) → hist.getLast Z = (length, height) → Turn_fst (hist.length + 1) → (Chomp height length).law (Chomp height length).init_game_state hist.dropLast act → (Chomp height length).law (Chomp height length).init_game_state hist act :=
   by
@@ -736,17 +736,97 @@ lemma Bait_leg_imp' (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) :
     exact List.mem_append_left [(length, height)] S
 
 
+lemma Chomp_Bait {height length : ℕ} (h : height ≠ 0 ∨ length ≠ 0) : Bait (Chomp height length) (length, height) :=
+  {leg_fst := Bait_leg_fst height length, leg_imp := Bait_leg_imp h, leg_imp' := Bait_leg_imp' h}
+
+
+lemma Chomp_not_init_win {height length : ℕ} : ¬ (Chomp height length).snd_win_states (Chomp height length).init_game_state [] :=
+  by
+  dsimp [Chomp, preChomp, Chomp_win_snd]
+  push_neg
+  intro h a _ con
+  replace con := con.ref
+  rw [List.suffix_nil] at con
+  contradiction
 
 
 
 
 
-#check Chomp_init_has_len_hei
-#check Chomp_state_empty
-#check Chomp_state_hist_zero
-#check Chomp_state_state_empty
-#check Chomp_init_has_zero
-#check Chomp_state_sub
+lemma List.ne_empty_of_mem {l : List α} {x : α} (h : x ∈ l) : l ≠ [] := by
+  cases' l with _ _
+  · contradiction
+  · apply List.noConfusion
+
+
+lemma List.singleton_suffix  {l : List α} {x : α} (h : [x] <:+ l) : x = l.getLast (List.ne_empty_of_mem (List.mem_of_suffix h (List.mem_cons_self x []))) := by
+  obtain ⟨t,td⟩ := h ; simp_rw [← td, List.getLast_append]
+
+
+lemma Chomp_winning_equiv {height length : ℕ} (H : height ≠ 0 ∨ length ≠ 0) :
+  ∀ hist, Hist_legal (Chomp height length).init_game_state (Chomp height length).law (Chomp height length).law hist → (Chomp height length).snd_win_states (Chomp height length).init_game_state (hist ++ [(length, height)]) → (Chomp height length).fst_win_states (Chomp height length).init_game_state hist :=
+  by
+  intro h _
+  intro q
+  dsimp [Chomp, preChomp, Chomp_win_fst, Chomp_win_snd] at *
+  obtain ⟨hist,act,T,W⟩ := q
+  use (hist.dropLast)
+  use act
+  have fact : hist ≠ [] :=
+    by
+    intro con
+    rw [con] at W
+    have oh := W.ref
+    have no := W.F
+    replace oh := List.singleton_suffix oh
+    rw [List.getLast_append] at oh
+    rw [oh] at no
+    replace no := Chomp_state_state_empty _ (Chomp_init_has_zero height length) _ no
+    apply helper _ _ H no
+  have : hist = hist.dropLast ++ [(length,height)] :=
+    by
+    nth_rewrite 1 [← List.dropLast_append_getLast fact]
+    congr
+    obtain ⟨t,tdef⟩ := W.ref
+    have : List.getLast (t ++ act :: hist) (by apply List.append_ne_nil_of_ne_nil_right ; apply List.noConfusion) = List.getLast (h ++ [(length, height)]) (by apply List.append_ne_nil_of_ne_nil_right ; apply List.noConfusion) := by simp_rw [tdef]
+    simp_rw [List.getLast_append] at this
+    simp_rw [List.getLast_append' t (act :: hist) List.noConfusion] at this
+    simp_rw [List.getLast_cons fact] at this
+    exact this
+  constructor
+  · rw [List.length_dropLast, Nat.sub_add_cancel (by rw [Nat.succ_le, List.length_pos] ; apply fact), Turn_snd_fst_step] ; exact T
+  · constructor
+    · intro con
+      apply W.N
+      rw [← Finset.subset_empty] at *
+      rw [← List.dropLast_append_getLast fact]
+      apply Finset.Subset.trans _ con
+      apply Chomp_state_sub
+    · apply Chomp_state_hist_zero
+      have that := Chomp_state_state_empty _ (Chomp_init_has_zero height length) _ W.F
+      rw [this, ← List.cons_append, List.mem_append] at that
+      cases' that with q q
+      · exact q
+      · exfalso
+        apply helper _ _ H q
+    · replace W := W.ref
+      rw [this, ← List.cons_append] at W
+      obtain ⟨t,td⟩ := W
+      rw [← List.append_assoc] at td
+      replace td := List.append_inj_left' td rfl
+      use t
+
+
+
+
+lemma Chomp_stealing_condition {height length : ℕ} (H : height ≠ 0 ∨ length ≠ 0) : Stealing_condition (Chomp height length) where
+  trap := (length, height)
+  hb := Chomp_Bait H
+  fst_not_win := Chomp_not_init_win
+  wb := Chomp_winning_equiv H
+
+
+
 
 #exit
 

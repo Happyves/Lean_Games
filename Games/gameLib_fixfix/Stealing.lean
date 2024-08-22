@@ -14,10 +14,29 @@ structure Bait (g : zSymm_Game_World α β) (trap : β) : Prop where
   leg_fst : g.law g.init_game_state [] trap
   leg_imp : ∀ hist, ∀ act, Hist_legal g.init_game_state g.law g.law (hist) → g.law g.init_game_state (hist ++ [trap]) act → g.law g.init_game_state (hist) act
   leg_imp' : ∀ hist, ∀ act, Hist_legal g.init_game_state g.law g.law (hist) → (Z : ¬ hist = []) → hist.getLast Z = trap → Turn_fst (hist.length + 1) → g.law g.init_game_state hist.dropLast act → g.law g.init_game_state hist act
-  leg_hist : ∀ hist, Hist_legal g.init_game_state g.law g.law (hist ++ [trap]) → Hist_legal g.init_game_state g.law g.law (hist)
 
 
--- TODO: leg_hist sounds like it can be derived from leg_imp
+
+lemma Bait_leg_hist (hb : Bait g trap) : ∀ hist, Hist_legal g.init_game_state g.law g.law (hist ++ [trap]) → Hist_legal g.init_game_state g.law g.law (hist) :=
+  by
+  intro hist leg
+  induction' hist with x l ih
+  · apply Hist_legal.nil
+  · apply Hist_legal.cons
+    · rw [ite_self]
+      rw [List.cons_append] at leg
+      cases' leg
+      rename_i sofar now
+      rw [ite_self] at now
+      exact hb.leg_imp _ _ (ih sofar) now
+    · rw [List.cons_append] at leg
+      cases' leg
+      rename_i sofar _
+      exact ih sofar
+
+
+
+--#exit
 
 
 -- replace by legality if snd condition unnessecary
@@ -43,7 +62,7 @@ def pre_stolen_strat (g : zSymm_Game_World α β)
   fun h ht hl =>  if Z : h = []
                   then ⟨trap, (by rw [Z] ; exact hb.leg_fst)⟩
                   else  if M : h.getLast Z = trap
-                        then  let move := s_strat h.dropLast (by rw [List.length_dropLast, Nat.sub_add_cancel, Turn_snd_fst_step] ; exact ht ; rw [Nat.succ_le, List.length_pos] ; exact Z) (by have := List.dropLast_append_getLast Z ; rw [M] at this ; apply hb.leg_hist ; rw [this] ; exact hl)
+                        then  let move := s_strat h.dropLast (by rw [List.length_dropLast, Nat.sub_add_cancel, Turn_snd_fst_step] ; exact ht ; rw [Nat.succ_le, List.length_pos] ; exact Z) (by have := List.dropLast_append_getLast Z ; rw [M] at this ; apply Bait_leg_hist hb ; rw [this] ; exact hl)
                               ⟨move.val, hb.leg_imp' h move.val hl Z M ht move.prop⟩
                         else  g.exStrat_fst g.hgp h ht hl
 
@@ -56,7 +75,7 @@ structure Stealing_condition (g : zSymm_Game_World α β) where
   trap : β
   hb : Bait g trap
   fst_not_win : ¬ g.snd_win_states g.init_game_state []
-  wb : ∀ hist, Hist_legal g.init_game_state g.law g.law hist → (g.snd_win_states g.init_game_state (hist ++ [trap]) ↔ g.fst_win_states g.init_game_state hist)
+  wb : ∀ hist, Hist_legal g.init_game_state g.law g.law hist → g.snd_win_states g.init_game_state (hist ++ [trap]) → g.fst_win_states g.init_game_state hist
 
 
 theorem Strategy_stealing (g : zSymm_Game_World α β) (s : Stealing_condition g) : g.is_fst_win :=
