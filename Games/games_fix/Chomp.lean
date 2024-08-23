@@ -100,75 +100,7 @@ lemma Chomp_state_sub_of_hist_suffix (ini : Finset (ℕ × ℕ)) (l L :  List (�
 
 def Chomp_init (height length : ℕ) := (Finset.range (length+1)) ×ˢ (Finset.range (height+1))
 
-lemma Chomp_state_blind (ini : Finset (ℕ × ℕ)) (hist prehist : List (ℕ × ℕ)) :
-  Chomp_state (Chomp_state ini prehist) hist = Chomp_state ini (hist ++ prehist) :=
-  by
-  ext x
-  constructor
-  · intro H
-    dsimp [Chomp_state] at *
-    simp_rw [Finset.mem_filter] at *
-    constructor
-    · exact H.1.1
-    · intro q qq
-      rw [List.mem_append] at qq
-      cases' qq with k k
-      · exact H.2 q k
-      · exact H.1.2 q k
-  · intro H
-    dsimp [Chomp_state] at *
-    simp_rw [Finset.mem_filter] at *
-    constructor
-    · constructor
-      · exact H.1
-      · intro q qh
-        apply H.2
-        exact List.mem_append_right hist qh
-    · intro q qh
-      apply H.2
-      exact List.mem_append.mpr (Or.inl qh)
 
-lemma Chomp_state_ini_zero (hist : List (ℕ × ℕ)) (hh : (0,0) ∉ hist): Chomp_state {(0,0)} hist = {(0,0)} :=
-  by
-  dsimp [Chomp_state]
-  rw [Finset.filter_eq_self]
-  intro x xdef q qh
-  rw [Finset.mem_singleton] at xdef
-  rw [xdef]
-  dsimp [nondomi, domi]
-  intro con
-  simp_rw [Nat.le_zero] at con
-  apply hh
-  convert qh
-  · exact con.1.symm
-  · exact con.2.symm
-
-lemma Chomp_state_has_zero_iff_hist_has_zero
-  (ini : Finset (ℕ × ℕ) ) (hini : (0,0) ∈ ini) (hist : List (ℕ × ℕ)) :
-  (0,0) ∈ Chomp_state ini hist ↔ (0,0) ∉ hist :=
-  by
-  constructor
-  · intro c
-    dsimp [Chomp_state] at c
-    rw [Finset.mem_filter] at c
-    dsimp [nondomi, domi] at c
-    intro con
-    apply c.2 _ con
-    decide
-  · intro c
-    dsimp [Chomp_state]
-    rw [Finset.mem_filter]
-    constructor
-    · exact hini
-    · intro q qh
-      dsimp [nondomi, domi]
-      intro con
-      simp_all only [nonpos_iff_eq_zero]
-      unhygienic with_reducible aesop_destruct_products
-      simp_all only
-
-lemma Chomp_state_sub_ini (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × ℕ)) :
-  Chomp_state ini hist ⊆ ini := by dsimp [Chomp_state]; exact Finset.filter_subset (fun p => ∀ q ∈ hist, nondomi q p) ini
 
 lemma Chomp_state_hist_zero (ini : Finset (ℕ × ℕ) ) (hist : List (ℕ × ℕ)) (main : (0,0) ∈ hist) :
   Chomp_state ini hist = ∅ :=
@@ -203,54 +135,12 @@ lemma nondomi_zero (act : ℕ × ℕ) : nondomi act (0,0) ↔ act ≠ (0,0) := b
 
 
 
-lemma Chomp_state_zero_act_non_zero (ini : Finset (ℕ × ℕ)) (hini : (0, 0) ∈ ini) (hist : List (ℕ × ℕ)) (act : ℕ × ℕ)
-  (hs : Chomp_state ini hist = {(0,0)}) (ha : act ≠ (0,0)) : Chomp_state ini (act :: hist) = {(0,0)} :=
-  by
-  dsimp [Chomp_state] at *
-  have : (fun p => ∀ q ∈ act :: hist, nondomi q p) = (fun p => (nondomi act p) ∧ (∀ q ∈ hist, nondomi q p)) :=
-    by
-    ext p
-    simp_all only [Prod.forall, List.mem_cons, forall_eq_or_imp]
-    unhygienic with_reducible aesop_destruct_products
-    simp_all only [Prod.forall, Prod.mk.injEq, not_and]
-    apply Iff.intro
-    · intro a
-      simp_all only [Prod.forall, and_self, true_or, or_true, implies_true, forall_const]
-    · intro a a_1 b a_2
-      unhygienic with_reducible aesop_destruct_products
-      unhygienic aesop_cases a_2
-      · simp_all only [Prod.forall]
-      · simp_all only [Prod.forall]
-  simp_rw [this, Finset.filter_and,hs]
-  rw [Finset.inter_eq_right]
-  intro y ydef
-  rw [Finset.mem_singleton] at ydef
-  rw [ydef, Finset.mem_filter]
-  exact ⟨ hini, (by rw [nondomi_zero]; exact ha)⟩
-
-
 
 lemma Chomp_init_has_zero (height length : ℕ)  : (0,0) ∈ Chomp_init height length :=
   by
   dsimp [Chomp_init]
   simp_rw [Finset.mem_product, Finset.mem_range, and_comm]
   constructor <;> {exact Nat.add_pos_right _ Nat.le.refl}
-
-lemma Chomp_state_ini_not_zero (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0)  : ¬Chomp_state (Chomp_init height length) [] = {(0, 0)} :=
-  by
-  dsimp [Chomp_state, Chomp_init]
-  apply ne_of_not_subset
-  intro con
-  specialize @con (length, height)
-    (by rw [Finset.mem_filter ]
-        constructor
-        · simp_rw [Finset.mem_product, Finset.mem_range]
-          constructor <;> {exact Nat.le.refl}
-        · intro q no ; contradiction)
-  simp only [Finset.mem_singleton, Prod.mk.injEq] at con
-  cases' h with h h
-  · exact h con.2
-  · exact h con.1
 
 
 private lemma helper (height length : ℕ) (h : height ≠ 0 ∨ length ≠ 0) : (0,0) ∉ [(length, height)] :=
