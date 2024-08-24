@@ -84,6 +84,112 @@ lemma loop_invariant
                             } ;
   ∀ turn, Turn_fst turn → (g.state_on_turn turn) % 3 = 0 :=
   by
+  intro G
+  apply Invariant_fst
+  · dsimp [Symm_Game.state_on_turn, Symm_Game_World.state_on_turn, Game_World.state_on_turn]
+    rw [dif_pos (by decide)]
+    dsimp [Symm_Game_World.transition, PickUpBricks, Symm_Game.history_on_turn, bricks_from_ini_hist_act, pub_win_strat, bricks_from_ini_hist]
+    split_ifs with z
+    · dsimp
+      rw [z]
+      decide
+    · -- split_ifs fucks up
+      by_cases c :
+            (init_bricks -
+                  List.sum
+                    ↑(Game_World.history_on_turn
+                        (Symm_Game_World.toGame_World
+                          { init_game_state := init_bricks, fst_win_states := fun ini hist => ini - List.sum hist = 0,
+                            snd_win_states := fun ini hist => ini - List.sum hist = 0,
+                            transition := fun ini => bricks_from_ini_hist_act ini,
+                            law := fun ini hist act =>
+                              if ini - List.sum hist = 0 then act = 0
+                              else if ini - List.sum hist = 1 then act = 1 else act = 1 ∨ act = 2 })
+                        (pub_win_strat init_bricks) s_strat 0)) %
+                3 =
+              1
+      · rw [dif_pos c]
+        dsimp [Game_World.history_on_turn, History_on_turn] at *
+        rw [Nat.sub_mod_eq_zero_of_mod_eq]
+        rw [c]
+        decide
+      · rw [dif_neg c]
+        simp_rw [Game_World.history_on_turn, History_on_turn, List.sum_nil] at *
+        rw [Nat.sub_mod_eq_zero_of_mod_eq]
+        rw [or_comm ,or_iff_not_imp_right] at win_hyp
+        exact win_hyp c
+  · intro t tf th
+    rw [Turn_fst_step] at tf
+    rw [Symm_Game.state_on_turn, Symm_Game_World.state_on_turn, Game_World.state_on_turn]
+    split
+    · contradiction
+    · rename_i m hm
+      rw [Nat.succ_eq_add_one] at hm
+      rw [dif_pos _]
+      swap
+      · rw [← hm]
+        exact tf
+      · norm_num at hm
+        --rw [← hm]
+        dsimp [Game_World.history_on_turn, PickUpBricks]
+        rw [if_neg _]
+        swap
+        · rw [← Turn_snd_fst_step]
+          rw [← Turn_fst_step] at tf
+          rw [Turn_not_snd_iff_fst]
+          exact tf
+        · dsimp [Strategy_legal_snd] at s_law
+          specialize s_law t
+          rw [← Turn_snd_fst_step] at tf
+          specialize s_law tf
+          dsimp [PickUpBricks] at s_law
+          dsimp [PickUpBricks]
+          rw [bricks_start_end]
+          split at s_law
+          · rename_i _ NoBricks
+            rw [s_law]
+            convert (Nat.zero_mod 3)
+            rw [bricks_start_turn_from_ini_hist, List.sum_cons, Nat.zero_add]
+            rw [bricks_start_turn_from_ini_hist] at NoBricks
+            rw [NoBricks]
+            apply Nat.zero_sub
+          · rename_i OneBrick
+            exfalso
+            have fact : g.toSymm_Game_World = PickUpBricks init_bricks := by rfl
+            have := PUB_state_bricks fact t
+            rw [← this] at th
+            rw [OneBrick] at th
+            contradiction
+          · rename_i noZero noOne
+            cases' s_law with one two
+            · rw [one]
+              rw [bricks_start_cons]
+              have fact : g.toSymm_Game_World = PickUpBricks init_bricks := by rfl
+              have := PUB_state_bricks fact t
+              rw [← this] at th
+              rw [pub_win_strat_one init_bricks (History_on_turn init_bricks pub_win_strat s_strat t) noZero noOne th]
+              rw [Nat.sub_sub]
+              rw [← Nat.mod_eq_sub_mod]
+              · exact th
+              · by_contra! k
+                interval_cases bricks_start_turn_from_ini_hist init_bricks (History_on_turn init_bricks pub_win_strat s_strat t)
+                · contradiction
+                · contradiction
+                · contradiction
+            · rw [two]
+              rw [bricks_start_cons]
+              have fact : g.toSymm_Game_World = PickUpBricks init_bricks := by rfl
+              have := PUB_state_bricks fact t
+              rw [← this] at th
+              rw [pub_win_strat_two init_bricks (History_on_turn init_bricks pub_win_strat s_strat t) noZero noOne th]
+              rw [Nat.sub_sub]
+              rw [← Nat.mod_eq_sub_mod]
+              · exact th
+              · by_contra! k
+                interval_cases bricks_start_turn_from_ini_hist init_bricks (History_on_turn init_bricks pub_win_strat s_strat t)
+                · contradiction
+                · contradiction
+                · contradiction
 
 
 
