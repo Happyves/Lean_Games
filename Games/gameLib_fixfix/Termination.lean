@@ -295,6 +295,77 @@ lemma Game.coherent_end_snd_win (g : Game α β) (hg : g.coherent_end)
     · apply mm n con nlm
 
 
-
-
 def Symm_Game_World.coherent_end (g : Symm_Game_World α β) : Prop := g.toGame_World.coherent_end
+
+
+
+-- # With draw states
+
+
+
+inductive Game_World_wDraw.Turn_isWLD (g : Game_World_wDraw α β)
+  (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal)
+  (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) (turn : ℕ) : Prop where
+| wf : g.fst_win_states g.init_game_state (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat turn) → g.Turn_isWLD f_strat s_strat turn
+| ws : g.snd_win_states g.init_game_state (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat turn) → g.Turn_isWLD f_strat s_strat turn
+| drw : g.draw_states g.init_game_state (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat turn) → g.Turn_isWLD f_strat s_strat turn
+
+
+def Game_World_wDraw.isWLD (g : Game_World_wDraw α β) : Prop :=
+  ∀ (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal),
+  ∀ (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal),
+  ∃ turn, g.Turn_isWLD f_strat s_strat turn
+
+
+def Game_World_wDraw.state_on_turn_neutral (g : Game_World_wDraw α β)
+  (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal)
+  (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) (turn : ℕ) : Prop :=
+  ¬ g.Turn_isWLD f_strat s_strat turn
+
+
+def Game_wDraw.state_on_turn_neutral (g : Game_wDraw α β) (turn : ℕ) : Prop :=
+  g.toGame_World_wDraw.state_on_turn_neutral g.fst_strat g.snd_strat turn
+
+
+def Game_wDraw.fst_win  {α β : Type _} (g : Game_wDraw α β) : Prop :=
+  ∃ turn : ℕ, g.fst_win_states g.init_game_state (History_on_turn g.init_game_state g.fst_legal g.snd_legal g.fst_strat g.snd_strat turn) ∧
+    (∀ t < turn, g.state_on_turn_neutral t)
+
+def Game_wDraw.snd_win  {α β : Type _} (g : Game_wDraw α β) : Prop :=
+  ∃ turn : ℕ, g.snd_win_states g.init_game_state (History_on_turn g.init_game_state g.fst_legal g.snd_legal g.fst_strat g.snd_strat turn) ∧
+    (∀ t < turn, g.state_on_turn_neutral t)
+
+def Game_wDraw.draw  {α β : Type _} (g : Game_wDraw α β) : Prop :=
+  ∃ turn : ℕ, g.draw_states g.init_game_state (History_on_turn g.init_game_state g.fst_legal g.snd_legal g.fst_strat g.snd_strat turn) ∧
+    (∀ t < turn, g.state_on_turn_neutral t)
+
+def Game_World_wDraw.is_fst_win  {α β : Type _} (g : Game_World_wDraw α β) : Prop :=
+  ∃ ws : fStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ∀ snd_s : sStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ({g with fst_strat := ws, snd_strat := snd_s} : Game_wDraw α β).fst_win
+
+def Game_World_wDraw.is_snd_win  {α β : Type _} (g : Game_World_wDraw α β) : Prop :=
+  ∃ ws : sStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ∀ fst_s : fStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ({g with fst_strat := fst_s, snd_strat := ws} : Game_wDraw α β).snd_win
+
+def Game_World_wDraw.is_draw_fst {α β : Type _} (g : Game_World_wDraw α β) : Prop :=
+  ∃ ws : fStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ∀ snd_s : sStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ({g with fst_strat := ws, snd_strat := snd_s} : Game_wDraw  α β).draw
+
+def Game_World_wDraw.is_draw_snd {α β : Type _} (g : Game_World_wDraw α β) : Prop :=
+  ∃ ws : sStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ∀ fst_s : fStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ({g with fst_strat := fst_s, snd_strat := ws} : Game_wDraw  α β).draw
+
+def Game_World_wDraw.is_draw {α β : Type _} (g : Game_World_wDraw α β) : Prop := g.is_draw_fst ∨ g.is_draw_snd
+
+
+inductive Game_World_wDraw.has_WLD (g : Game_World_wDraw α β) : Prop where
+| wf (h : g.is_fst_win)
+| ws (h : g.is_snd_win)
+| draw (h : g.is_draw)
+
+def State_from_history_neutral_wDraw (ini : α ) (f_wins s_wins draw : α → List β → Prop) (hist : List β) : Prop :=
+  (¬ (f_wins ini hist)) ∧ (¬ (s_wins ini hist) ∧ (¬ (draw ini hist)))

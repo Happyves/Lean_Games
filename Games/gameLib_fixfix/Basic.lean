@@ -42,7 +42,7 @@ structure Game_World (α β : Type u) where
 
 /-- `Game_World` with addtional drawing states, given by a predicate on states-/
 structure Game_World_wDraw (α β : Type u) extends Game_World α β where
-  draw_states : α → Prop
+  draw_states : α → List β → Prop
 
 
 /--
@@ -60,9 +60,7 @@ structure Symm_Game_World (α β : Type u) where
   /-- A predicate that decides in which states the game is won for the players-/
   law : α → List β → (β → Prop)
 
-/-- `Symm_Game_World` with addtional drawing states, given by a predicate on states-/
-structure Symm_Game_World_wDraw (α β : Type u) extends Symm_Game_World α β where
-  draw_states : α → Prop
+
 
 /--
 Produce a `Game_World` from a `Symm_Game_World`.
