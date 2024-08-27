@@ -8,6 +8,110 @@ import Games.gameLib_fixfix.Positional
 
 
 
+
+
+structure pairProp {win_sets : Finset (Finset α)} (win_set : win_sets) (p : α × α) : Prop where
+  dif : p.1 ≠ p.2
+  mem_fst : p.1 ∈ win_set.val
+  mem_snd : p.2 ∈ win_set.val
+
+
+
+structure pre_Pairing_condition [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} (g : Positional_Game_World win_sets) : Prop where
+  playable : g.playable
+  pairing : ∀ w : win_sets, ∃ p : α × α, pairProp w p -- keep pairing in prop form for covience as its probaly easier to prove
+  --pairing! := @Classical.choose (win_sets → (α × α)) (fun f : win_sets → (α × α) => ∀ (x : { x // x ∈ win_sets }), pairProp x (f x)) (@Classical.axiomOfChoice _ _ pairProp pairing)
+  -- ↑ adding noncomputable raises errors though ; might be fixed when updating ?!?
+
+
+noncomputable
+def pairing! [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} {g : Positional_Game_World win_sets} (h : pre_Pairing_condition g) :=
+  @Classical.choose (win_sets → (α × α)) (fun f : win_sets → (α × α) => ∀ (x : { x // x ∈ win_sets }), pairProp x (f x)) (@Classical.axiomOfChoice _ _ pairProp h.pairing)
+
+
+lemma pairing!_prop [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} {g : Positional_Game_World win_sets} (h : pre_Pairing_condition g) :
+  ∀ (x : { x // x ∈ win_sets }), pairProp x ((pairing! h) x)  :=
+  @Classical.choose_spec (win_sets → (α × α)) (fun f : win_sets → (α × α) => ∀ (x : { x // x ∈ win_sets }), pairProp x (f x)) (@Classical.axiomOfChoice _ _ pairProp h.pairing)
+
+structure pairDif (a b : α × α) : Prop where
+  strait_fst : a.1 ≠ b.1
+  strait_snd : a.1 ≠ b.1
+  cross_fst : a.1 ≠ b.2
+  cross_snd : a.2 ≠ b.1
+
+
+structure Pairing_condition [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} (g : Positional_Game_World win_sets) extends pre_Pairing_condition g where
+  pairing_dif : ∀ w v : win_sets, w ≠ v → pairDif ((pairing! topre_Pairing_condition) w) ((pairing! topre_Pairing_condition) v)
+
+
+
+noncomputable
+def Pairing_StratCore [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} {g : Positional_Game_World win_sets} (hg : Pairing_condition g) :
+  (hist : List α) → (leg : Hist_legal g.init_game_state g.fst_legal g.snd_legal hist) → α :=
+  fun hist leg =>
+    let spam :=
+      if T : Turn_fst (hist.length + 1)
+            then
+              Classical.choose ((hg.playable hist (leg)).1 T)
+            else
+              Classical.choose ((hg.playable hist (leg)).2 (by rw [Turn_snd_iff_not_fst] ; exact T))
+    match hist with
+    | last :: _ =>
+        if hxf : ∃ w : win_sets, last = (pairing! hg.topre_Pairing_condition w).1
+        then
+          let other := (pairing! hg.topre_Pairing_condition (Classical.choose hxf)).2
+          if other ∈ hist
+          then spam
+          else other
+        else
+          if hxs : ∃ w : win_sets, last = (pairing! hg.topre_Pairing_condition w).2
+          then
+            let other := (pairing! hg.topre_Pairing_condition (Classical.choose hxs)).1
+            if other ∈ hist
+            then spam
+            else other
+          else
+            spam
+    | [] => spam
+
+
+
+
+noncomputable
+def Pairing_fStrat [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} {g : Positional_Game_World win_sets} (hg : Pairing_condition g) :
+  fStrategy g.init_game_state g.fst_legal g.snd_legal :=
+  fun hist T leg =>
+    ⟨ Pairing_StratCore hg hist leg,
+      (by
+       sorry
+       )
+      ⟩
+
+
+
+#exit
+
+-- # Alternative
+
+structure pairDif (a b : α × α) : Prop where
+  strait_fst : a.1 ≠ b.1
+  strait_snd : a.1 ≠ b.1
+  cross_fst : a.1 ≠ b.2
+  cross_snd : a.2 ≠ b.1
+
+structure Pairing_condition [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} (g : Positional_Game_World win_sets) where
+  playable : g.playable
+  pairing : List (α × α)
+  pairing_dif_inner : ∀ p ∈ pairing, p.1 ≠ p.2
+  pairing_dif_outer : List.Pairwise pairDif pairing
+  pairing_mem : ∀ w ∈ win_sets, ∃ n : Fin pairing.length, (pairing.get n).1 ∈ w ∧ (pairing.get n).2 ∈ w
+  -- should make the paring strat computable, if the element chosen in by playability are ... (via List.find?)
+  -- probably makes proofs of pairing_mem much more difficult ; I believe Hall is non-constructive in mathlib, so whats the point anyway
+
+
+
+
+-- Initial stuff
 #exit
 
 structure Game_World.pairing_prop_pairdiff_fst
