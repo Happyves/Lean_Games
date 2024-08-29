@@ -369,3 +369,16 @@ inductive Game_World_wDraw.has_WLD (g : Game_World_wDraw α β) : Prop where
 
 def State_from_history_neutral_wDraw (ini : α ) (f_wins s_wins draw : α → List β → Prop) (hist : List β) : Prop :=
   (¬ (f_wins ini hist)) ∧ (¬ (s_wins ini hist) ∧ (¬ (draw ini hist)))
+
+
+def Game_World_wDraw.is_draw_at_worst_fst {α β : Type _} (g : Game_World_wDraw α β) : Prop :=
+  ∃ ws : fStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ∀ snd_s : sStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ({g with fst_strat := ws, snd_strat := snd_s} : Game_wDraw α β).fst_win ∨
+  ({g with fst_strat := ws, snd_strat := snd_s} : Game_wDraw  α β).draw
+
+def Game_World_wDraw.is_draw_at_worst_snd {α β : Type _} (g : Game_World_wDraw α β) : Prop :=
+  ∃ ws : sStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ∀ fst_s : fStrategy g.init_game_state g.fst_legal g.snd_legal,
+  ({g with fst_strat := fst_s, snd_strat := ws} : Game_wDraw α β).snd_win ∨
+  ({g with fst_strat := fst_s, snd_strat := ws} : Game_wDraw  α β).draw
