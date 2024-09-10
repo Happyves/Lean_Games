@@ -648,8 +648,16 @@ lemma seq_rep_line_rel (sa sb : Fin n → (Fin D → Fin n)) (l : Finset (Fin D 
       · exact ocase_dec_dec D n hn sa sb l ra radef rb rbdef i idef Q idx d qa qb
 
 
-lemma seq_ne_seq_reverse (s : Fin n → (Fin D → Fin n))(l : Finset (Fin D → Fin n))  (h : seq_rep_line D n hn s l) :
-  s ≠ (seq_reverse D n hn s) :=
+variable (Hn : 1 < n)
+
+private lemma strengthen : n ≠ 0 :=
+  by
+  intro con
+  rw [con, ← not_le] at Hn
+  apply Hn zero_le_one
+
+lemma seq_ne_seq_reverse (s : Fin n → (Fin D → Fin n)) (l : Finset (Fin D → Fin n))  (h : seq_rep_line D n (strengthen n Hn) s l) :
+  s ≠ (seq_reverse D n (strengthen n Hn) s) :=
   by
   intro con
   have remind := h.line.non_pt
@@ -658,31 +666,35 @@ lemma seq_ne_seq_reverse (s : Fin n → (Fin D → Fin n))(l : Finset (Fin D →
   have remind := h.line.idc d
   cases' remind with cst inc dec
   · exact dp cst
-  · have := inc ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact hn ⟩
+  · have := inc ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact (strengthen n Hn) ⟩
     rw [con] at this
     simp_rw [seq_reverse] at this
-    specialize inc (Opp n hn ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact hn ⟩)
-    simp_rw [this, Opp, Fin.eq_iff_veq] at inc
-    -- inc false requires n ≥ 2 actually!
+    specialize inc (Opp n (strengthen n Hn) ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact (strengthen n Hn) ⟩)
+    simp_rw [this, Opp, Fin.eq_iff_veq, Nat.sub_zero] at inc
+    exact (Nat.sub_ne_zero_of_lt Hn) inc.symm
+  · have := dec ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact (strengthen n Hn) ⟩
+    rw [con] at this
+    simp_rw [seq_reverse] at this
+    specialize dec (Opp n (strengthen n Hn) ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact (strengthen n Hn) ⟩)
+    simp_rw [this, Opp, Fin.eq_iff_veq, Nat.sub_zero, Nat.sub_self] at dec
+    exact (Nat.sub_ne_zero_of_lt Hn) dec
 
 
 
 
-#exit
-
-lemma combi_line_repr_card (l : Finset (Fin D → Fin n)) (hl : is_combi_line D n hn l) :
-  (Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n hn c l)).card = 2 :=
+lemma combi_line_repr_card (l : Finset (Fin D → Fin n)) (hl : is_combi_line D n (strengthen n Hn) l) :
+  (Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n (strengthen n Hn) c l)).card = 2 :=
   by
   obtain ⟨fst, fst_p⟩ := hl
-  let snd := seq_reverse D n hn fst
-  have snd_p := seq_reverse_of_line_rep_line D n hn l fst fst_p
-  have : (Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n hn c l)) = {fst,snd} :=
+  let snd := seq_reverse D n (strengthen n Hn) fst
+  have snd_p := seq_reverse_of_line_rep_line D n (strengthen n Hn) l fst fst_p
+  have : (Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n (strengthen n Hn) c l)) = {fst,snd} :=
     by
     ext x
     rw [Finset.mem_filter]
     constructor
     · intro H
-      replace H := seq_rep_line_rel D n hn x fst l H.2 fst_p
+      replace H := seq_rep_line_rel D n (strengthen n Hn) x fst l H.2 fst_p
       rw [Finset.mem_insert]
       cases' H with H H
       · left ; exact H
@@ -697,19 +709,16 @@ lemma combi_line_repr_card (l : Finset (Fin D → Fin n)) (hl : is_combi_line D 
         · rw [H] ; exact fst_p
         · rw [H] ; exact snd_p
   rw [this]
-  rw [Finset.card_insert_eq_ite]
-
-  -- get the first line by unfolding hl, then the second by considering its negative, and use thm to show that those are all,
-  -- aka show Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n s l) = the set of these two lines
-
-#check Finset.mem_cons
-
-
+  simp_rw [Finset.card_insert_eq_ite, Finset.mem_singleton, Finset.card_singleton]
+  rw [if_neg]
+  apply seq_ne_seq_reverse D n Hn fst l fst_p
 
 
 #exit
+
+
 lemma incidence_ub (p : Fin D → Fin n) :
-  (Finset.univ.filter (fun c : Finset (Fin D → Fin n) => is_combi_line D n c ∧ p ∈ c)).card ≤ (3^D - 1)/2 :=
+  (Finset.univ.filter (fun c : Finset (Fin D → Fin n) => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c)).card ≤ (3^D - 1)/2 :=
   by sorry
 
 
