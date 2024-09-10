@@ -143,6 +143,33 @@ lemma seq_reverse_of_line_is_line (s : Fin n → (Fin D → Fin n)) (h : seq_is_
     convert xdef
     rw [Opp_Opp]
 
+lemma seq_reverse_of_line_rep_line (l : Finset (Fin D → Fin n)) (s : Fin n → (Fin D → Fin n)) (h : seq_rep_line D n hn s l) :
+  seq_rep_line D n hn (seq_reverse D n hn s) l :=
+  by
+  constructor
+  · apply seq_reverse_of_line_is_line
+    exact h.line
+  · replace h := h.rep
+    rw [h]
+    ext x
+    simp_rw [Finset.mem_image]
+    constructor
+    · rintro ⟨i,idef⟩
+      use Opp n hn i
+      constructor
+      · apply Finset.mem_univ
+      · unfold seq_reverse
+        simp_rw [Opp_Opp, idef.2]
+    · rintro ⟨i,idef⟩
+      use Opp n hn i
+      constructor
+      · apply Finset.mem_univ
+      · unfold seq_reverse at idef
+        apply idef.2
+
+
+
+
 private lemma scase_cst_cst (sa sb : Fin n → Fin D → Fin n) (i : Fin n) (idef : i ∈ Finset.univ ∧ sb i = sa ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩)
   (Q : i = ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩) (idx : Fin n) (d : Fin D) (qa : ∃ x, ∀ (i : Fin n), sa i d = x) (qb : ∃ x, ∀ (i : Fin n), sb i d = x)
   : sa idx d = sb idx d :=
@@ -342,8 +369,233 @@ private lemma scase_inc_dec' (sa sb : Fin n → Fin D → Fin n) (l : Finset (Fi
     exact (not_le_of_lt hn') idef
 
 
+private lemma ocase_cst_cst (sa sb : Fin n → Fin D → Fin n) (i : Fin n) (idef : i ∈ Finset.univ ∧ sb i = sa ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩)
+  (idx : Fin n) (d : Fin D) (qa : ∃ x, ∀ (i : Fin n), sa i d = x) (qb : ∃ x, ∀ (i : Fin n), sb i d = x)
+  : sa idx d = (seq_reverse D n hn sb) idx d :=
+  by
+  obtain ⟨x,xdef⟩ := qa ; obtain ⟨ y ,ydef⟩ := qb
+  have : x = y := by
+    specialize xdef ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩
+    specialize ydef i
+    rw [idef.2] at ydef
+    rw [← xdef, ← ydef]
+  rw [this] at xdef
+  dsimp [seq_reverse]
+  rw [xdef, ydef]
 
---#exit
+
+private lemma ocase_cst_inc (sa sb : Fin n → Fin D → Fin n) (l : Finset (Fin D → Fin n)) (ra : seq_is_line D n hn sa) (radef : l = Finset.image sa Finset.univ)
+  (rb : seq_is_line D n hn sb) (rbdef : l = Finset.image sb Finset.univ) (i : Fin n) (idef : i ∈ Finset.univ ∧ sb i = sa ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩)
+  (Q : ¬ i = ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩) (idx : Fin n) (d : Fin D) (qa : ∃ x, ∀ (i : Fin n), sa i d = x) (qb : ∀ (i : Fin n), sb i d = i)
+  : sa idx d = seq_reverse D n hn sb idx d :=
+  by
+  obtain ⟨x,xdef⟩ := qa
+  rw [Nat.ne_zero_iff_one_le] at hn
+  by_cases K : n = 1
+  · replace idef := idef.2
+    rw [ Function.funext_iff] at idef
+    specialize idef d
+    dsimp [seq_reverse]
+    convert idef.symm
+    -- might of convert ; should be using Fin.fin_one_eq_zero ?
+  · exfalso
+    have hn' : 1 < n := by apply lt_of_le_of_ne hn (by rw [ne_comm] ; apply K)
+    by_cases L : x = ⟨0, lt_trans zero_lt_one hn'⟩
+    · have oh : sb ⟨1, hn'⟩ ∈ l := by
+        rw [rbdef] ; rw [Finset.mem_image] ; use ⟨1, hn'⟩ ; exact ⟨ Finset.mem_univ _ , rfl⟩
+      have no : sb ⟨1, hn'⟩ ∉ l := by
+        rw [radef, Finset.mem_image] at oh
+        obtain ⟨j,jdef⟩ := oh
+        replace jdef := jdef.2
+        rw [Function.funext_iff] at jdef
+        specialize jdef d
+        rw [qb ⟨1, hn'⟩, xdef j, L, Fin.eq_iff_veq] at jdef
+        contradiction
+      exact no oh
+    · have oh : sb ⟨0, lt_trans zero_lt_one hn'⟩ ∈ l := by
+        rw [rbdef] ; rw [Finset.mem_image] ; use ⟨0, lt_trans zero_lt_one hn'⟩ ; exact ⟨ Finset.mem_univ _ , rfl⟩
+      have no : sb ⟨0, lt_trans zero_lt_one hn'⟩ ∉ l := by
+        rw [radef, Finset.mem_image] at oh
+        obtain ⟨j,jdef⟩ := oh
+        replace jdef := jdef.2
+        rw [Function.funext_iff] at jdef
+        specialize jdef d
+        rw [qb ⟨0, lt_trans zero_lt_one hn'⟩, xdef j] at jdef
+        contradiction
+      exact no oh
+
+
+lemma Nat.sub_eq_self {n m : Nat} (hn : n ≠ 0) : n - m = n ↔ m = 0 := by
+  constructor
+  · intro h
+    induction' n with n ih
+    · contradiction
+    · have : m ≤ n := by
+        by_contra! con
+        rw [← Nat.succ_le, ← Nat.sub_eq_zero_iff_le] at con
+        rw [con] at h
+        exact hn h.symm
+      rw [Nat.succ_sub this, Nat.succ_inj] at h
+      by_cases q : n = 0
+      · rwa [q, Nat.le_zero] at this
+      · exact ih q h
+  · intro h ; rw [h, Nat.sub_zero]
+
+private lemma ocase_cst_dec (sa sb : Fin n → Fin D → Fin n) (l : Finset (Fin D → Fin n)) (ra : seq_is_line D n hn sa) (radef : l = Finset.image sa Finset.univ)
+  (rb : seq_is_line D n hn sb) (rbdef : l = Finset.image sb Finset.univ) (i : Fin n) (idef : i ∈ Finset.univ ∧ sb i = sa ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩)
+  (Q : ¬ i = ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩) (idx : Fin n) (d : Fin D) (qa : ∃ x, ∀ (i : Fin n), sa i d = x) (qb : ∀ (i : Fin n), sb i d = Opp n hn i)
+  : sa idx d = seq_reverse D n hn sb idx d :=
+  by
+  obtain ⟨x,xdef⟩ := qa
+  rw [Nat.ne_zero_iff_one_le] at hn
+  by_cases K : n = 1
+  · replace idef := idef.2
+    rw [Function.funext_iff] at idef
+    specialize idef d
+    dsimp [seq_reverse]
+    convert idef.symm
+    -- might of convert ; should be using Fin.fin_one_eq_zero ?
+  · exfalso
+    have hn' : 1 < n := by apply lt_of_le_of_ne hn (by rw [ne_comm] ; apply K)
+    by_cases L : x = ⟨n-1, Nat.sub_lt_self zero_lt_one hn ⟩
+    · replace idef := idef.2
+      rw [Function.funext_iff] at idef
+      specialize idef d
+      simp_rw [qb i, xdef ⟨0, lt_trans zero_lt_one hn'⟩, L, Opp,  Fin.eq_iff_veq] at idef
+      rw [@Nat.sub_eq_self  (n-1) _ (by rw [Nat.sub_ne_zero_iff_lt] ; exact hn')] at idef
+      simp_rw [Fin.eq_iff_veq] at Q
+      exact Q idef
+    · have oh : sb ⟨0, lt_trans zero_lt_one hn'⟩ ∈ l := by
+        rw [rbdef] ; rw [Finset.mem_image] ; use ⟨0, lt_trans zero_lt_one hn'⟩ ; exact ⟨ Finset.mem_univ _ , rfl⟩
+      have no : sb ⟨0, lt_trans zero_lt_one hn'⟩ ∉ l := by
+        rw [radef, Finset.mem_image] at oh
+        obtain ⟨j,jdef⟩ := oh
+        replace jdef := jdef.2
+        rw [Function.funext_iff] at jdef
+        specialize jdef d
+        simp_rw [qb ⟨0, lt_trans zero_lt_one hn'⟩, xdef j, Opp] at jdef
+        exfalso
+        exact L jdef
+      exact no oh
+
+
+private lemma ocase_cst_inc' (sa sb : Fin n → Fin D → Fin n) (l : Finset (Fin D → Fin n)) (ra : seq_is_line D n hn sa) (radef : l = Finset.image sa Finset.univ)
+  (rb : seq_is_line D n hn sb) (rbdef : l = Finset.image sb Finset.univ) (i : Fin n) (idef : i ∈ Finset.univ ∧ sa i = sb ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩)
+  (Q : ¬ i = ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩) (idx : Fin n) (d : Fin D) (qa : ∃ x, ∀ (i : Fin n), sa i d = x) (qb : ∀ (i : Fin n), sb i d = i)
+  : seq_reverse D n hn sa idx d = sb idx d :=
+  by
+  obtain ⟨x,xdef⟩ := qa
+  rw [Nat.ne_zero_iff_one_le] at hn
+  by_cases K : n = 1
+  · replace idef := idef.2
+    rw [ Function.funext_iff] at idef
+    specialize idef d
+    dsimp [seq_reverse]
+    convert idef
+    -- might of convert ; should be using Fin.fin_one_eq_zero ?
+  · exfalso
+    have hn' : 1 < n := by apply lt_of_le_of_ne hn (by rw [ne_comm] ; apply K)
+    by_cases L : x = ⟨0, lt_trans zero_lt_one hn'⟩
+    · have oh : sb ⟨1, hn'⟩ ∈ l := by
+        rw [rbdef] ; rw [Finset.mem_image] ; use ⟨1, hn'⟩ ; exact ⟨ Finset.mem_univ _ , rfl⟩
+      have no : sb ⟨1, hn'⟩ ∉ l := by
+        rw [radef, Finset.mem_image] at oh
+        obtain ⟨j,jdef⟩ := oh
+        replace jdef := jdef.2
+        rw [Function.funext_iff] at jdef
+        specialize jdef d
+        rw [qb ⟨1, hn'⟩, xdef j, L, Fin.eq_iff_veq] at jdef
+        contradiction
+      exact no oh
+    · have oh : sb ⟨0, lt_trans zero_lt_one hn'⟩ ∈ l := by
+        rw [rbdef] ; rw [Finset.mem_image] ; use ⟨0, lt_trans zero_lt_one hn'⟩ ; exact ⟨ Finset.mem_univ _ , rfl⟩
+      have no : sb ⟨0, lt_trans zero_lt_one hn'⟩ ∉ l := by
+        rw [radef, Finset.mem_image] at oh
+        obtain ⟨j,jdef⟩ := oh
+        replace jdef := jdef.2
+        rw [Function.funext_iff] at jdef
+        specialize jdef d
+        rw [qb ⟨0, lt_trans zero_lt_one hn'⟩, xdef j] at jdef
+        contradiction
+      exact no oh
+
+
+private lemma ocase_inc_inc (sa sb : Fin n → Fin D → Fin n) (l : Finset (Fin D → Fin n)) (ra : seq_is_line D n hn sa) (radef : l = Finset.image sa Finset.univ)
+  (rb : seq_is_line D n hn sb) (rbdef : l = Finset.image sb Finset.univ) (i : Fin n) (idef : i ∈ Finset.univ ∧ sb i = sa ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩)
+  (Q : ¬ i = ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩) (idx : Fin n) (d : Fin D) (qa : ∀ (i : Fin n), sa i d = i) (qb : ∀ (i : Fin n), sb i d = i)
+  : sa idx d = seq_reverse D n hn sb idx d :=
+  by
+  rw [Nat.ne_zero_iff_one_le] at hn
+  replace idef := idef.2
+  rw [Function.funext_iff] at idef
+  specialize idef d
+  by_cases K : n = 1
+  · dsimp [seq_reverse]
+    convert idef.symm
+  · exfalso
+    have hn' : 1 < n := by apply lt_of_le_of_ne hn (by rw [ne_comm] ; apply K)
+    specialize qa ⟨0, lt_trans zero_lt_one hn'⟩
+    specialize qb i
+    simp_rw [qa, qb] at idef
+    exact Q idef
+
+
+private lemma ocase_cst_dec' (sa sb : Fin n → Fin D → Fin n) (l : Finset (Fin D → Fin n)) (ra : seq_is_line D n hn sa) (radef : l = Finset.image sa Finset.univ)
+  (rb : seq_is_line D n hn sb) (rbdef : l = Finset.image sb Finset.univ) (i : Fin n) (idef : i ∈ Finset.univ ∧ sa i = sb ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩)
+  (Q : ¬ i = ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩) (idx : Fin n) (d : Fin D) (qa : ∃ x, ∀ (i : Fin n), sa i d = x) (qb : ∀ (i : Fin n), sb i d = Opp n hn i)
+  : seq_reverse D n hn sa idx d = sb idx d :=
+  by
+  obtain ⟨x,xdef⟩ := qa
+  rw [Nat.ne_zero_iff_one_le] at hn
+  by_cases K : n = 1
+  · replace idef := idef.2
+    rw [Function.funext_iff] at idef
+    specialize idef d
+    dsimp [seq_reverse]
+    convert idef
+    -- might of convert ; should be using Fin.fin_one_eq_zero ?
+  · exfalso
+    have hn' : 1 < n := by apply lt_of_le_of_ne hn (by rw [ne_comm] ; apply K)
+    by_cases L : x = ⟨0, lt_trans zero_lt_one hn'⟩
+    · replace idef := idef.2
+      rw [Function.funext_iff] at idef
+      specialize idef d
+      rw [eq_comm] at idef
+      simp_rw [qb ⟨0, lt_trans zero_lt_one hn'⟩, xdef i, L, Opp,  Fin.eq_iff_veq, Nat.sub_zero, Nat.sub_eq_zero_iff_le] at idef
+      exact (not_le_of_lt hn') idef
+    · have oh : sb ⟨n-1, Nat.sub_lt_self zero_lt_one hn ⟩ ∈ l := by
+        rw [rbdef] ; rw [Finset.mem_image] ; use ⟨n-1, Nat.sub_lt_self zero_lt_one hn ⟩ ; exact ⟨ Finset.mem_univ _ , rfl⟩
+      have no : sb ⟨n-1, Nat.sub_lt_self zero_lt_one hn ⟩ ∉ l := by
+        rw [radef, Finset.mem_image] at oh
+        obtain ⟨j,jdef⟩ := oh
+        replace jdef := jdef.2
+        rw [Function.funext_iff] at jdef
+        specialize jdef d
+        simp_rw [qb ⟨n-1, Nat.sub_lt_self zero_lt_one hn ⟩, xdef j, Opp, Nat.sub_self] at jdef
+        exfalso
+        exact L jdef
+      exact no oh
+
+private lemma ocase_dec_dec (sa sb : Fin n → Fin D → Fin n) (l : Finset (Fin D → Fin n)) (ra : seq_is_line D n hn sa) (radef : l = Finset.image sa Finset.univ)
+  (rb : seq_is_line D n hn sb) (rbdef : l = Finset.image sb Finset.univ) (i : Fin n) (idef : i ∈ Finset.univ ∧ sb i = sa ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩)
+  (Q : ¬ i = ⟨0, Nat.pos_iff_ne_zero.mpr hn⟩) (idx : Fin n) (d : Fin D) (qa : ∀ (i : Fin n), sa i d = Opp n hn i) (qb : ∀ (i : Fin n), sb i d = Opp n hn i)
+  : sa idx d = seq_reverse D n hn sb idx d :=
+  by
+  rw [Nat.ne_zero_iff_one_le] at hn
+  replace idef := idef.2
+  rw [Function.funext_iff] at idef
+  specialize idef d
+  by_cases K : n = 1
+  · dsimp [seq_reverse]
+    convert idef.symm
+  · exfalso
+    have hn' : 1 < n := by apply lt_of_le_of_ne hn (by rw [ne_comm] ; apply K)
+    specialize qa ⟨0, lt_trans zero_lt_one hn'⟩
+    specialize qb i
+    simp_rw [qa, qb] at idef
+    exact Q (Opp_inj _ _ _ _ idef)
+
+
 
 lemma seq_rep_line_rel (sa sb : Fin n → (Fin D → Fin n)) (l : Finset (Fin D → Fin n)) (ha : seq_rep_line D n hn sa l) (hb : seq_rep_line D n hn sb l) :
   sa = sb ∨ sa = seq_reverse D n hn sb  :=
@@ -373,19 +625,84 @@ lemma seq_rep_line_rel (sa sb : Fin n → (Fin D → Fin n)) (l : Finset (Fin D 
       · exact (scase_inc_dec' D n hn sb sa l rb rbdef ra radef i idef Q idx d qb qa).symm
       · rw [qa, qb]
   · right
-    sorry
-    -- jesus fucking christ
+    funext idx d
+    have qa := ra.idc d
+    have qb := rb.idc d
+    cases' qa with qa qa qa
+    · cases' qb with qb qb qb
+      · exact ocase_cst_cst D n hn sa sb i idef idx d qa qb
+      · exact ocase_cst_inc D n hn sa sb l ra radef rb rbdef i idef Q idx d qa qb
+      · exact ocase_cst_dec D n hn sa sb l ra radef rb rbdef i idef Q idx d qa qb
+    · cases' qb with qb qb qb
+      · exact (ocase_cst_inc' D n hn sb sa l rb rbdef ra radef i idef Q idx d qb qa).symm
+      · exact ocase_inc_inc D n hn sa sb l ra radef rb rbdef i idef Q idx d qa qb
+      · dsimp [seq_reverse]
+        replace qb := fun i => qb (Opp n hn i)
+        simp_rw [Opp_Opp] at qb
+        rw [qa,qb]
+    · cases' qb with qb qb qb
+      · exact (ocase_cst_dec' D n hn sb sa l rb rbdef ra radef i idef Q idx d qb qa).symm
+      · dsimp [seq_reverse]
+        replace qb := fun i => qb (Opp n hn i)
+        rw [qa,qb]
+      · exact ocase_dec_dec D n hn sa sb l ra radef rb rbdef i idef Q idx d qa qb
+
+
+lemma seq_ne_seq_reverse (s : Fin n → (Fin D → Fin n))(l : Finset (Fin D → Fin n))  (h : seq_rep_line D n hn s l) :
+  s ≠ (seq_reverse D n hn s) :=
+  by
+  intro con
+  have remind := h.line.non_pt
+  rw [not_forall] at remind
+  obtain ⟨d, dp⟩ := remind
+  have remind := h.line.idc d
+  cases' remind with cst inc dec
+  · exact dp cst
+  · have := inc ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact hn ⟩
+    rw [con] at this
+    simp_rw [seq_reverse] at this
+    specialize inc (Opp n hn ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact hn ⟩)
+    simp_rw [this, Opp, Fin.eq_iff_veq] at inc
+    -- inc false requires n ≥ 2 actually!
+
+
 
 
 #exit
 
-lemma combi_line_repr_card (l : Finset (Fin D → Fin n)) (hl : is_combi_line D n l) :
-  (Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n s l)).card = 2 :=
+lemma combi_line_repr_card (l : Finset (Fin D → Fin n)) (hl : is_combi_line D n hn l) :
+  (Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n hn c l)).card = 2 :=
   by
+  obtain ⟨fst, fst_p⟩ := hl
+  let snd := seq_reverse D n hn fst
+  have snd_p := seq_reverse_of_line_rep_line D n hn l fst fst_p
+  have : (Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n hn c l)) = {fst,snd} :=
+    by
+    ext x
+    rw [Finset.mem_filter]
+    constructor
+    · intro H
+      replace H := seq_rep_line_rel D n hn x fst l H.2 fst_p
+      rw [Finset.mem_insert]
+      cases' H with H H
+      · left ; exact H
+      · right
+        rw [Finset.mem_singleton]
+        exact H
+    · intro H
+      rw [Finset.mem_insert, Finset.mem_singleton] at H
+      constructor
+      · apply Finset.mem_univ
+      · cases' H with H H
+        · rw [H] ; exact fst_p
+        · rw [H] ; exact snd_p
+  rw [this]
+  rw [Finset.card_insert_eq_ite]
+
   -- get the first line by unfolding hl, then the second by considering its negative, and use thm to show that those are all,
   -- aka show Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n s l) = the set of these two lines
 
-
+#check Finset.mem_cons
 
 
 
