@@ -714,13 +714,26 @@ lemma combi_line_repr_card (l : Finset (Fin D → Fin n)) (hl : is_combi_line D 
   apply seq_ne_seq_reverse D n Hn fst l fst_p
 
 
+#check Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow
+-- with relation
+#check seq_rep_line
+-- ↑ and adapted ∧ p ∈ c
+--
+
 #exit
 
 
 lemma incidence_ub (p : Fin D → Fin n) :
   (Finset.univ.filter (fun c : Finset (Fin D → Fin n) => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c)).card ≤ (3^D - 1)/2 :=
   by sorry
+  /-
+  - show that set eq image over sequences that are lines (`seq_is_line`), filtered by p ∈ c, under map `fun x => Finset.filter x .univ`
+  -
+  -/
 
+#check Finset.card_filter
+#check Finset.univ_filter_exists
+#check Finset.filter_image
 
 
 
