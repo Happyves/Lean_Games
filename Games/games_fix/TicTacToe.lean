@@ -681,7 +681,7 @@ lemma seq_ne_seq_reverse (s : Fin n → (Fin D → Fin n)) (l : Finset (Fin D �
 
 
 
-
+-- unused
 lemma combi_line_repr_card (l : Finset (Fin D → Fin n)) (hl : is_combi_line D n (strengthen n Hn) l) :
   (Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => seq_rep_line D n (strengthen n Hn) c l)).card = 2 :=
   by
@@ -714,26 +714,112 @@ lemma combi_line_repr_card (l : Finset (Fin D → Fin n)) (hl : is_combi_line D 
   apply seq_ne_seq_reverse D n Hn fst l fst_p
 
 
-#check Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow
--- with relation
-#check seq_rep_line
--- ↑ and adapted ∧ p ∈ c
---
 
-#exit
+private lemma count_below (p : Fin D → Fin n) (b : Finset (Fin D → Fin n)) (bp : is_combi_line D n (strengthen n Hn) b ∧ p ∈ b) :
+  (Finset.bipartiteBelow (seq_rep_line D n (strengthen n Hn)) (Finset.filter (fun c => seq_is_line D n (strengthen n Hn) c ∧ p ∈ Finset.image c Finset.univ) Finset.univ) b).card = 2 :=
+  by
+  rw [Finset.bipartiteBelow, Finset.filter_filter]
+  have simpli : ∀ a : Fin n → Fin D → Fin n, ((seq_is_line D n (strengthen n Hn) a ∧ p ∈ Finset.image a Finset.univ) ∧ seq_rep_line D n (strengthen n Hn) a b) ↔ p ∈ Finset.image a Finset.univ ∧ seq_rep_line D n (strengthen n Hn) a b :=
+    by
+    intro a
+    constructor
+    · intro h
+      exact ⟨h.1.2, h.2⟩
+    · intro h
+      exact ⟨⟨h.2.line,h.1⟩, h.2⟩
+  simp_rw [simpli]
+  clear simpli
+  obtain ⟨fst, fst_p⟩ := bp.1
+  let snd := seq_reverse D n (strengthen n Hn) fst
+  have snd_p := seq_reverse_of_line_rep_line D n (strengthen n Hn) b fst fst_p
+  have : (Finset.univ.filter (fun c : Fin n → (Fin D → Fin n) => (p ∈ Finset.image c Finset.univ) ∧ seq_rep_line D n (strengthen n Hn) c b)) = {fst,snd} :=
+    by
+    ext x
+    rw [Finset.mem_filter]
+    constructor
+    · intro H
+      replace H := seq_rep_line_rel D n (strengthen n Hn) x fst b H.2.2 fst_p
+      rw [Finset.mem_insert]
+      cases' H with H H
+      · left ; exact H
+      · right
+        rw [Finset.mem_singleton]
+        exact H
+    · intro H
+      rw [Finset.mem_insert, Finset.mem_singleton] at H
+      constructor
+      · apply Finset.mem_univ
+      · cases' H with H H
+        · rw [H, ← fst_p.rep] ; exact ⟨bp.2,fst_p⟩
+        · rw [H, ← snd_p.rep] ; exact ⟨bp.2,snd_p⟩
+  rw [this]
+  simp_rw [Finset.card_insert_eq_ite, Finset.mem_singleton, Finset.card_singleton]
+  rw [if_neg]
+  apply seq_ne_seq_reverse D n Hn fst b fst_p
+
+
+#check Finset.filter_filter
+
+
+private lemma count_above (p : Fin D → Fin n) (a : Fin n → (Fin D → Fin n)) (ha : seq_is_line D n (strengthen n Hn) a ∧ p ∈ Finset.image a Finset.univ):
+  (Finset.bipartiteAbove (seq_rep_line D n (strengthen n Hn)) (Finset.filter (fun c => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c) Finset.univ) a).card = 1 :=
+  by
+  let l := Finset.image a Finset.univ
+  have : (Finset.bipartiteAbove (seq_rep_line D n (strengthen n Hn)) (Finset.filter (fun c => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c) Finset.univ) a) = {l} :=
+    by
+    rw [Finset.bipartiteAbove, Finset.filter_filter]
+    ext x
+    rw [Finset.mem_filter, Finset.mem_singleton]
+    constructor
+    · intro H
+      rw [H.2.2.rep]
+    · intro H
+      constructor
+      · apply Finset.mem_univ
+      · rw [H]
+        exact ⟨⟨⟨a,⟨ha.1, rfl⟩⟩ ,ha.2⟩,⟨ha.1, rfl⟩⟩
+  rw [this, Finset.card_singleton]
+
+
+
+
+
+--#exit
+
+private lemma double_count_lines_seq_main (p : Fin D → Fin n) :
+  let t := (Finset.univ.filter (fun c : Finset (Fin D → Fin n) => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c))
+  let s := (Finset.univ.filter (fun c : (Fin n → Fin D → Fin n) => seq_is_line D n (strengthen n Hn) c ∧ p ∈ (Finset.univ.image c)))
+  let r := seq_rep_line D n (strengthen n Hn)
+  (Finset.sum s fun a => (Finset.bipartiteAbove r t a).card) = Finset.sum t fun b => (Finset.bipartiteBelow r s b).card :=
+  by apply Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow
+
+
+private lemma double_count_lines_seq (p : Fin D → Fin n) :
+  (Finset.filter (fun c => seq_is_line D n (strengthen n Hn) c ∧ p ∈ Finset.image c Finset.univ) Finset.univ).card = Finset.sum (Finset.filter (fun c => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c) Finset.univ) (fun _ => 2) :=
+  by
+  have := double_count_lines_seq_main D n Hn p
+  dsimp at this
+  have surgery_1 :
+    (Finset.sum (Finset.filter (fun c => seq_is_line D n (strengthen n Hn) c ∧ p ∈ Finset.image c Finset.univ) Finset.univ) (fun a => (Finset.bipartiteAbove (seq_rep_line D n (strengthen n Hn)) (Finset.filter (fun c => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c) Finset.univ) a).card)) =
+    (Finset.sum (Finset.filter (fun c => seq_is_line D n (strengthen n Hn) c ∧ p ∈ Finset.image c Finset.univ) Finset.univ) (fun _ => 1)) :=
+    by apply Finset.sum_congr ; rfl ; intro a ha ; rw [Finset.mem_filter] at ha ; exact count_above D n Hn p a ha.2
+  have surgery_2 :
+    Finset.sum (Finset.filter (fun c => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c) Finset.univ) (fun b => (Finset.bipartiteBelow (seq_rep_line D n (strengthen n Hn)) (Finset.filter (fun c => seq_is_line D n (strengthen n Hn) c ∧ p ∈ Finset.image c Finset.univ) Finset.univ) b).card) =
+    Finset.sum (Finset.filter (fun c => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c) Finset.univ) (fun _ => 2) :=
+    by apply Finset.sum_congr ; rfl ; intro b hb ; rw [Finset.mem_filter] at hb ; exact count_below D n Hn p b hb.2
+  rw [surgery_1, surgery_2] at this
+  rw [Finset.card_eq_sum_ones]
+  exact this
+
+
 
 
 lemma incidence_ub (p : Fin D → Fin n) :
   (Finset.univ.filter (fun c : Finset (Fin D → Fin n) => is_combi_line D n (strengthen n Hn) c ∧ p ∈ c)).card ≤ (3^D - 1)/2 :=
-  by sorry
-  /-
-  - show that set eq image over sequences that are lines (`seq_is_line`), filtered by p ∈ c, under map `fun x => Finset.filter x .univ`
-  -
-  -/
-
-#check Finset.card_filter
-#check Finset.univ_filter_exists
-#check Finset.filter_image
+  by
+  rw [Nat.le_div_iff_mul_le (by decide), Finset.card_eq_sum_ones, Finset.sum_mul]
+  simp_rw [one_mul]
+  rw [← double_count_lines_seq D n Hn]
 
 
 
