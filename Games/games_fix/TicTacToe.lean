@@ -813,7 +813,7 @@ private lemma double_count_lines_seq (p : Fin D → Fin n) :
 
 
 
--- Goal is to bring set in bijection with
+-- Goal is to bring set in injection with
 #check (.univ : Finset (Fin D → Fin 3)) \ {fun _ => 0}
 -- Who's cardinal can be computed with
 #check Fintype.card_fin
@@ -822,87 +822,117 @@ private lemma double_count_lines_seq (p : Fin D → Fin n) :
 #check Finset.card_sdiff
 
 -- fun _ => 0 represents constant coord sequenc
--- in the bijection, the reverse map will send 0 to the corresponding dimension of p
+-- in the injection, the reverse map will send 0 to the corresponding dimension of p
 #check Finset.card_congr
+#check Finset.card_le_card_of_inj_on
 
-private def the_coord (p : Fin D → Fin n) (d : Fin D) (k : Fin 3) : Fin n → Fin n :=
-  if k = 0
-  then
-    fun _ => p d
-  else
-    if k = 1
-    then
-      fun i => i
-    else
-      fun i => Opp n hn i
 
-private def the_bij (p : Fin D → Fin n) (c : Fin D → Fin 3) (_ : c ∈ (Finset.univ) \ {fun _ => 0}) : (Fin n → Fin D → Fin n) :=
-  fun idx d => the_coord D n hn p d (c d) idx
+#check Finset.card_attach
 
-private lemma the_bij_map (p : Fin D → Fin n) (c : Fin D → Fin 3) (hc : c ∈ (Finset.univ) \ {fun _ => 0}) :
-  the_bij D n (strengthen n Hn) p c hc ∈ (Finset.univ.filter (fun c : (Fin n → Fin D → Fin n) => seq_is_line D n (strengthen n Hn) c ∧ p ∈ (Finset.univ.image c))) :=
-  by
-  rw [Finset.mem_filter]
-  refine' ⟨Finset.mem_univ _ , _ ⟩
-  constructor
-  · constructor
-    · intro d
-      set q := (c d) with qdef
-      -- fin_cases q -- fails, maybe report this ?
-      by_cases Q : q = 0
-      · apply in_de_const.cst
-        use p d
-        intro i
-        dsimp [the_bij, the_coord]
-        rw [if_pos (by rw [← qdef] ; exact Q)]
-      · by_cases K : q = 1
-        · apply in_de_const.inc
-          intro i
-          dsimp [the_bij, the_coord]
-          rw [if_neg (by rw [← qdef] ; exact Q)]
-          rw [if_pos (by rw [← qdef] ; exact K)]
-        · apply in_de_const.dec
-          intro i
-          dsimp [the_bij, the_coord]
-          rw [if_neg (by rw [← qdef] ; exact Q)]
-          rw [if_neg (by rw [← qdef] ; exact K)]
-    · intro con
-      rw [Finset.mem_sdiff, Finset.mem_singleton] at hc
-      apply hc.2
-      ext d
-      specialize con d
-      set q := (c d) with qdef
-      -- fin_cases q -- fails, maybe report this ?
-      by_cases Q : q = 0
-      · rw [← Fin.eq_iff_veq]
-        apply Q
-      · by_cases K : q = 1
-        · exfalso
-          obtain ⟨x, xdef⟩ := con
-          dsimp [the_bij, the_coord] at xdef
-          rw [if_neg (by rw [← qdef] ; exact Q)] at xdef
-          rw [if_pos (by rw [← qdef] ; exact K)] at xdef
-          by_cases F : x = ⟨0, Nat.pos_iff_ne_zero.mpr (strengthen n Hn)⟩
-          · specialize xdef ⟨1,Hn⟩
-            simp_rw [F, Fin.eq_iff_veq] at xdef
-            -- simp handles contradction
-          · specialize xdef ⟨0, Nat.pos_iff_ne_zero.mpr (strengthen n Hn)⟩
-            exact F xdef.symm
-        · exfalso
-          obtain ⟨x, xdef⟩ := con
-          dsimp [the_bij, the_coord] at xdef
-          rw [if_neg (by rw [← qdef] ; exact Q)] at xdef
-          rw [if_neg (by rw [← qdef] ; exact K)] at xdef
-          by_cases F : x = ⟨0, Nat.pos_iff_ne_zero.mpr (strengthen n Hn)⟩
-          · specialize xdef ⟨0, Nat.pos_iff_ne_zero.mpr (strengthen n Hn)⟩
-            simp_rw [F,Opp, Fin.eq_iff_veq, Nat.sub_zero] at xdef
-            rw [← Nat.sub_ne_zero_iff_lt] at Hn
-            exact Hn xdef
-          · specialize xdef ⟨n-1, Nat.sub_lt_self zero_lt_one (le_of_lt Hn) ⟩
-            simp_rw [Opp, Nat.sub_self] at xdef
-            exact F xdef.symm
-  · rw [Finset.mem_image]
-    --refine' ⟨Finset.mem_univ _ , _ ⟩
+private def the_inj (c : {x : (Fin n → Fin D → Fin n) // x ∈ (Finset.univ.filter (fun c : (Fin n → Fin D → Fin n) => seq_is_line D n (strengthen n Hn) c ∧ p ∈ (Finset.univ.image c)))}) : Fin D → Fin 3 :=
+  fun d =>
+    match (Finset.mem_filter.mp c.prop).2.1.idc d with
+    | .cst F => by
+
+-- private def the_coord (p : Fin D → Fin n) (d : Fin D) (k : Fin 3) : Fin n → Fin n :=
+--   if k = 0
+--   then
+--     fun _ => p d
+--   else
+--     if k = 1
+--     then
+--       fun i => i
+--     else
+--       fun i => Opp n hn i
+
+-- private def the_bij (p : Fin D → Fin n) (c : Fin D → Fin 3) (_ : c ∈ (Finset.univ) \ {fun _ => 0}) : (Fin n → Fin D → Fin n) :=
+--   fun idx d => the_coord D n hn p d (c d) idx
+
+-- private lemma the_bij_map (p : Fin D → Fin n) (c : Fin D → Fin 3) (hc : c ∈ (Finset.univ) \ {fun _ => 0}) :
+--   the_bij D n (strengthen n Hn) p c hc ∈ (Finset.univ.filter (fun c : (Fin n → Fin D → Fin n) => seq_is_line D n (strengthen n Hn) c ∧ p ∈ (Finset.univ.image c))) :=
+--   by
+--   rw [Finset.mem_filter]
+--   refine' ⟨Finset.mem_univ _ , _ ⟩
+--   constructor
+--   · constructor
+--     · intro d
+--       set q := (c d) with qdef
+--       -- fin_cases q -- fails, maybe report this ?
+--       by_cases Q : q = 0
+--       · apply in_de_const.cst
+--         use p d
+--         intro i
+--         dsimp [the_bij, the_coord]
+--         rw [if_pos (by rw [← qdef] ; exact Q)]
+--       · by_cases K : q = 1
+--         · apply in_de_const.inc
+--           intro i
+--           dsimp [the_bij, the_coord]
+--           rw [if_neg (by rw [← qdef] ; exact Q)]
+--           rw [if_pos (by rw [← qdef] ; exact K)]
+--         · apply in_de_const.dec
+--           intro i
+--           dsimp [the_bij, the_coord]
+--           rw [if_neg (by rw [← qdef] ; exact Q)]
+--           rw [if_neg (by rw [← qdef] ; exact K)]
+--     · intro con
+--       rw [Finset.mem_sdiff, Finset.mem_singleton] at hc
+--       apply hc.2
+--       ext d
+--       specialize con d
+--       set q := (c d) with qdef
+--       -- fin_cases q -- fails, maybe report this ?
+--       by_cases Q : q = 0
+--       · rw [← Fin.eq_iff_veq]
+--         apply Q
+--       · by_cases K : q = 1
+--         · exfalso
+--           obtain ⟨x, xdef⟩ := con
+--           dsimp [the_bij, the_coord] at xdef
+--           rw [if_neg (by rw [← qdef] ; exact Q)] at xdef
+--           rw [if_pos (by rw [← qdef] ; exact K)] at xdef
+--           by_cases F : x = ⟨0, Nat.pos_iff_ne_zero.mpr (strengthen n Hn)⟩
+--           · specialize xdef ⟨1,Hn⟩
+--             simp_rw [F, Fin.eq_iff_veq] at xdef
+--             -- simp handles contradction
+--           · specialize xdef ⟨0, Nat.pos_iff_ne_zero.mpr (strengthen n Hn)⟩
+--             exact F xdef.symm
+--         · exfalso
+--           obtain ⟨x, xdef⟩ := con
+--           dsimp [the_bij, the_coord] at xdef
+--           rw [if_neg (by rw [← qdef] ; exact Q)] at xdef
+--           rw [if_neg (by rw [← qdef] ; exact K)] at xdef
+--           by_cases F : x = ⟨0, Nat.pos_iff_ne_zero.mpr (strengthen n Hn)⟩
+--           · specialize xdef ⟨0, Nat.pos_iff_ne_zero.mpr (strengthen n Hn)⟩
+--             simp_rw [F,Opp, Fin.eq_iff_veq, Nat.sub_zero] at xdef
+--             rw [← Nat.sub_ne_zero_iff_lt] at Hn
+--             exact Hn xdef
+--           · specialize xdef ⟨n-1, Nat.sub_lt_self zero_lt_one (le_of_lt Hn) ⟩
+--             simp_rw [Opp, Nat.sub_self] at xdef
+--             exact F xdef.symm
+--   · rw [Finset.mem_image]
+--     rw [Finset.mem_sdiff, Finset.mem_singleton] at hc
+--     have : ∃ d, c d ≠ 0 :=
+--       by
+--       by_contra! con
+--       apply hc.2
+--       ext d
+--       rw [← Fin.eq_iff_veq]
+--       apply con
+--     obtain ⟨d,ddef⟩ := this
+--     set q := (c d) with qdef
+--     by_cases Q : q = 0
+--     · exfalso
+--       exact ddef Q
+--     · by_cases K : q = 1
+--       · use (p d)
+--         refine' ⟨Finset.mem_univ _ , _ ⟩
+--         ext i
+--         dsimp [the_bij, the_coord]
+--         rw [if_neg (by rw [← qdef] ; exact Q)]
+--         rw [if_pos (by rw [← qdef] ; exact K)]
+
+--     --refine' ⟨Finset.mem_univ _ , _ ⟩
 
 
 
