@@ -997,7 +997,25 @@ lemma incidence_ub (p : Fin D → Fin n) :
 
 
 
---#exit
+lemma seq_inj (s : Fin n → Fin D → Fin n) (sdef : seq_is_line D n (strengthen n Hn) s) :
+  Set.InjOn s ↑(Finset.univ : Finset (Fin n)) :=
+  by
+  intro x _ y _ main
+  rw [Function.funext_iff] at main
+  have := sdef.non_pt
+  rw [not_forall] at this
+  obtain ⟨d,dp⟩ := this
+  specialize main d
+  cases' sdef.idc d with cst inc dec
+  · exfalso ; exact dp cst
+  · rw [inc, inc] at main
+    exact main
+  · rw [dec, dec] at main
+    exact Opp_inj _ (strengthen n Hn) _ _ main
+
+
+
+#exit
 
 -- Both depend on classical choice, so making a constructive pairing strat would be mildly pointless for this project
 #print axioms Finset.all_card_le_biUnion_card_iff_existsInjective'
