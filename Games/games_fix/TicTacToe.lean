@@ -140,8 +140,75 @@ lemma main_bound (ls : Finset ({c : Finset (Fin D → Fin n) // is_combi_line D 
   apply le_of_eq
   exact this
 
-#exit
 
-lemma Hall_condition (ls : Finset ({c : Finset (Fin D → Fin n) // is_combi_line D n (strengthen n hn) c} × Bool)) :
+#eval (Finset.univ : Finset (Fin 0 → Fin 0)).card
+
+
+lemma Hall_condition (ls : Finset ({c : Finset (Fin D → Fin n) // is_combi_line D n (strengthen n hn) c} × Bool))
+  (h : n ≥ 3^D - 1) :
   ls.card ≤ (Finset.biUnion ls (line_set_neighbours D n hn)).card :=
   by
+  have := main_bound D n hn ls
+  apply Nat.le_of_mul_le_mul_left _ (show 0 < n by apply lt_trans _ hn ; exact Nat.one_pos)
+  rw [mul_comm]
+  apply le_trans this
+  rw [mul_comm]
+  apply Nat.mul_le_mul_right
+  exact h
+
+
+#check  Finset.all_card_le_biUnion_card_iff_existsInjective'
+
+variable (h : n ≥ 3^D - 1)
+
+noncomputable
+def TTT_pairing  :=
+  Classical.choose ((Finset.all_card_le_biUnion_card_iff_existsInjective' (line_set_neighbours D n hn)).mp (fun ls => Hall_condition D n hn ls h))
+
+lemma TTT_pairing_inj : Function.Injective (TTT_pairing D n hn h) :=
+  (Classical.choose_spec ((Finset.all_card_le_biUnion_card_iff_existsInjective' (line_set_neighbours D n hn)).mp (fun ls => Hall_condition D n hn ls h))).1
+
+lemma TTT_pairing_map (l : { c // is_combi_line D n (strengthen n hn) c } × Bool) :
+  (TTT_pairing D n hn h) l ∈ (line_set_neighbours D n hn) l :=
+  (Classical.choose_spec ((Finset.all_card_le_biUnion_card_iff_existsInjective' (line_set_neighbours D n hn)).mp (fun ls => Hall_condition D n hn ls h))).2 l
+
+
+lemma line_set_neighbours_is_line (l : {c : Finset (Fin D → Fin n) // is_combi_line D n (strengthen n hn) c} × Bool) :
+  line_set_neighbours D n hn l = l.1.val :=
+  by
+  dsimp [line_set_neighbours]
+  rw [Finset.filter_univ_mem]
+
+
+
+lemma TTT_pre_Pairing_condition : pre_Pairing_condition (TTT_win_sets D n hn) :=
+  by
+  rw [TTT_win_sets]
+  intro w
+  let w_dtt_pain := (⟨w.val, by have wp := w.prop ; simp_rw [Finset.mem_filter, Finset.mem_univ, true_and] at wp ; exact wp ⟩ : {x // is_combi_line D n (strengthen n hn) x})
+  use (TTT_pairing D n hn h (w_dtt_pain, true), TTT_pairing D n hn h (w_dtt_pain, false))
+  constructor
+  · dsimp
+    intro con
+    have := TTT_pairing_inj D n hn h con
+    simp_rw [Prod.eq_iff_fst_eq_snd_eq] at this
+    exact this.2
+  · dsimp
+    have := TTT_pairing_map D n hn h (w_dtt_pain, true)
+    rw [line_set_neighbours_is_line] at this
+    apply this
+    -- creates shit-show if w_dtt_pain isn't used
+  · dsimp
+    have := TTT_pairing_map D n hn h (w_dtt_pain, false)
+    rw [line_set_neighbours_is_line] at this
+    apply this
+
+
+lemma TTT_Pairing_condition : Pairing_condition (TTT_win_sets D n hn) :=
+  by
+  constructor
+  · intro w v wnv
+    have := pairing_prop (TTT_pre_Pairing_condition D n hn h)
+    constructor
+    ·
+  · exact TTT_pre_Pairing_condition D n hn h
