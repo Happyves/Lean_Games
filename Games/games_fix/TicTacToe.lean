@@ -162,14 +162,14 @@ lemma Hall_condition (ls : Finset ({c : Finset (Fin D → Fin n) // is_combi_lin
 variable (h : n ≥ 3^D - 1)
 
 noncomputable
-def TTT_pairing  :=
+def pre_TTT_pairing  :=
   Classical.choose ((Finset.all_card_le_biUnion_card_iff_existsInjective' (line_set_neighbours D n hn)).mp (fun ls => Hall_condition D n hn ls h))
 
-lemma TTT_pairing_inj : Function.Injective (TTT_pairing D n hn h) :=
+lemma pre_TTT_pairing_inj : Function.Injective (pre_TTT_pairing D n hn h) :=
   (Classical.choose_spec ((Finset.all_card_le_biUnion_card_iff_existsInjective' (line_set_neighbours D n hn)).mp (fun ls => Hall_condition D n hn ls h))).1
 
-lemma TTT_pairing_map (l : { c // is_combi_line D n (strengthen n hn) c } × Bool) :
-  (TTT_pairing D n hn h) l ∈ (line_set_neighbours D n hn) l :=
+lemma pre_TTT_pairing_map (l : { c // is_combi_line D n (strengthen n hn) c } × Bool) :
+  (pre_TTT_pairing D n hn h) l ∈ (line_set_neighbours D n hn) l :=
   (Classical.choose_spec ((Finset.all_card_le_biUnion_card_iff_existsInjective' (line_set_neighbours D n hn)).mp (fun ls => Hall_condition D n hn ls h))).2 l
 
 
@@ -180,35 +180,63 @@ lemma line_set_neighbours_is_line (l : {c : Finset (Fin D → Fin n) // is_combi
   rw [Finset.filter_univ_mem]
 
 
-
-lemma TTT_pre_Pairing_condition : pre_Pairing_condition (TTT_win_sets D n hn) :=
-  by
-  rw [TTT_win_sets]
-  intro w
-  let w_dtt_pain := (⟨w.val, by have wp := w.prop ; simp_rw [Finset.mem_filter, Finset.mem_univ, true_and] at wp ; exact wp ⟩ : {x // is_combi_line D n (strengthen n hn) x})
-  use (TTT_pairing D n hn h (w_dtt_pain, true), TTT_pairing D n hn h (w_dtt_pain, false))
-  constructor
-  · dsimp
-    intro con
-    have := TTT_pairing_inj D n hn h con
-    simp_rw [Prod.eq_iff_fst_eq_snd_eq] at this
-    exact this.2
-  · dsimp
-    have := TTT_pairing_map D n hn h (w_dtt_pain, true)
-    rw [line_set_neighbours_is_line] at this
-    apply this
-    -- creates shit-show if w_dtt_pain isn't used
-  · dsimp
-    have := TTT_pairing_map D n hn h (w_dtt_pain, false)
-    rw [line_set_neighbours_is_line] at this
-    apply this
+noncomputable
+def TTT_pairing : (TTT_win_sets D n hn) → ((Fin D → Fin n) × (Fin D → Fin n)) :=
+  fun w =>
+    let w_dtt_pain := (⟨w.val, by have wp := w.prop ; simp_rw [TTT_win_sets, Finset.mem_filter, Finset.mem_univ, true_and] at wp ; exact wp ⟩ : {x // is_combi_line D n (strengthen n hn) x})
+    (pre_TTT_pairing D n hn h (w_dtt_pain, true), pre_TTT_pairing D n hn h (w_dtt_pain, false))
 
 
-lemma TTT_Pairing_condition : Pairing_condition (TTT_win_sets D n hn) :=
-  by
-  constructor
-  · intro w v wnv
-    have := pairing_prop (TTT_pre_Pairing_condition D n hn h)
+lemma TTT_Pairing_condition : Pairing_condition (TTT_win_sets D n hn) (TTT_pairing D n hn h) where
+  has_pairing := by
+    intro w
+    let w_dtt_pain := (⟨w.val, by have wp := w.prop ; simp_rw [TTT_win_sets, Finset.mem_filter, Finset.mem_univ, true_and] at wp ; exact wp ⟩ : {x // is_combi_line D n (strengthen n hn) x})
+    rw [TTT_pairing]
     constructor
-    ·
-  · exact TTT_pre_Pairing_condition D n hn h
+    · dsimp
+      intro con
+      have := pre_TTT_pairing_inj D n hn h con
+      simp_rw [Prod.eq_iff_fst_eq_snd_eq] at this
+      exact this.2
+    · dsimp
+      have := pre_TTT_pairing_map D n hn h (w_dtt_pain, true)
+      rw [line_set_neighbours_is_line] at this
+      apply this
+    · dsimp
+      have := pre_TTT_pairing_map D n hn h (w_dtt_pain, false)
+      rw [line_set_neighbours_is_line] at this
+      apply this
+  pairing_dif := by
+    intro w v wnv
+    dsimp [TTT_pairing]
+    constructor
+    · intro con
+      dsimp at con
+      replace con := pre_TTT_pairing_inj D n hn h con
+      rw [Prod.eq_iff_fst_eq_snd_eq] at con
+      apply wnv
+      apply Subtype.eq
+      dsimp at con
+      rw [← Subtype.val_inj] at con
+      apply con.1
+    · intro con
+      dsimp at con
+      replace con := pre_TTT_pairing_inj D n hn h con
+      rw [Prod.eq_iff_fst_eq_snd_eq] at con
+      apply wnv
+      apply Subtype.eq
+      dsimp at con
+      rw [← Subtype.val_inj] at con
+      apply con.1
+    · intro con
+      dsimp at con
+      replace con := pre_TTT_pairing_inj D n hn h con
+      rw [Prod.eq_iff_fst_eq_snd_eq] at con
+      dsimp at con
+      apply Bool.noConfusion con.2
+    · intro con
+      dsimp at con
+      replace con := pre_TTT_pairing_inj D n hn h con
+      rw [Prod.eq_iff_fst_eq_snd_eq] at con
+      dsimp at con
+      apply Bool.noConfusion con.2

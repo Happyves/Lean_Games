@@ -94,3 +94,43 @@ lemma Positional_Game_World_playable [Inhabited α] [DecidableEq α] [Fintype α
          dsimp [Positional_Game_World] at N -- required for ↓, hopefully fixed in future version
          rw [if_neg N]
          apply True.intro
+
+
+
+
+
+lemma Positional_Game_World.decreasing_neutral [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) (hist : List α) (act : α) :
+  let g := Positional_Game_World win_sets
+  Finset.filter (fun x => (State_from_history g.init_game_state g.fst_transition g.snd_transition (act :: hist)) x = 0) Finset.univ
+  ⊆ Finset.filter (fun x => (State_from_history g.init_game_state g.fst_transition g.snd_transition (hist)) x = 0) Finset.univ :=
+  by
+  intro g
+  intro x
+  simp_rw [Finset.mem_filter]
+  rintro ⟨_,xdef⟩
+  refine' ⟨Finset.mem_univ _, _ ⟩
+  dsimp [State_from_history, Positional_Game_World] at xdef
+  rw [ite_self] at xdef
+  cases' hist with y l
+  · dsimp [State_from_history, Positional_Game_World]
+  · dsimp [State_from_history, Positional_Game_World]
+    rw [ite_self]
+    dsimp [PosGame_trans] at *
+    split_ifs at xdef
+    · contradiction
+    · contradiction
+    · rename_i main
+      rw [if_neg (by contrapose! main ; exact List.Mem.tail act main)]
+
+
+
+
+lemma Positional_Game_World.strict_decreasing_neutral [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) (hist : List α) (act : α) :
+  let g := Positional_Game_World win_sets ;
+  State_from_history_neutral_wDraw g.init_game_state g.fst_win_states g.fst_win_states g.draw_states hist →
+  Finset.filter (fun x => (State_from_history g.init_game_state g.fst_transition g.snd_transition (act :: hist)) x = 0) Finset.univ
+  ⊂ Finset.filter (fun x => (State_from_history g.init_game_state g.fst_transition g.snd_transition (hist)) x = 0) Finset.univ :=
+  by sorry
+
+#check Finset.ssubset_iff_of_subset
+#check Finset.ssubset_iff_subset_ne
