@@ -371,6 +371,30 @@ def State_from_history_neutral_wDraw (ini : α ) (f_wins s_wins draw : α → Li
   (¬ (f_wins ini hist)) ∧ (¬ (s_wins ini hist) ∧ (¬ (draw ini hist)))
 
 
+lemma Game_World_wDraw.state_on_turn_neutral_State_from_history_neutral (g : Game_World_wDraw α β)
+  (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal)
+  (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal) (turn : ℕ) :
+  g.state_on_turn_neutral f_strat s_strat turn ↔
+  State_from_history_neutral_wDraw g.init_game_state g.fst_win_states g.snd_win_states g.draw_states
+  (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat turn).val :=
+  by
+  dsimp [Game_World_wDraw.state_on_turn_neutral, State_from_history_neutral_wDraw]
+  rw [← not_or, ← not_or, not_iff_not]
+  constructor
+  · intro h
+    cases' h with F S D
+    · left ; exact F
+    · right ; left ; exact S
+    · right ; right ; exact D
+  · intro h
+    cases' h with F O
+    · apply Game_World_wDraw.Turn_isWLD.wf ; exact F
+    · cases' O with S D
+      · apply Game_World_wDraw.Turn_isWLD.ws ; exact S
+      · apply Game_World_wDraw.Turn_isWLD.drw ; exact D
+
+
+
 def Game_World_wDraw.is_draw_at_worst_fst {α β : Type _} (g : Game_World_wDraw α β) : Prop :=
   ∃ ws : fStrategy g.init_game_state g.fst_legal g.snd_legal,
   ∀ snd_s : sStrategy g.init_game_state g.fst_legal g.snd_legal,
