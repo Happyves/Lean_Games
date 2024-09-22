@@ -240,3 +240,14 @@ lemma TTT_Pairing_condition : Pairing_condition (TTT_win_sets D n hn) (TTT_pairi
       rw [Prod.eq_iff_fst_eq_snd_eq] at con
       dsimp at con
       apply Bool.noConfusion con.2
+
+lemma TTT_win_sets_nontrivial : ∅ ∉ (TTT_win_sets D n hn) :=
+  by
+  intro con
+  rw [TTT_win_sets, Finset.mem_filter] at con
+  obtain ⟨seq,_,seqp⟩ := con.2
+  apply Finset.not_mem_empty (seq ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact (strengthen n hn) ⟩)
+  rw [seqp]
+  rw [Finset.mem_image]
+  use ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact (strengthen n hn) ⟩
+  exact ⟨Finset.mem_univ _ , rfl⟩

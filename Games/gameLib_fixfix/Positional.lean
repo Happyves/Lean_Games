@@ -15,31 +15,46 @@ def PosGame_trans [DecidableEq α] (hist : List α) : α → Fin 3 :=
            else 0
 
 
+
+structure PosGame_win_win [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) (ini : α → Fin 3) (hist : List α) : Prop where
+  win : ∃ w ∈ win_sets, w ⊆ Finset.filter (fun x => (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) x = 1) Finset.univ
+
+
+structure PosGame_win_fst [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) (ini : α → Fin 3) (hist : List α) extends PosGame_win_win win_sets ini hist : Prop where
+  tf : Turn_fst (hist.length + 1)
+
+structure PosGame_win_snd [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) (ini : α → Fin 3) (hist : List α) extends PosGame_win_win win_sets ini hist : Prop where
+  ts : Turn_snd (hist.length + 1)
+
+
+
+
 open Classical
 
 def Positional_Game_World [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) : Game_World_wDraw (α → Fin 3) α where
      init_game_state := fun _ => 0
      fst_transition := fun _ hist act => PosGame_trans (act :: hist)
      snd_transition := fun _ hist act => PosGame_trans (act :: hist)
-     fst_win_states := fun ini hist => (Turn_fst (hist.length + 1) ∧ ∃ w ∈ win_sets, w ⊆ Finset.filter (fun x => (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) x = 1) Finset.univ)
-     snd_win_states := fun ini hist => (Turn_snd (hist.length + 1) ∧ ∃ w ∈ win_sets, w ⊆ Finset.filter (fun x => (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) x = 2) Finset.univ)
+     fst_win_states := fun ini hist => ∃ H, H <:+ hist ∧ PosGame_win_fst win_sets ini H
+     snd_win_states := fun ini hist => ∃ H, H <:+ hist ∧ PosGame_win_snd win_sets ini H
      draw_states := fun ini hist => ∀ p : α, (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) p ≠ 0
      fst_legal := fun ini hist act =>
                     if State_from_history_neutral_wDraw ini -- for ↓ don't know why field names not accepted ... might be fixed when updating
-                         (fun ini hist => (Turn_fst (hist.length + 1) ∧ ∃ w ∈ win_sets, w ⊆ Finset.filter (fun x => (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) x = 1) Finset.univ))
-                         (fun ini hist => (Turn_snd (hist.length + 1) ∧ ∃ w ∈ win_sets, w ⊆ Finset.filter (fun x => (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) x = 2) Finset.univ))
+                         (fun ini hist => ∃ H, H <:+ hist ∧ PosGame_win_fst win_sets ini H)
+                         (fun ini hist => ∃ H, H <:+ hist ∧ PosGame_win_snd win_sets ini H)
                          (fun ini hist => ∀ p : α, (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) p ≠ 0)
                          hist
                     then act ∉ hist
                     else True
      snd_legal := fun ini hist act =>
                     if State_from_history_neutral_wDraw ini -- for ↓ don't know why field names not accepted ... might be fixed when updating
-                         (fun ini hist => (Turn_fst (hist.length + 1) ∧ ∃ w ∈ win_sets, w ⊆ Finset.filter (fun x => (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) x = 1) Finset.univ))
-                         (fun ini hist => (Turn_snd (hist.length + 1) ∧ ∃ w ∈ win_sets, w ⊆ Finset.filter (fun x => (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) x = 2) Finset.univ))
+                         (fun ini hist => ∃ H, H <:+ hist ∧ PosGame_win_fst win_sets ini H)
+                         (fun ini hist => ∃ H, H <:+ hist ∧ PosGame_win_snd win_sets ini H)
                          (fun ini hist => ∀ p : α, (State_from_history ini (fun _ hist act => PosGame_trans (act :: hist)) (fun _ hist act => PosGame_trans (act :: hist)) hist) p ≠ 0)
                          hist
                     then act ∉ hist
                     else True
+
 
 
 lemma Positional_Game_World_mem_state [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) (p : α) (hist : List α) (h : p ∈ hist) :
@@ -210,6 +225,78 @@ lemma Positional_Game_World.strict_decreasing_neutral_hists [DecidableEq α] [Fi
     apply Positional_Game_World.strict_decreasing_neutral win_sets _ _ this N
 
 
+
+lemma Positional_Game_World.fst_win_suffix [DecidableEq α] [Fintype α] [Inhabited α] (win_sets : Finset (Finset α))
+  (hist Hist : List α)  (su : hist <:+ Hist) :
+  let g := Positional_Game_World win_sets ;
+  g.fst_win_states g.init_game_state hist → g.fst_win_states g.init_game_state Hist :=
+  by
+  rintro g ⟨H,Hdef,X⟩
+  dsimp [g, Positional_Game_World] at *
+  use H
+  refine' ⟨List.IsSuffix.trans Hdef su,_⟩
+  exact X
+
+
+lemma Positional_Game_World.snd_win_suffix [DecidableEq α] [Fintype α] [Inhabited α] (win_sets : Finset (Finset α))
+  (hist Hist : List α)  (su : hist <:+ Hist) :
+  let g := Positional_Game_World win_sets ;
+  g.snd_win_states g.init_game_state hist → g.snd_win_states g.init_game_state Hist :=
+  by
+  rintro g ⟨H,Hdef,X⟩
+  dsimp [g, Positional_Game_World] at *
+  use H
+  refine' ⟨List.IsSuffix.trans Hdef su,_⟩
+  exact X
+
+lemma List.not_suffix_cons_nil {a : α} {l : List α} : ¬ (a :: l <:+ []) := by
+  simp_all only [suffix_nil, not_false_eq_true]
+
+lemma Positional_Game_World.draw_win_suffix [DecidableEq α] [Fintype α] [Inhabited α] (win_sets : Finset (Finset α))
+  (hist Hist : List α)  (su : hist <:+ Hist) :
+  let g := Positional_Game_World win_sets ;
+  g.draw_states g.init_game_state hist → g.draw_states g.init_game_state Hist :=
+  by
+  rintro g D
+  dsimp [g, Positional_Game_World] at *
+  intro p
+  specialize D p
+  contrapose! D
+  cases' hist with ah h
+  · dsimp [State_from_history]
+  · cases' Hist with aH H
+    · exfalso
+      exact List.not_suffix_cons_nil su
+    · dsimp [State_from_history] at *
+      rw [ite_self, PosGame_trans] at *
+      split_ifs at D
+      · contradiction
+      · contradiction
+      · rename_i main
+        rw [if_neg (by contrapose! main ; apply List.mem_of_mem_suffix main su )]
+
+
+
+
+lemma Positional_Game_World.neutral_of_suffix [DecidableEq α] [Fintype α] [Inhabited α] (win_sets : Finset (Finset α))
+  (hist Hist : List α)  (su : hist <:+ Hist) :
+  let g := Positional_Game_World win_sets ;
+  State_from_history_neutral_wDraw g.init_game_state g.fst_win_states g.snd_win_states g.draw_states Hist
+  → State_from_history_neutral_wDraw g.init_game_state g.fst_win_states g.snd_win_states g.draw_states hist :=
+  by
+  rintro g ⟨Nf, Ns,Nd⟩
+  constructor
+  · contrapose! Nf
+    apply Positional_Game_World.fst_win_suffix _ _ _ su Nf
+  · constructor
+    · contrapose! Ns
+      apply Positional_Game_World.snd_win_suffix _ _ _ su Ns
+    · contrapose! Nd
+      apply Positional_Game_World.draw_win_suffix _ _ _ su Nd
+
+
+
+
 lemma Positional_Game_World.terminates [DecidableEq α] [Fintype α] [Inhabited α] (win_sets : Finset (Finset α))
   (win_sets_nontrivial : ∅ ∉ win_sets) :
   let g := Positional_Game_World win_sets ;
@@ -232,14 +319,20 @@ lemma Positional_Game_World.terminates [DecidableEq α] [Fintype α] [Inhabited 
     · dsimp [H, History_on_turn, State_from_history_neutral_wDraw, Positional_Game_World]
       constructor
       · intro con
-        obtain ⟨oh,no,pe⟩ := con.2
+        obtain ⟨H,Hdef,X⟩ := con
+        rw [List.suffix_nil] at Hdef
+        rw [Hdef] at X
+        obtain ⟨oh,no,pe⟩ := X.win
         dsimp [State_from_history] at pe
         rw [Finset.filter_false_of_mem (fun _ _ => by decide), Finset.subset_empty] at pe
         rw [pe] at no
         exact win_sets_nontrivial no
       · constructor
         · intro con
-          obtain ⟨oh,no,pe⟩ := con.2
+          obtain ⟨H,Hdef,X⟩ := con
+          rw [List.suffix_nil] at Hdef
+          rw [Hdef] at X
+          obtain ⟨oh,no,pe⟩ := X.win
           dsimp [State_from_history] at pe
           rw [Finset.filter_false_of_mem (fun _ _ => by decide), Finset.subset_empty] at pe
           rw [pe] at no
@@ -260,75 +353,7 @@ lemma Positional_Game_World.terminates [DecidableEq α] [Fintype α] [Inhabited 
     apply ne
   · intro m mln
     rw [Game_World_wDraw.state_on_turn_neutral_State_from_history_neutral]
-
-
-
-
-
-
--- TODO : show that hists mini in terms of suffix ; show that wld states of positional get maintaind
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#check instWellFoundedLTNatInstLTNat
-
-
-#check Nat.lt_wfRel.wf
-#check Finset.filter_eq_empty_iff
-
-#check Finset.isWellFounded_ssubset.wf
-
--- follwo proof method of ↓
-#exit
-
-lemma preChomp_reaches_empty {height length : ℕ}
-  (f_strat : fStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law)
-  (s_strat : sStrategy (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law) :
-  ∃ n, Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n+1)) = ∅ ∧
-    ∀ m ≤ n, Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (m)) ≠ ∅ :=
-  by
-  let states := {s | ∃ n, s = Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n)) ∧ s ≠ ∅}
-  have lem : Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat 0).val ≠ ∅ :=
-    by
-    dsimp only [History_on_turn, Chomp_state, preChomp]
-    rw [Finset.filter_true_of_mem]
-    · rw [← Finset.nonempty_iff_ne_empty]
-      use (length, height)
-      apply Chomp_init_has_len_hei height length
-    · intro _ _ _ no
-      contradiction
-  have states_nonempty : Set.Nonempty states := by
-    use  Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat 0)
-    use 0
-    -- wow
-    -- constructor
-    -- · rfl
-    -- · apply lem
-  obtain ⟨n,ndef,ne⟩ := WellFounded.min_mem Finset.isWellFounded_ssubset.wf states states_nonempty
-  use n
-  constructor
-  · by_contra con
-    apply @WellFounded.not_lt_min _ _ Finset.isWellFounded_ssubset.wf states states_nonempty (Chomp_state (preChomp height length).init_game_state (History_on_turn (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat (n+1))) (by use n+1)
-    rw [ndef]
-    apply preChomp_state_ssub f_strat s_strat n
-    rw [← ndef]
-    exact ne
-  · intro m mln
-    contrapose ne
-    rw [ndef, not_not, ← Finset.subset_empty]
-    rw [not_not] at ne
-    rw [← ne]
-    apply Chomp_state_sub_of_hist_suffix
-    apply History_on_turn_suffix (preChomp height length).toGame_World
-    exact mln
+    apply Positional_Game_World.neutral_of_suffix _ _ (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat n).val
+    · apply History_on_turn_suffix
+      exact mln
+    · exact ne

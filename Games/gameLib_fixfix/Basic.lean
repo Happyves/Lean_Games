@@ -878,6 +878,33 @@ lemma History_eq_of_strat_strong_eq' (ini : α) (f_law s_law : α → List β �
 
 
 
+lemma History_on_turn_suffix
+  (ini : α) (f_law s_law : α → List β → (β → Prop))
+  (f_strat : fStrategy ini f_law s_law)  (s_strat : sStrategy ini f_law s_law)
+  (n m : ℕ) (hmn : m ≤ n) :
+  (History_on_turn ini f_law s_law f_strat s_strat m).val <:+ (History_on_turn ini f_law s_law f_strat s_strat n).val :=
+  by
+  induction' n with n ih
+  · rw [Nat.le_zero] at hmn
+    rw [hmn]
+    dsimp!
+    exact List.nil_suffix []
+  · rw [Nat.le_iff_lt_or_eq] at hmn
+    cases' hmn with hmn hmn
+    · rw [Nat.lt_succ] at hmn
+      apply List.IsSuffix.trans (ih hmn)
+      nth_rewrite 1 [History_on_turn]
+      split_ifs with T
+      · simp_rw [dif_pos T]
+        apply List.suffix_cons
+      · simp_rw [dif_neg T]
+        apply List.suffix_cons
+    · rw [hmn]
+      apply List.suffix_rfl
+
+
+
+
 -- # Properties of state
 
 

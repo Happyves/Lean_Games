@@ -184,11 +184,28 @@ This is gonna ake ages
 
 
 
-theorem Pairing_Strategy [Inhabited α] [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} {pairing : win_sets → (α × α)} (hg : Pairing_condition win_sets pairing) :
+theorem Pairing_Strategy [Inhabited α] [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} {pairing : win_sets → (α × α)}
+  (win_sets_nontrivial : ∅ ∉ win_sets) (hg : Pairing_condition win_sets pairing) :
   (Positional_Game_World win_sets).is_draw_at_worst_snd :=
   by
   use Pairing_sStrat win_sets pairing
   intro f_strat
-  sorry
-
-#check Game_wDraw.draw
+  obtain ⟨T,Tend,Tpre⟩ := Positional_Game_World.terminates win_sets win_sets_nontrivial f_strat (Pairing_sStrat win_sets pairing)
+  rw [Game_World_wDraw.state_on_turn_neutral, not_not] at Tend
+  cases' Tend with F S D
+  · exfalso
+    sorry
+  · left
+    use (T+1)
+    constructor
+    · apply S
+    · intro t tlT
+      rw [Nat.lt_succ] at tlT
+      exact Tpre t tlT
+  · right
+    use (T+1)
+    constructor
+    · apply D
+    · intro t tlT
+      rw [Nat.lt_succ] at tlT
+      exact Tpre t tlT
