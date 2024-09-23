@@ -69,6 +69,22 @@ lemma Positional_Game_World_mem_state [DecidableEq α] [Fintype α] (win_sets : 
        split_ifs
        all_goals {decide}
 
+lemma Positional_Game_World_mem_state' [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) (p : α) (hist : List α)
+  (h : (State_from_history (Positional_Game_World win_sets).init_game_state (Positional_Game_World win_sets).fst_transition (Positional_Game_World win_sets).snd_transition hist) p ≠ 0) :
+    p ∈ hist :=
+    by
+    cases' hist with x _
+    · contradiction
+    · dsimp [State_from_history, Positional_Game_World] at h
+      rw [ite_self] at h
+      dsimp [PosGame_trans] at h
+      split_ifs at h
+      · rename_i m _
+        exact m
+      · rename_i m _
+        exact m
+      · contradiction
+
 
 
 lemma Positional_Game_World_playable [Inhabited α] [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) : (Positional_Game_World win_sets).playable :=
