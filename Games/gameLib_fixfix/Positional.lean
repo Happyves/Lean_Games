@@ -9,7 +9,7 @@ import Games.gameLib_fixfix.Termination
 
 def PosGame_trans [DecidableEq α] (hist : List α) : α → Fin 3 :=
   fun p => if  p ∈ hist
-           then if Turn_fst (hist.indexOf p)
+           then if Turn_fst (hist.reverse.indexOf p)
                 then 1
                 else 2
            else 0

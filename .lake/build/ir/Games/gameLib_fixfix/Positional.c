@@ -29,6 +29,7 @@ LEAN_EXPORT lean_object* l_PosGame__trans___rarg(lean_object*, lean_object*, lea
 LEAN_EXPORT lean_object* l_PosGame__trans___at_Positional__Game__World___spec__1___rarg(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_List_indexOf___at_PosGame__trans___spec__1___rarg(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_List_indexOf___at_Positional__Game__World___spec__2(lean_object*);
+lean_object* l_List_reverse___rarg(lean_object*);
 LEAN_EXPORT lean_object* l_Positional__Game__World(lean_object*);
 LEAN_EXPORT lean_object* l_List_indexOf___at_PosGame__trans___spec__1(lean_object*);
 lean_object* l_instBEq___rarg(lean_object*, lean_object*, lean_object*);
@@ -124,22 +125,23 @@ return x_6;
 }
 else
 {
-lean_object* x_7; lean_object* x_8; uint8_t x_9; 
-x_7 = lean_unsigned_to_nat(0u);
-x_8 = l_List_findIdx_go___at_PosGame__trans___spec__2___rarg(x_1, x_3, x_2, x_7);
-x_9 = l_instDecidablePredNatTurn__fst(x_8);
-lean_dec(x_8);
-if (x_9 == 0)
+lean_object* x_7; lean_object* x_8; lean_object* x_9; uint8_t x_10; 
+x_7 = l_List_reverse___rarg(x_2);
+x_8 = lean_unsigned_to_nat(0u);
+x_9 = l_List_findIdx_go___at_PosGame__trans___spec__2___rarg(x_1, x_3, x_7, x_8);
+x_10 = l_instDecidablePredNatTurn__fst(x_9);
+lean_dec(x_9);
+if (x_10 == 0)
 {
-lean_object* x_10; 
-x_10 = lean_unsigned_to_nat(2u);
-return x_10;
+lean_object* x_11; 
+x_11 = lean_unsigned_to_nat(2u);
+return x_11;
 }
 else
 {
-lean_object* x_11; 
-x_11 = lean_unsigned_to_nat(1u);
-return x_11;
+lean_object* x_12; 
+x_12 = lean_unsigned_to_nat(1u);
+return x_12;
 }
 }
 }
@@ -240,22 +242,23 @@ return x_6;
 }
 else
 {
-lean_object* x_7; lean_object* x_8; uint8_t x_9; 
-x_7 = lean_unsigned_to_nat(0u);
-x_8 = l_List_findIdx_go___at_Positional__Game__World___spec__3___rarg(x_1, x_3, x_2, x_7);
-x_9 = l_instDecidablePredNatTurn__fst(x_8);
-lean_dec(x_8);
-if (x_9 == 0)
+lean_object* x_7; lean_object* x_8; lean_object* x_9; uint8_t x_10; 
+x_7 = l_List_reverse___rarg(x_2);
+x_8 = lean_unsigned_to_nat(0u);
+x_9 = l_List_findIdx_go___at_Positional__Game__World___spec__3___rarg(x_1, x_3, x_7, x_8);
+x_10 = l_instDecidablePredNatTurn__fst(x_9);
+lean_dec(x_9);
+if (x_10 == 0)
 {
-lean_object* x_10; 
-x_10 = lean_unsigned_to_nat(2u);
-return x_10;
+lean_object* x_11; 
+x_11 = lean_unsigned_to_nat(2u);
+return x_11;
 }
 else
 {
-lean_object* x_11; 
-x_11 = lean_unsigned_to_nat(1u);
-return x_11;
+lean_object* x_12; 
+x_12 = lean_unsigned_to_nat(1u);
+return x_12;
 }
 }
 }
