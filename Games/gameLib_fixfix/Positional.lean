@@ -416,3 +416,45 @@ lemma Positional_Game_World.col_snd_of_turn_fst [DecidableEq α] [Fintype α] [I
   dsimp [Positional_Game_World] at now
   rw [if_pos (by  convert N), ← List.mem_reverse] at now
   rw [if_neg (by rw [List.reverse_cons, List.indexOf_append_of_not_mem now, List.length_reverse, List.indexOf_cons_eq _ rfl, Turn_fst_not_step, not_not] ; exact ts)]
+
+
+lemma Positional_Game_World.turn_snd_of_col_fst [DecidableEq α] [Fintype α] [Inhabited α] {win_sets : Finset (Finset α)}
+  (hist : List α) (act : α) (leg : Hist_legal (Positional_Game_World win_sets).init_game_state (Positional_Game_World win_sets).fst_legal  (Positional_Game_World win_sets).snd_legal (act :: hist)) :
+  let g := (Positional_Game_World win_sets) ;
+  (State_from_history g.init_game_state g.fst_transition  g.snd_transition (act :: hist)) act = 1 →
+  State_from_history_neutral_wDraw g.init_game_state g.fst_win_states g.snd_win_states g.draw_states (hist) →
+  ¬ Turn_fst (hist.length + 1) :=
+  by
+  intro g S N con
+  dsimp [State_from_history] at S
+  rw [if_pos con] at S
+  dsimp [Positional_Game_World, PosGame_trans] at S
+  rw [if_pos (by apply List.mem_cons_self)] at S
+  cases' leg
+  rename_i _ now
+  rw [if_pos con] at now
+  dsimp [Positional_Game_World] at now
+  rw [if_pos (by  convert N), ← List.mem_reverse] at now
+  rw [if_neg (by rw [List.reverse_cons, List.indexOf_append_of_not_mem now, List.length_reverse, List.indexOf_cons_eq _ rfl, Turn_fst_not_step, not_not] ; exact con)] at S
+  contradiction
+
+lemma Positional_Game_World.turn_fst_of_col_snd [DecidableEq α] [Fintype α] [Inhabited α] {win_sets : Finset (Finset α)}
+  (hist : List α) (act : α) (leg : Hist_legal (Positional_Game_World win_sets).init_game_state (Positional_Game_World win_sets).fst_legal  (Positional_Game_World win_sets).snd_legal (act :: hist)) :
+  let g := (Positional_Game_World win_sets) ;
+  (State_from_history g.init_game_state g.fst_transition  g.snd_transition (act :: hist)) act = 2 →
+  State_from_history_neutral_wDraw g.init_game_state g.fst_win_states g.snd_win_states g.draw_states (hist) →
+  Turn_fst (hist.length + 1) :=
+  by
+  intro g S N
+  by_contra con
+  dsimp [State_from_history] at S
+  rw [if_neg con] at S
+  dsimp [Positional_Game_World, PosGame_trans] at S
+  rw [if_pos (by apply List.mem_cons_self)] at S
+  cases' leg
+  rename_i _ now
+  rw [if_neg con] at now
+  dsimp [Positional_Game_World] at now
+  rw [if_pos (by  convert N), ← List.mem_reverse] at now
+  rw [if_pos (by rw [List.reverse_cons, List.indexOf_append_of_not_mem now, List.length_reverse, List.indexOf_cons_eq _ rfl, Turn_fst_not_step] ; exact con)] at S
+  contradiction
