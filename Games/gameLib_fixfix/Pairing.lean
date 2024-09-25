@@ -703,6 +703,29 @@ lemma classical_help_4 [Inhabited α] [DecidableEq α] [Fintype α] {win_sets : 
   rw [this]
 
 
+lemma Positional_Game_World.nonzero_colored_suffix [Inhabited α] [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)}
+  (h H : List α) (su : h <:+ H) (leg : Hist_legal (Positional_Game_World win_sets).init_game_state (Positional_Game_World win_sets).fst_legal (Positional_Game_World win_sets).snd_legal H)
+  (x : α) (main : (State_from_history (Positional_Game_World win_sets).init_game_state (Positional_Game_World win_sets).fst_transition (Positional_Game_World win_sets).snd_transition h) x ≠ 0) :
+  (State_from_history (Positional_Game_World win_sets).init_game_state (Positional_Game_World win_sets).fst_transition (Positional_Game_World win_sets).snd_transition H) x ≠ 0 :=
+  by
+  have bd := Fin.le_val_last ((State_from_history (Positional_Game_World win_sets).init_game_state (Positional_Game_World win_sets).fst_transition (Positional_Game_World win_sets).snd_transition h) x)
+  rw [Fin.ne_iff_vne] at *
+  dsimp at main
+  simp_rw [← Nat.one_le_iff_ne_zero, le_iff_eq_or_lt] at main
+  cases' main with main main
+  · have := Positional_Game_World.fst_colored_suffix _ _ su leg x (by rw [Fin.eq_iff_veq] ; apply main.symm)
+    rw [this]
+    decide
+  · rw [← Nat.succ_le] at main
+    replace main := le_antisymm bd main
+    have := Positional_Game_World.snd_colored_suffix _ _ su leg x (main)
+    rw [Fin.eq_iff_veq] at main
+    dsimp at main
+    dsimp
+    simp_rw [this]
+    decide
+
+
 private lemma help_2 [Inhabited α] [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} {pairing : win_sets → (α × α)}
   (hg : Pairing_condition win_sets pairing) {n : Nat}
   (f_strat : fStrategy (Positional_Game_World win_sets).toGame_World.init_game_state (Positional_Game_World win_sets).toGame_World.fst_legal (Positional_Game_World win_sets).toGame_World.snd_legal)
@@ -724,20 +747,104 @@ private lemma help_2 [Inhabited α] [DecidableEq α] [Fintype α] {win_sets : Fi
   replace con := Positional_Game_World_mem_state win_sets _ _ con
   replace hit := second_uncolored hg f_strat  H Hsuf W W_win W_sub hit
   rw [mdef] at hit
+  have con' := Positional_Game_World.nonzero_colored_suffix
+      (History_on_turn (Positional_Game_World win_sets).toGame_World.init_game_state
+        (Positional_Game_World win_sets).toGame_World.fst_legal (Positional_Game_World win_sets).toGame_World.snd_legal
+        f_strat (Pairing_sStrat win_sets pairing) m).val
+      (History_on_turn (Positional_Game_World win_sets).toGame_World.init_game_state
+        (Positional_Game_World win_sets).toGame_World.fst_legal (Positional_Game_World win_sets).toGame_World.snd_legal
+        f_strat (Pairing_sStrat win_sets pairing) (m+1)).val
+      (by apply History_on_turn_suffix ; exact Nat.le_add_right m 1)
+      (History_on_turn (Positional_Game_World win_sets).toGame_World.init_game_state
+        (Positional_Game_World win_sets).toGame_World.fst_legal (Positional_Game_World win_sets).toGame_World.snd_legal
+        f_strat (Pairing_sStrat win_sets pairing) (m+1)).prop.1
+      _ con
+  exact con' hit
 
 
 #check Positional_Game_World_mem_state
 
-/-
-So fucking sick and tired of the project and the lack of API
-
-con should imply that same sattement but for m+1, contradicting hit
-probably requires major fucking arround caases in Fin 3 and `Positional_Game_World.fst_colored_suffix`
 
 
+lemma help_3 [Inhabited α] [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} {pairing : win_sets → (α × α)}
+  (hg : Pairing_condition win_sets pairing) {n : Nat}
+  (f_strat : fStrategy (Positional_Game_World win_sets).toGame_World.init_game_state (Positional_Game_World win_sets).toGame_World.fst_legal (Positional_Game_World win_sets).toGame_World.snd_legal)
+  (H : List α) (Hsuf : H <:+ (History_on_turn (Positional_Game_World win_sets).init_game_state (Positional_Game_World win_sets).fst_legal (Positional_Game_World win_sets).snd_legal f_strat (Pairing_sStrat win_sets pairing) n).val )
+  (W : Finset α) (W_win : W ∈ win_sets) (W_sub : W ⊆ Finset.filter (fun x => State_from_history (fun x => 0) (fun x hist act => PosGame_trans (act :: hist)) (fun x hist act => PosGame_trans (act :: hist)) H x = 1) Finset.univ)
+  {m : Nat} (mdef : WellFounded.min Nat.lt_wfRel.wf (colored pairing f_strat (pairing ⟨W, W_win⟩)) (colored_nonempty hg f_strat H Hsuf W W_win W_sub) = m+1)
+  : let M := WellFounded.min Nat.lt_wfRel.wf (colored pairing f_strat (pairing ⟨W, W_win⟩)) (colored_nonempty hg f_strat H Hsuf W W_win W_sub)
+  let Hi :=  ((History_on_turn (Positional_Game_World win_sets).toGame_World.init_game_state (Positional_Game_World win_sets).fst_legal (Positional_Game_World win_sets).toGame_World.snd_legal f_strat (Pairing_sStrat win_sets pairing)))
+  (State_from_history (Positional_Game_World win_sets).toGame_World.init_game_state
+      (Positional_Game_World win_sets).toGame_World.fst_transition
+      (Positional_Game_World win_sets).toGame_World.snd_transition
+      (Hi M) (pairing ⟨W, W_win⟩).1 ≠ 0) →
+  (T : ¬ Turn_fst (m+1) ) → (Pairing_sStrat win_sets pairing) (Hi m).val (by rw [History_on_turn_length] ; exact T) (Hi m).prop.1 = (pairing ⟨W, W_win⟩).1 :=
+  by
+  intro M Hi S T
+  have : m ∉ (colored pairing f_strat (pairing ⟨W, W_win⟩)) :=
+      by
+      intro con
+      apply WellFounded.not_lt_min Nat.lt_wfRel.wf (colored pairing f_strat (pairing ⟨W, W_win⟩)) (colored_nonempty hg f_strat H Hsuf W W_win W_sub) con
+      rw [mdef]
+      apply Nat.lt_succ_self
+  dsimp [colored] at this
+  have that : (pairing ⟨W, W_win⟩).1 ∈ (Hi (M)).val :=
+    by
+    apply Positional_Game_World_mem_state' win_sets
+    exact S
+  dsimp [M] at that
+  rw [mdef] at that
+  simp_rw [← not_and_or, not_not] at this
+  have nm1 : (pairing ⟨W, W_win⟩).1 ∉ (Hi m).val :=
+    by
+    intro con
+    exact (Positional_Game_World_mem_state win_sets _ _ con) this.1
+  dsimp [History_on_turn] at that
+  rw [dif_neg T] at that
+  replace nm1 := List.eq_of_mem_cons_not_mem nm1 that
+  exact nm1.symm
 
--/
 
+
+lemma Pairing_StratCore_colors_fst_impossible [Inhabited α] [DecidableEq α] [Fintype α] {win_sets : Finset (Finset α)} {pairing : win_sets → (α × α)}
+  (hg : Pairing_condition win_sets pairing) {n : Nat}
+  (f_strat : fStrategy (Positional_Game_World win_sets).toGame_World.init_game_state (Positional_Game_World win_sets).toGame_World.fst_legal (Positional_Game_World win_sets).toGame_World.snd_legal)
+  (H : List α) (Hsuf : H <:+ (History_on_turn (Positional_Game_World win_sets).init_game_state (Positional_Game_World win_sets).fst_legal (Positional_Game_World win_sets).snd_legal f_strat (Pairing_sStrat win_sets pairing) n).val )
+  (W : Finset α) (W_win : W ∈ win_sets) (W_sub : W ⊆ Finset.filter (fun x => State_from_history (fun x => 0) (fun x hist act => PosGame_trans (act :: hist)) (fun x hist act => PosGame_trans (act :: hist)) H x = 1) Finset.univ)
+  : let M := WellFounded.min Nat.lt_wfRel.wf (colored pairing f_strat (pairing ⟨W, W_win⟩)) (colored_nonempty hg f_strat H Hsuf W W_win W_sub)
+  let Hi :=  ((History_on_turn (Positional_Game_World win_sets).toGame_World.init_game_state (Positional_Game_World win_sets).fst_legal (Positional_Game_World win_sets).toGame_World.snd_legal f_strat (Pairing_sStrat win_sets pairing)))
+  Turn_fst (M) :=
+  by
+  intro M Hi
+  by_contra con
+  by_cases Q : M = 0
+  · exfalso
+    exact (first_colored_turn_neq_zero hg f_strat H Hsuf W W_win W_sub) Q
+  · obtain ⟨m,mdef⟩ := Nat.succ_of_ne_zero Q
+    have M_mem := WellFounded.min_mem Nat.lt_wfRel.wf (colored pairing f_strat (pairing ⟨W, W_win⟩)) (colored_nonempty hg f_strat H Hsuf W W_win W_sub)
+    simp_rw [mdef] at M_mem
+    dsimp [colored] at M_mem
+    cases' M_mem with M_mem M_mem
+    · have := first_colored_by_fst hg f_strat H Hsuf W W_win W_sub (by dsimp ; dsimp [M] at mdef ; rw [mdef] ; exact M_mem )
+      rw [mdef] at con
+      have that := help_3 hg f_strat H Hsuf W W_win W_sub mdef (by dsimp ; dsimp [M] at mdef ; rw [mdef] ; exact M_mem ) con
+      dsimp [M] at mdef
+      rw [mdef, History_on_turn, dif_neg con] at this
+      dsimp at this
+      simp_rw [that] at this
+
+
+
+
+-- BigPic: cases M = 0, last move was snd & by def of colored, one of the pair, so it will be colored 2, contradict W_sub
+
+-- disjoin cases on M_mem, then use ↓ to show that they *should* be colored by fst
+#check first_colored_by_fst
+#check second_colored_by_fst
+
+-- show again that last move was pairing (wrti hist on m)
+
+-- show that in general in a positional game, if a move was played on snd turn its colored 2
 
 #exit
 
@@ -748,25 +855,30 @@ private lemma Pairing_StratCore_reacts_fst [Inhabited α] [DecidableEq α] [Fint
   (W : Finset α) (W_win : W ∈ win_sets) (W_sub : W ⊆ Finset.filter (fun x => State_from_history (fun x => 0) (fun x hist act => PosGame_trans (act :: hist)) (fun x hist act => PosGame_trans (act :: hist)) H x = 1) Finset.univ)
   : let M := WellFounded.min Nat.lt_wfRel.wf (colored pairing f_strat (pairing ⟨W, W_win⟩)) (colored_nonempty hg f_strat H Hsuf W W_win W_sub)
   let Hi :=  ((History_on_turn (Positional_Game_World win_sets).toGame_World.init_game_state (Positional_Game_World win_sets).fst_legal (Positional_Game_World win_sets).toGame_World.snd_legal f_strat (Pairing_sStrat win_sets pairing)))
+  Turn_fst (M) →
   (State_from_history (Positional_Game_World win_sets).toGame_World.init_game_state
       (Positional_Game_World win_sets).toGame_World.fst_transition
       (Positional_Game_World win_sets).toGame_World.snd_transition
       (Hi M) (pairing ⟨W, W_win⟩).1 ≠ 0) →
   (Pairing_StratCore win_sets pairing (Hi M).val (Hi M).prop.1) = (pairing ⟨W, W_win⟩).2 :=
   by
-  intro M Hi hit
+  intro M Hi T hit
   by_cases Q : M = 0
   · exfalso
     exact (first_colored_turn_neq_zero hg f_strat H Hsuf W W_win W_sub) Q
   · obtain ⟨m,mdef⟩ := Nat.succ_of_ne_zero Q
     rw [mdef]
+    rw [mdef] at T
     dsimp [History_on_turn]
-    split_ifs with T
-    · dsimp [Pairing_StratCore]
-      have hxf : ∃ w, f_strat (Hi m).val (by rw [History_on_turn_length] ; exact T) (Hi m).prop.1 = (pairing w).1 :=
-        by use ⟨W, W_win⟩ ; apply help_1 hg f_strat H Hsuf W W_win W_sub mdef hit T
-      rw [dif_pos hxf]
-      rw [if_neg (by simp_rw [help_1 hg f_strat H Hsuf W W_win W_sub mdef hit T] ; have := classical_help_1 hg W W_win (by rw [ help_1 hg f_strat H Hsuf W W_win W_sub mdef hit T] at hxf ; exact hxf) ; rw [this] ; apply List.not_mem_cons_of_ne_of_not_mem ; rw [ne_comm] ; exact (hg.has_pairing ⟨W,W_win⟩).dif ; )]
+    rw [dif_pos T]
+    dsimp [Pairing_StratCore]
+    have hxf : ∃ w, f_strat (Hi m).val (by rw [History_on_turn_length] ; exact T) (Hi m).prop.1 = (pairing w).1 :=
+      by use ⟨W, W_win⟩ ; apply help_1 hg f_strat H Hsuf W W_win W_sub mdef hit T
+    rw [dif_pos hxf]
+    rw [if_neg (by simp_rw [help_1 hg f_strat H Hsuf W W_win W_sub mdef hit T] ; have := classical_help_1 hg W W_win (by rw [ help_1 hg f_strat H Hsuf W W_win W_sub mdef hit T] at hxf ; exact hxf) ; rw [this] ; apply List.not_mem_cons_of_ne_of_not_mem ; rw [ne_comm] ; exact (hg.has_pairing ⟨W,W_win⟩).dif ; apply help_2 hg f_strat H Hsuf W W_win W_sub mdef hit)]
+    rw [ help_1 hg f_strat H Hsuf W W_win W_sub mdef hit T] at hxf
+    convert classical_help_1 hg W W_win hxf
+    apply help_1 hg f_strat H Hsuf W W_win W_sub mdef hit T
 
 
 
