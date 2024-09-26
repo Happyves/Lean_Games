@@ -125,23 +125,26 @@ return x_6;
 }
 else
 {
-lean_object* x_7; lean_object* x_8; lean_object* x_9; uint8_t x_10; 
+lean_object* x_7; lean_object* x_8; lean_object* x_9; lean_object* x_10; lean_object* x_11; uint8_t x_12; 
 x_7 = l_List_reverse___rarg(x_2);
 x_8 = lean_unsigned_to_nat(0u);
 x_9 = l_List_findIdx_go___at_PosGame__trans___spec__2___rarg(x_1, x_3, x_7, x_8);
-x_10 = l_instDecidablePredNatTurn__fst(x_9);
+x_10 = lean_unsigned_to_nat(1u);
+x_11 = lean_nat_add(x_9, x_10);
 lean_dec(x_9);
-if (x_10 == 0)
+x_12 = l_instDecidablePredNatTurn__fst(x_11);
+lean_dec(x_11);
+if (x_12 == 0)
 {
-lean_object* x_11; 
-x_11 = lean_unsigned_to_nat(2u);
-return x_11;
+lean_object* x_13; 
+x_13 = lean_unsigned_to_nat(2u);
+return x_13;
 }
 else
 {
-lean_object* x_12; 
-x_12 = lean_unsigned_to_nat(1u);
-return x_12;
+lean_object* x_14; 
+x_14 = lean_unsigned_to_nat(1u);
+return x_14;
 }
 }
 }
@@ -242,23 +245,26 @@ return x_6;
 }
 else
 {
-lean_object* x_7; lean_object* x_8; lean_object* x_9; uint8_t x_10; 
+lean_object* x_7; lean_object* x_8; lean_object* x_9; lean_object* x_10; lean_object* x_11; uint8_t x_12; 
 x_7 = l_List_reverse___rarg(x_2);
 x_8 = lean_unsigned_to_nat(0u);
 x_9 = l_List_findIdx_go___at_Positional__Game__World___spec__3___rarg(x_1, x_3, x_7, x_8);
-x_10 = l_instDecidablePredNatTurn__fst(x_9);
+x_10 = lean_unsigned_to_nat(1u);
+x_11 = lean_nat_add(x_9, x_10);
 lean_dec(x_9);
-if (x_10 == 0)
+x_12 = l_instDecidablePredNatTurn__fst(x_11);
+lean_dec(x_11);
+if (x_12 == 0)
 {
-lean_object* x_11; 
-x_11 = lean_unsigned_to_nat(2u);
-return x_11;
+lean_object* x_13; 
+x_13 = lean_unsigned_to_nat(2u);
+return x_13;
 }
 else
 {
-lean_object* x_12; 
-x_12 = lean_unsigned_to_nat(1u);
-return x_12;
+lean_object* x_14; 
+x_14 = lean_unsigned_to_nat(1u);
+return x_14;
 }
 }
 }
