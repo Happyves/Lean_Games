@@ -251,3 +251,11 @@ lemma TTT_win_sets_nontrivial : ∅ ∉ (TTT_win_sets D n hn) :=
   rw [Finset.mem_image]
   use ⟨0,by rw [Nat.pos_iff_ne_zero] ; exact (strengthen n hn) ⟩
   exact ⟨Finset.mem_univ _ , rfl⟩
+
+
+
+instance speInst : Inhabited (Fin D → Fin n) where default := (fun _ => ⟨0, lt_trans zero_lt_one hn ⟩ )
+
+theorem TTT_is_draw_at_worst_snd : (TTT D n hn).is_draw_at_worst_snd :=
+  by
+  exact @Pairing_Strategy _ (speInst D n hn) _ _ _ _ (TTT_win_sets_nontrivial D n hn) (TTT_Pairing_condition D n hn h)
