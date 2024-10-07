@@ -6,7 +6,7 @@ Author: Yves Jäckle.
 
 
 import Mathlib.Tactic
-import Mathlib.Data.List.DropRight -- now Rdrop
+import Mathlib.Data.List.DropRight -- now Rdrop, or not
 
 
 -- should contain game structures, turn manipulations, history and state lemmas
