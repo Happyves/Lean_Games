@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Yves Jäckle.
 -/
 
-import Games.gameLib.TurnAPI
+import Games.gameLibExp.TurnAPI
 
 
 -- # Game worlds
@@ -229,12 +229,12 @@ instance (g : Game_World α β)
 
 def Game_World.fStrategy (g : Game_World α β) :=
   (hist : List β) → (Turn_fst (hist.length+1)) →
-  (g.hist_legal hist) →
+  (g.hist_legal hist) → (g.hist_neutral hist) →
   { act : β // g.fst_legal hist act}
 
 def Game_World.sStrategy (g : Game_World α β) :=
   (hist : List β) → (Turn_snd (hist.length+1)) →
-  (g.hist_legal hist) →
+  (g.hist_legal hist) → (g.hist_neutral hist) →
   { act : β // g.snd_legal hist act}
 
 def Game_World_wDraw.fStrategy (g : Game_World_wDraw α β) :=
@@ -254,38 +254,43 @@ def Symm_Game_World.sStrategy (g : Symm_Game_World α β) :=
 -- # Histories
 
 
+inductive Game_World.hist_on_turn_output (g : Game_World α β) (t : Nat) where
+| invalid
+| terminal (result : {hist : List β // g.hist_legal hist ∧ hist.length = t})
+| nonterminal (result : {hist : List β // g.hist_legal hist ∧ hist.length = t}) (property : g.hist_neutral result.val)
+
 def Game_World.hist_on_turn (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
-  (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
+  (t : ℕ) : g.hist_on_turn_output t :=
   match t with
-  | 0 => ⟨[], ⟨Game_World.hist_legal.nil, rfl⟩⟩
-  | n+1 =>  let h := g.hist_on_turn fst_strat snd_strat n
+  | 0 =>
+      if N : g.hist_neutral []
+      then
+        .nonterminal ⟨[], ⟨Game_World.hist_legal.nil, rfl⟩⟩ N
+      else
+        .terminal ⟨[], ⟨Game_World.hist_legal.nil, rfl⟩⟩
+  | n+1 =>  let h? := g.hist_on_turn fst_strat snd_strat n
+            match h? with
+            | .invalid | .terminal _ => .invalid
+            | .nonterminal h N =>
             if T : Turn_fst (n+1)
             then
-              let T' : Turn_fst (List.length h.val + 1) := by rw [h.property.2] ; exact T ;
-              let act := (fst_strat h.val T' h.property.1).val ;
-              let leg := (fst_strat h.val T' h.property.1).property ;
-              ⟨ act :: h.val , ⟨Game_World.hist_legal.cons h.val act (by rw [if_pos T'] ; exact leg) h.property.1, (by dsimp ; rw [h.property.2])⟩⟩
+                let T' : Turn_fst (List.length h.val + 1) := by rw [h.property.2] ; exact T ;
+                let act := (fst_strat h.val T' h.property.1 N).val ;
+                let leg := (fst_strat h.val T' h.property.1 N).property ;
+                let H := act :: h.val
+                if N : g.hist_neutral H
+                then .nonterminal ⟨H , ⟨Game_World.hist_legal.cons h.val act (by rw [if_pos T'] ; exact leg) h.property.1, (by dsimp ; rw [h.property.2])⟩⟩ N
+                else .terminal ⟨H , ⟨Game_World.hist_legal.cons h.val act (by rw [if_pos T'] ; exact leg) h.property.1, (by dsimp ; rw [h.property.2])⟩⟩
             else
-              let T' : Turn_snd (List.length h.val + 1) := by rw [Turn_snd_iff_not_fst , h.property.2] ; exact T ;
-              let act := (snd_strat h.val T' h.property.1).val ;
-              let leg := (snd_strat h.val T' h.property.1).property ;
-              ⟨ act :: h.val , ⟨Game_World.hist_legal.cons h.val act (by rw [if_neg ] ; exact leg ; rw [Turn_not_fst_iff_snd] ; exact T') h.property.1, (by dsimp ; rw [h.property.2])⟩⟩
-
-def Symm_Game_World.hist_on_turn (g : Symm_Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
-  (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
-  (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
-  @Game_World.hist_on_turn _ _  g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) fst_strat snd_strat t
-
-
-def Game_World_wDraw.hist_on_turn (g : Game_World_wDraw α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
-  (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
-  (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
-  g.toGame_World.hist_on_turn fst_strat snd_strat t
-
+                let T' : Turn_snd (List.length h.val + 1) := by rw [Turn_snd_iff_not_fst , h.property.2] ; exact T ;
+                let act := (snd_strat h.val T' h.property.1 N).val ;
+                let leg := (snd_strat h.val T' h.property.1 N).property ;
+                let H := act :: h.val
+                if N : g.hist_neutral H
+                then .nonterminal ⟨H , ⟨Game_World.hist_legal.cons h.val act (by rw [if_neg ] ; exact leg ; rw [Turn_not_fst_iff_snd] ; exact T') h.property.1, (by dsimp ; rw [h.property.2])⟩⟩ N
+                else .terminal ⟨H , ⟨Game_World.hist_legal.cons h.val act (by rw [if_neg ] ; exact leg ; rw [Turn_not_fst_iff_snd] ; exact T') h.property.1, (by dsimp ; rw [h.property.2])⟩⟩
 
 
 
@@ -312,7 +317,7 @@ structure Game_wDraw (α β : Type u) extends Game_World_wDraw α β where
 
 def Game.hist_on_turn (g : Game α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
-  (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
+  (t : ℕ) : g.hist_on_turn_output t :=
   g.toGame_World.hist_on_turn g.fst_strat g.snd_strat t
 
 
@@ -321,19 +326,30 @@ def Game.hist_on_turn (g : Game α β)
 -- # State
 
 
+
 def Game_World.state_from_hist (g : Game_World α β) : List β → α
 | [] => g.init_game_state
 | a :: h => if Turn_fst (h.length +1)
             then g.fst_transition h a
             else g.snd_transition h a
 
+
+inductive Game_World.state_on_turn_output where
+| invalid
+| valid (state : α)
+
+
+-- Continiue here
 def Game_World.state_on_turn (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
-  (fst_strat : g.fStrategy) (snd_strat : g.sStrategy) : ℕ → α
-  | 0 => g.init_game_state
-  | n+1 => let h := g.hist_on_turn fst_strat snd_strat n
-          if T : Turn_fst (n+1)
-          then let T' : Turn_fst (List.length h.val + 1) := by rw [h.property.2] ; exact T ;
-                g.fst_transition h (fst_strat h.val T' h.property.1)
-          else let T' : Turn_snd (List.length h.val + 1) := by rw [Turn_snd_iff_not_fst , h.property.2] ; exact T ;
-                g.snd_transition h (snd_strat h.val T' h.property.1)
+  (fst_strat : g.fStrategy) (snd_strat : g.sStrategy) : ℕ → Game_World.state_on_turn_output
+  | 0 => .valid g.init_game_state
+  | n+1 =>  let h := g.hist_on_turn fst_strat snd_strat n
+            match h with
+            | .invalid => .invalid
+            | .terminal res | .nonterminal res _ =>
+                  if T : Turn_fst (n+1)
+                  then let T' : Turn_fst (List.length res.val + 1) := by rw [res.property.2] ; exact T ;
+                        g.fst_transition res (fst_strat res.val T' res.property.1)
+                  else let T' : Turn_snd (List.length res.val + 1) := by rw [Turn_snd_iff_not_fst , h.property.2] ; exact T ;
+                        g.snd_transition res (snd_strat res.val T' h.property.1)

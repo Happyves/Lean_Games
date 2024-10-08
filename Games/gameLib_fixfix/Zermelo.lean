@@ -694,22 +694,22 @@ lemma sStrat_wHist_eq_of_eq_after (g : Game_World α β) (act : β) (hist : List
       rw [g.History_of_staged_rtake hist leg _ ⟨snd_s.val, sStrat_staged_cons'' _ _ _ _ act hist leg al rfl T snd_s.prop⟩ _ q]
 
 -- to basic, maybe ?
-lemma History_on_turn_suffix (g : Game_World α β) (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal) (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal)
-  {n m : ℕ} (hnm : n ≤ m) : (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat n).val <:+ History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat m :=
-  by
-  induction' m with m ih
-  · rw [Nat.le_zero] at hnm
-    rw [hnm]
-    apply List.suffix_refl
-  · rw [le_iff_eq_or_lt] at hnm
-    cases' hnm with h h
-    · rw [h]
-      apply List.suffix_refl
-    · rw [Nat.lt_succ] at h
-      apply List.IsSuffix.trans (ih h)
-      dsimp [History_on_turn]
-      split_ifs
-      <;> {dsimp ; apply List.suffix_cons}
+-- lemma History_on_turn_suffix (g : Game_World α β) (f_strat : fStrategy g.init_game_state g.fst_legal g.snd_legal) (s_strat : sStrategy g.init_game_state g.fst_legal g.snd_legal)
+--   {n m : ℕ} (hnm : n ≤ m) : (History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat n).val <:+ History_on_turn g.init_game_state g.fst_legal g.snd_legal f_strat s_strat m :=
+--   by
+--   induction' m with m ih
+--   · rw [Nat.le_zero] at hnm
+--     rw [hnm]
+--     apply List.suffix_refl
+--   · rw [le_iff_eq_or_lt] at hnm
+--     cases' hnm with h h
+--     · rw [h]
+--       apply List.suffix_refl
+--     · rw [Nat.lt_succ] at h
+--       apply List.IsSuffix.trans (ih h)
+--       dsimp [History_on_turn]
+--       split_ifs
+--       <;> {dsimp ; apply List.suffix_cons}
 
 
 lemma Strat_wHist_f_act_cons_eq_History_on_turn_length (g : Game_World α β) (hist : List β)
