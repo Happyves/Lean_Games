@@ -259,6 +259,10 @@ inductive Game_World.hist_on_turn_output (g : Game_World α β) (t : Nat) where
 | terminal (result : {hist : List β // g.hist_legal hist ∧ hist.length = t})
 | nonterminal (result : {hist : List β // g.hist_legal hist ∧ hist.length = t}) (property : g.hist_neutral result.val)
 
+def Symm_Game_World.hist_on_turn_output (g : Symm_Game_World α β) (t : Nat) :=
+  Game_World.hist_on_turn_output g.toGame_World t
+
+
 def Game_World.hist_on_turn (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
@@ -292,6 +296,12 @@ def Game_World.hist_on_turn (g : Game_World α β)
                 then .nonterminal ⟨H , ⟨Game_World.hist_legal.cons h.val act (by rw [if_neg ] ; exact leg ; rw [Turn_not_fst_iff_snd] ; exact T') h.property.1, (by dsimp ; rw [h.property.2])⟩⟩ N
                 else .terminal ⟨H , ⟨Game_World.hist_legal.cons h.val act (by rw [if_neg ] ; exact leg ; rw [Turn_not_fst_iff_snd] ; exact T') h.property.1, (by dsimp ; rw [h.property.2])⟩⟩
 
+
+def Symm_Game_World.hist_on_turn (g : Symm_Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
+  (t : ℕ) : g.hist_on_turn_output t :=
+  @Game_World.hist_on_turn _ _ g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) fst_strat snd_strat t
 
 
 -- # Games

@@ -12,6 +12,10 @@ inductive Game_World.hist_on_turn_valid (g : Game_World α β) {t : Nat} : g.his
 | ofNonterminal (result : {hist : List β // g.hist_legal hist ∧ hist.length = t}) (property : g.hist_neutral result.val) : g.hist_on_turn_valid (.nonterminal result property)
 
 
+def Symm_Game_World.hist_on_turn_valid (g : Symm_Game_World α β) {t : Nat} (h : g.hist_on_turn_output t) : Prop :=
+  Game_World.hist_on_turn_valid g.toGame_World h
+
+
 lemma Game_World.hist_on_turn_valid_not_invalid (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
@@ -23,6 +27,15 @@ lemma Game_World.hist_on_turn_valid_not_invalid (g : Game_World α β)
   | .nonterminal _ _ => Game_World.hist_on_turn_output.noConfusion
 
 
+lemma Symm_Game_World.hist_on_turn_valid_not_invalid (g : Symm_Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
+  (t : ℕ) (V : g.hist_on_turn_valid (g.hist_on_turn fst_strat snd_strat t)) :
+  g.hist_on_turn fst_strat snd_strat t ≠ Game_World.hist_on_turn_output.invalid :=
+  by convert @Game_World.hist_on_turn_valid_not_invalid _ _ g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) fst_strat snd_strat t (by apply V)
+
+
+
 def Game_World.hist_on_turn_value (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
@@ -32,6 +45,15 @@ def Game_World.hist_on_turn_value (g : Game_World α β)
   | .invalid => False.elim ((g.hist_on_turn_valid_not_invalid _ _ _ V) Q)
   | .terminal res => res.val
   | .nonterminal res _ => res.val
+
+
+def Symm_Game_World.hist_on_turn_value (g : Symm_Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
+  (t : ℕ) (V : g.hist_on_turn_valid (g.hist_on_turn fst_strat snd_strat t)) :
+  List β :=
+  by convert @Game_World.hist_on_turn_value _ _ g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) fst_strat snd_strat t (by apply V)
+
 
 
 lemma Game_World.hist_on_turn_value_length (g : Game_World α β)
@@ -51,6 +73,17 @@ lemma Game_World.hist_on_turn_value_length (g : Game_World α β)
         apply res'.prop.2
 
 
+
+lemma Symm_Game_World.hist_on_turn_value_length (g : Symm_Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
+  (t : ℕ) (V : g.hist_on_turn_valid (g.hist_on_turn fst_strat snd_strat t)) :
+  (g.hist_on_turn_value fst_strat snd_strat t V).length = t :=
+  by convert @Game_World.hist_on_turn_value_length _ _ g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) fst_strat snd_strat t (by apply V)
+
+
+
+
 lemma Game_World.hist_on_turn_value_legal (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
@@ -66,3 +99,11 @@ lemma Game_World.hist_on_turn_value_legal (g : Game_World α β)
         apply res'.prop.1
       · rename_i res' _ _
         apply res'.prop.1
+
+
+lemma Symm_Game_World.hist_on_turn_value_legal (g : Symm_Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
+  (t : ℕ) (V : g.hist_on_turn_valid (g.hist_on_turn fst_strat snd_strat t)) :
+  g.hist_legal (g.hist_on_turn_value fst_strat snd_strat t V) :=
+  by convert @Game_World.hist_on_turn_value_legal _ _ g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) fst_strat snd_strat t (by apply V)
