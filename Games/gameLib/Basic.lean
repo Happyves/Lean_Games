@@ -291,21 +291,21 @@ def Game_World_wDraw.hist_on_turn (g : Game_World_wDraw α β)
 
 -- # Games
 
-structure Game (α β : Type u) extends Game_World α β where
+structure Game (α β : Type _) extends Game_World α β where
   fst_strat : toGame_World.fStrategy
   snd_strat : toGame_World.sStrategy
 
-structure Symm_Game (α β : Type u) extends Symm_Game_World α β where
+structure Symm_Game (α β : Type _) extends Symm_Game_World α β where
   fst_strat : toSymm_Game_World.fStrategy
   snd_strat : toSymm_Game_World.sStrategy
 
-def Symm_Game.toGame {α β : Type u} (g : Symm_Game α β) : Game α β :=
+def Symm_Game.toGame {α β : Type _} (g : Symm_Game α β) : Game α β :=
  {toGame_World :=  Symm_Game_World.toGame_World (g.toSymm_Game_World)
   fst_strat := g.fst_strat
   snd_strat := g.snd_strat
   }
 
-structure Game_wDraw (α β : Type u) extends Game_World_wDraw α β where
+structure Game_wDraw (α β : Type _) extends Game_World_wDraw α β where
   fst_strat : toGame_World_wDraw.fStrategy
   snd_strat : toGame_World_wDraw.sStrategy
 
@@ -315,6 +315,13 @@ def Game.hist_on_turn (g : Game α β)
   (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
   g.toGame_World.hist_on_turn g.fst_strat g.snd_strat t
 
+
+lemma Symm_Game.toGame_fst_win (g : Symm_Game α β) :
+  g.toGame.fst_win_states = g.fst_win_states := rfl
+
+
+lemma Symm_Game.toGame_snd_win (g : Symm_Game α β) :
+  g.toGame.snd_win_states = g.snd_win_states := rfl
 
 
 

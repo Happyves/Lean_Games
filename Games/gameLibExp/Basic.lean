@@ -339,7 +339,6 @@ inductive Game_World.state_on_turn_output where
 | valid (state : α)
 
 
--- Continiue here
 def Game_World.state_on_turn (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy) (snd_strat : g.sStrategy) : ℕ → Game_World.state_on_turn_output
@@ -347,9 +346,10 @@ def Game_World.state_on_turn (g : Game_World α β)
   | n+1 =>  let h := g.hist_on_turn fst_strat snd_strat n
             match h with
             | .invalid => .invalid
-            | .terminal res | .nonterminal res _ =>
+            | .terminal _ => .invalid
+            | .nonterminal res N =>
                   if T : Turn_fst (n+1)
                   then let T' : Turn_fst (List.length res.val + 1) := by rw [res.property.2] ; exact T ;
-                        g.fst_transition res (fst_strat res.val T' res.property.1)
-                  else let T' : Turn_snd (List.length res.val + 1) := by rw [Turn_snd_iff_not_fst , h.property.2] ; exact T ;
-                        g.snd_transition res (snd_strat res.val T' h.property.1)
+                       .valid (g.fst_transition res (fst_strat res.val T' res.property.1 N))
+                  else let T' : Turn_snd (List.length res.val + 1) := by rw [Turn_snd_iff_not_fst , res.property.2] ; exact T ;
+                       .valid (g.snd_transition res (snd_strat res.val T' res.property.1 N))
