@@ -332,6 +332,21 @@ def Game.hist_on_turn (g : Game α β)
 
 
 
+lemma Symm_Game.toGame_fst_win (g : Symm_Game α β) :
+  g.toGame.fst_win_states = g.fst_win_states := rfl
+
+
+lemma Symm_Game.toGame_snd_win (g : Symm_Game α β) :
+  g.toGame.snd_win_states = g.snd_win_states := rfl
+
+
+
+
+def Symm_Game.hist_on_turn (g : Symm_Game α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (t : ℕ) : g.hist_on_turn_output t :=
+  @Game.hist_on_turn _ _ g.toGame (by rwa [g.toGame_fst_win]) (by rwa [g.toGame_snd_win]) t
+
 
 -- # State
 

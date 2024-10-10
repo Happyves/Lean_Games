@@ -96,3 +96,21 @@ inductive Game_World.has_WL (g : Game_World α β)
 def Symm_Game_World.has_WL (g : Symm_Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] :=
   @Game_World.has_WL _ _ g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win])
+
+
+lemma Game_World.state_on_turn_neutral_State_from_history_neutral (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (f_strat : g.fStrategy) (s_strat : g.sStrategy) (turn : ℕ) :
+  g.state_on_turn_neutral f_strat s_strat turn ↔
+  g.hist_neutral (g.hist_on_turn f_strat s_strat turn).val :=
+  by
+  dsimp [Game_World.state_on_turn_neutral]
+  constructor
+  · intro h
+    constructor
+    · contrapose! h ; apply Game_World.Turn_isWL.wf h
+    · contrapose! h ; apply Game_World.Turn_isWL.ws h
+  · intro h con
+    cases' con with F S
+    · exact h.not_fst F
+    · exact h.not_snd S
