@@ -158,3 +158,24 @@ lemma Symm_Game.hist_on_turn_value_legal (g : Symm_Game α β)
   (t : ℕ) (V : g.hist_on_turn_valid (g.hist_on_turn t)) :
   g.hist_legal (g.hist_on_turn_value t V) :=
   g.toSymm_Game_World.hist_on_turn_value_legal g.fst_strat g.snd_strat t V
+
+
+
+def Game_World.hist_on_turn_value_zero (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  {fst_strat : g.fStrategy} {snd_strat : g.sStrategy}
+  {V : g.hist_on_turn_valid (g.hist_on_turn fst_strat snd_strat 0)} :
+  (g.hist_on_turn_value fst_strat snd_strat 0 V) = [] :=
+  by
+  dsimp [hist_on_turn_value, hist_on_turn]
+  split
+  · rename_i no
+    split_ifs at no
+  · rename_i no
+    split_ifs at no
+    replace no := hist_on_turn_output.terminal.inj no
+    apply Subtype.val_inj.mpr no.symm
+  · rename_i no
+    split_ifs at no
+    replace no := hist_on_turn_output.nonterminal.inj no
+    apply Subtype.val_inj.mpr no.symm
