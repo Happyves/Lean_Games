@@ -122,6 +122,11 @@ lemma List.rget_singleton {x : α} {n : Fin 1} : [x].rget n = x := by
   unfold List.rget ; apply List.get_singleton
 
 
+theorem List.rdrop_append_rtake : ∀ (n : Nat) (l : List α), List.rdrop l n ++ List.rtake l n = l :=
+  by
+  unfold List.rdrop List.rtake
+  intro n l
+  apply List.take_append_drop
 
 
 #exit

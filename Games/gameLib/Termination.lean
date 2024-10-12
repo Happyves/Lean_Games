@@ -78,7 +78,7 @@ def Game_World.is_fst_win (g : Game_World α β)
 def Game_World.is_snd_win (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] : Prop :=
   ∃ ws : g.sStrategy, ∀ snd_s : g.fStrategy,
-  ({g with snd_strat := ws, fst_strat := snd_s} : Game α β).fst_win
+  ({g with snd_strat := ws, fst_strat := snd_s} : Game α β).snd_win
 
 def Symm_Game_World.is_fst_win (g : Symm_Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] : Prop :=

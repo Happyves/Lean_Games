@@ -136,4 +136,10 @@ lemma Game_World.Turn_isWL_wins (g : Game_World α β)
       rw [Game_World.hist_on_turn_value_zero] at con
       rw [dif_pos con] at q
       contradiction
-    ·
+    · dsimp [hist_on_turn, hist_on_turn_value] at q
+      split at q
+      · contradiction
+      · contradiction
+      · rename_i Q
+        split_ifs at q with T
+        · replace q := hist_on_turn_output.terminal.inj q -- Subtype.val_inj.mpr

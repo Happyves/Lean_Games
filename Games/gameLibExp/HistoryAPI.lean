@@ -161,7 +161,7 @@ lemma Symm_Game.hist_on_turn_value_legal (g : Symm_Game α β)
 
 
 
-def Game_World.hist_on_turn_value_zero (g : Game_World α β)
+lemma Game_World.hist_on_turn_value_zero (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   {fst_strat : g.fStrategy} {snd_strat : g.sStrategy}
   {V : g.hist_on_turn_valid (g.hist_on_turn fst_strat snd_strat 0)} :
@@ -179,3 +179,30 @@ def Game_World.hist_on_turn_value_zero (g : Game_World α β)
     split_ifs at no
     replace no := hist_on_turn_output.nonterminal.inj no
     apply Subtype.val_inj.mpr no.symm
+
+
+
+lemma Game_World.hist_on_turn_valid_of_valid_succ (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  {fst_strat : g.fStrategy} {snd_strat : g.sStrategy} {t : Nat}
+  (V : g.hist_on_turn_valid (g.hist_on_turn fst_strat snd_strat (t+1))) :
+  g.hist_on_turn_valid (g.hist_on_turn fst_strat snd_strat t) :=
+  by
+  cases' t with t
+  · dsimp [hist_on_turn]
+    split_ifs with N
+    · exact Game_World.hist_on_turn_valid.ofNonterminal _ _
+    · exact Game_World.hist_on_turn_valid.ofTerminal _
+  · dsimp [hist_on_turn]
+    split
+
+
+#exit
+
+lemma Game_World.hist_on_turn_value_succ_turn_fst (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  {fst_strat : g.fStrategy} {snd_strat : g.sStrategy} {t : Nat}
+  {V : g.hist_on_turn_valid (g.hist_on_turn fst_strat snd_strat (t+1))}
+  (T : Turn_fst (t+1)) :
+  (g.hist_on_turn_value fst_strat snd_strat (t+1) V) =
+  fst_strat :=

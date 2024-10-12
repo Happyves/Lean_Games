@@ -5,6 +5,8 @@ Author: Yves Jäckle.
 -/
 
 import Games.gameLib.Basic
+import Games.exLib.List
+
 
 
 lemma Game_World.hist_on_turn_length (g : Game_World α β)
@@ -70,3 +72,47 @@ lemma Game_World.hist_on_turn_induction (g : Game_World α β)
       exact step_fst t T ih
     · rw [hist_on_turn, dif_neg T]
       exact step_snd t T ih
+
+
+lemma Game_World.hist_legal_suffix (g : Game_World α β)
+  (pre post : List β) :
+  g.hist_legal (post ++ pre) → g.hist_legal pre :=
+  by
+  intro main
+  induction' post with x l ih
+  · rw [List.nil_append] at main
+    exact main
+  · cases' main
+    rename_i yes _
+    exact ih yes
+
+lemma Game_World.hist_legal_rtake (g : Game_World α β)
+  (hist : List β) (t : Nat) :
+  g.hist_legal hist → g.hist_legal (hist.rtake t) := by
+  intro main
+  rw [← hist.rdrop_append_rtake t] at main
+  apply g.hist_legal_suffix _ _ main
+
+
+
+
+lemma Game_World.hist_legal_rtake_fst (g : Game_World α β)
+  (hist : List β) (t : Nat) (htT : Turn_fst (t+1)) (htL : t < hist.length)
+  (main : g.hist_legal hist) : g.fst_legal (hist.rtake t) (hist.rget ⟨t, htL⟩) := by
+  replace main := g.hist_legal_rtake _ (t+1) main
+  rw [@List.rget_cons_rtake _ _ ⟨t,htL⟩ ] at main
+  cases' main
+  rename_i _ now
+  rw [List.length_rtake (le_of_lt htL), if_pos htT] at now
+  exact now
+
+lemma Game_World.hist_legal_rtake_snd (g : Game_World α β)
+  (hist : List β) (t : Nat) (htT : Turn_snd (t+1)) (htL : t < hist.length)
+  (main : g.hist_legal hist) : g.snd_legal (hist.rtake t) (hist.rget ⟨t, htL⟩) := by
+  replace main := g.hist_legal_rtake _ (t+1) main
+  rw [@List.rget_cons_rtake _ _ ⟨t,htL⟩ ] at main
+  cases' main
+  rename_i _ now
+  rw [Turn_snd_iff_not_fst] at htT
+  rw [List.length_rtake (le_of_lt htL), if_neg htT] at now
+  exact now
