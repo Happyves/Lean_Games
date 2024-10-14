@@ -25,3 +25,10 @@ lemma Game_World.exStrat_Hist_legal (g : Game_World α β) (hg : g.playable)
   ∀ t, g.hist_legal (g.hist_on_turn (g.exStrat_fst hg) (g.exStrat_snd hg) t) :=
   by
   apply Game_World.hist_on_turn_legal
+
+
+def Game_World.cPlayable_fst (g : Game_World α β) : Type _ :=
+  (hist : List β) → (pl : g.hist_legal hist) → (Turn_fst (List.length hist + 1)) → {act : β // g.fst_legal hist act}
+
+def Game_World.cPlayable_snd (g : Game_World α β) : Type _ :=
+  (hist : List β) → (pl : g.hist_legal hist) → (Turn_snd (List.length hist + 1)) → {act : β // g.snd_legal hist act}
