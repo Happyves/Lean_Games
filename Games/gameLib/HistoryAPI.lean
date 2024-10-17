@@ -116,3 +116,69 @@ lemma Game_World.hist_legal_rtake_snd (g : Game_World α β)
   rw [Turn_snd_iff_not_fst] at htT
   rw [List.length_rtake (le_of_lt htL), if_neg htT] at now
   exact now
+
+
+lemma Game_World.fStrat_eq_of_hist_eq (g : Game_World α β) (fs : g.fStrategy)
+  (h H : List β) (hh : g.hist_legal h) (hH : g.hist_legal H) (Th : Turn_fst (h.length + 1)) (TH : Turn_fst (H.length + 1))
+  (main : h = H) : (fs h Th hh ).val = (fs H TH hH).val :=
+  by
+  congr
+  · rw [main]
+  · apply heq_prop
+  · apply heq_prop
+
+
+lemma Game_World.sStrat_eq_of_hist_eq (g : Game_World α β) (fs : g.sStrategy)
+  (h H : List β) (hh : g.hist_legal h) (hH : g.hist_legal H) (Th : Turn_snd (h.length + 1)) (TH : Turn_snd (H.length + 1))
+  (main : h = H) : (fs h Th hh ).val = (fs H TH hH).val :=
+  by
+  congr
+  · rw [main]
+  · apply heq_prop
+  · apply heq_prop
+
+lemma Game_World.fStrat_eq_of_strat_hist_eq (g : Game_World α β) (fs fs' : g.fStrategy)
+  (h H : List β) (hh : g.hist_legal h) (hH : g.hist_legal H) (Th : Turn_fst (h.length + 1)) (TH : Turn_fst (H.length + 1))
+  (main' : fs = fs') (main : h = H) : (fs h Th hh ).val = (fs' H TH hH).val :=
+  by
+  have : (fs h Th hh ).val = (fs h Th hh ).val := rfl
+  convert this
+  · exact main.symm
+  · exact main'.symm
+  · exact main.symm
+
+
+
+lemma Game_World.sStrat_eq_of_strat_hist_eq (g : Game_World α β) (fs fs' : g.sStrategy)
+  (h H : List β) (hh : g.hist_legal h) (hH : g.hist_legal H) (Th : Turn_snd (h.length + 1)) (TH : Turn_snd (H.length + 1))
+  (main' : fs = fs') (main : h = H) : (fs h Th hh ).val = (fs' H TH hH).val :=
+  by
+  have : (fs h Th hh ).val = (fs h Th hh ).val := rfl
+  convert this
+  · exact main.symm
+  · exact main'.symm
+  · exact main.symm
+
+lemma Game_World.hist_on_turn_suffix
+  (g : Game_World α β) [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (f_strat : g.fStrategy )  (s_strat : g.sStrategy)
+  (n m : ℕ) (hmn : m ≤ n) :
+  (g.hist_on_turn f_strat s_strat m).val <:+ (g.hist_on_turn f_strat s_strat n).val :=
+  by
+  induction' n with n ih
+  · rw [Nat.le_zero] at hmn
+    rw [hmn]
+    dsimp!
+    exact List.nil_suffix []
+  · rw [Nat.le_iff_lt_or_eq] at hmn
+    cases' hmn with hmn hmn
+    · rw [Nat.lt_succ] at hmn
+      apply List.IsSuffix.trans (ih hmn)
+      nth_rewrite 1 [hist_on_turn]
+      split_ifs with T
+      · simp_rw [dif_pos T]
+        apply List.suffix_cons
+      · simp_rw [dif_neg T]
+        apply List.suffix_cons
+    · rw [hmn]
+      apply List.suffix_rfl
