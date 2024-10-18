@@ -770,3 +770,554 @@ lemma Game_World.Strat_wHist_s_act_cons_suffix_Hist (g : Game_World α β)
   · rw [Nat.lt_iff_add_one_le] at nb
     apply Strat_wHist_s_act_cons_suffix_Hist_helper
     exact nb
+
+private lemma Game_World.sStrat_winner_help_rget [DecidableEq β] (g : Game_World α β) (hg : g.playable)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (hist : List β) (leg : g.hist_legal (hist)) (T : Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
+  (f_strat : g.fStrat_wHist hist leg) {n : Nat} (n_bnd : n ≥ List.length hist) (tu : Turn_snd (n+1))
+  (difp_2 : ¬ List.length (g.hist_on_turn (f_strat.val) ((sStrat_winner g hg hist leg T main).val) n).val < List.length hist) :
+  let h := (g.hist_on_turn f_strat.val (sStrat_winner g hg hist leg T main).val n)
+  h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩ = (f_strat.val hist T leg).val :=
+  by
+  intro h
+  rw [List.rget_suffix (Strat_wHist_f_act_cons_suffix_Hist g hist leg T _ _ n tu n_bnd) ⟨hist.length, (by rw [List.length_cons] ; apply Nat.lt_succ_self)⟩]
+  rw [List.rget_cons_length]
+
+private lemma Game_World.fStrat_winner_help_rget [DecidableEq β] (g : Game_World α β) (hg : g.playable)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (hist : List β) (leg : g.hist_legal (hist)) (T : ¬ Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.snd_legal hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
+  (f_strat : g.sStrat_wHist hist leg) {n : Nat} (n_bnd : n ≥ List.length hist) (tu : Turn_fst (n+1))
+  (difp_2 : ¬ List.length (g.hist_on_turn ((g.fStrat_winner hg hist leg T main).val) (f_strat.val) n).val < List.length hist) :
+  let h := (g.hist_on_turn (g.fStrat_winner hg hist leg T main).val f_strat.val n)
+  h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩ = (f_strat.val hist T leg).val :=
+  by
+  intro h
+  rw [List.rget_suffix (Strat_wHist_s_act_cons_suffix_Hist g hist leg T _ _ n tu n_bnd) ⟨hist.length, (by rw [List.length_cons] ; apply Nat.lt_succ_self)⟩]
+  rw [List.rget_cons_length]
+
+
+private lemma Game_World.sStrat_winner_help_History [DecidableEq β] (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hist : List β) (leg : g.hist_legal (hist)) (T : Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
+  (f_strat : g.fStrat_wHist hist leg) :
+  let f_act := f_strat.val hist T leg
+  let ws := Classical.choose (main f_act.val f_act.prop)
+  g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val = g.hist_on_turn f_strat.val ws.val :=
+  by
+  intro f_act ws
+  funext n
+  induction' n with n ih
+  · rfl
+  · dsimp [Game_World.hist_on_turn]
+    split_ifs with tu
+    · apply Subtype.eq
+      dsimp!
+      congr 1
+      · apply g.fStrat_eq_of_hist_eq
+        rw [ih]
+      · rw [ih]
+    · rw [Turn_not_fst_iff_snd] at tu
+      apply Subtype.eq
+      dsimp!
+      -- refactore start here
+      congr 1
+      · apply g.sStrat_wHist_eq_of_eq_after f_act.val hist leg f_act.prop T _ _ _ n tu
+        intro h H n_bnd
+        dsimp [Game_World.sStrat_winner]
+        have difp_1 : hist.rtake (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n).val.length <:+ (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n).val :=
+          by
+          simp_rw [g.hist_on_turn_length]
+          apply List.IsSuffix.trans _ (g.Strat_wHist_f_act_cons_suffix_Hist hist leg T f_strat (g.sStrat_winner hg hist leg T main) n tu n_bnd)
+          rw [List.rtake_all_of_le n_bnd]
+          apply List.suffix_cons
+        rw [dif_pos]
+        swap
+        · apply difp_1
+        · have difp_2 : ¬ (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n).val.length < hist.length :=
+            by
+            simp_rw [g.hist_on_turn_length, not_lt]
+            exact n_bnd
+          rw [dif_neg]
+          swap
+          · apply difp_2
+          · apply g.sStrat_eq_of_strat_hist_eq
+            · let h := (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n)
+              let f_act := h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩
+              have f_act_leg : g.fst_legal hist f_act := by
+                convert g.hist_legal_rtake_fst h hist.length T _ h.prop.1
+                · rw [not_lt] at difp_2
+                  apply List.rtake_suffix_comm difp_1 difp_2
+                · apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu)
+              apply @Classical.choose_congr_surgery _ _ _
+                  (fun ws :
+                    g.sStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact f_act_leg) leg)  =>
+                      ∀ fst_s : g.fStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact f_act_leg) leg),
+                      ({g with fst_strat := fst_s.val, snd_strat := ws.val} : Game α β).snd_win)
+                  (fun ws :
+                    g.sStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_pos T] ; exact (f_strat.val hist T leg).prop) leg)  =>
+                      ∀ fst_s : g.fStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_pos T] ; exact (f_strat.val hist T leg).prop) leg),
+                      ({g with fst_strat := fst_s.val, snd_strat := ws.val} : Game α β).snd_win)
+                  (main f_act f_act_leg)
+                  (main (f_strat.val hist T leg).val (f_strat.val hist T leg).prop)
+                  (fun ws : g.sStrategy  =>
+                      ∀ fst_s : g.fStrat_wHist  (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact f_act_leg) leg),
+                      ({g with fst_strat := fst_s.val, snd_strat := ws} : Game α β).snd_win)
+                  (fun ws : g.sStrategy =>
+                      ∀ fst_s : g.fStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_pos T] ; exact (f_strat.val hist T leg).prop) leg),
+                      ({g with fst_strat := fst_s.val, snd_strat := ws} : Game α β).snd_win)
+              -- survived dtt hell
+              · intro ws ; rfl
+              · intro ws ; rfl
+              · intro ws
+                have := g.sStrat_winner_help_rget hg hist leg T main f_strat n_bnd tu difp_2
+                simp_rw [this]
+              · intro ws
+                constructor
+                · intro W fs
+                  convert W ⟨fs.val, (by simp_rw [g.sStrat_winner_help_rget hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+                · intro W fs
+                  convert W ⟨fs.val, (by simp_rw [← g.sStrat_winner_help_rget hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+            · replace ih := congr_arg Subtype.val ih
+              convert ih
+      · replace ih := congr_arg Subtype.val ih
+        exact ih
+
+
+lemma Game_World.fStrat_winner_help_History [DecidableEq β] (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.snd_legal hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
+  (f_strat : g.sStrat_wHist hist leg) :
+  let f_act := f_strat.val hist T leg
+  let ws := Classical.choose (main f_act.val f_act.prop)
+  g.hist_on_turn (fStrat_winner g hg hist leg T main).val f_strat.val = g.hist_on_turn ws.val f_strat.val :=
+  by
+  intro f_act ws
+  funext n
+  induction' n with n ih
+  · rfl
+  · dsimp [ hist_on_turn]
+    split_ifs with tu
+    · apply Subtype.eq
+      dsimp!
+      -- refactore start here
+      congr 1
+      · apply fStrat_wHist_eq_of_eq_after g f_act.val hist leg f_act.prop T _ _ _ n tu
+        intro h H n_bnd
+        dsimp [fStrat_winner]
+        have difp_1 : hist.rtake (g.hist_on_turn  (fStrat_winner g hg hist leg T main).val f_strat.val n).val.length <:+ (g.hist_on_turn (fStrat_winner g hg hist leg T main).val f_strat.val n).val :=
+          by
+          simp_rw [g.hist_on_turn_length]
+          apply List.IsSuffix.trans _ (g.Strat_wHist_s_act_cons_suffix_Hist hist leg T f_strat (g.fStrat_winner hg hist leg T main) n tu n_bnd)
+          rw [List.rtake_all_of_le n_bnd]
+          apply List.suffix_cons
+        have difp_2 : ¬ (g.hist_on_turn (fStrat_winner g hg hist leg T main).val f_strat.val n).val.length < hist.length :=
+            by
+            simp_rw [g.hist_on_turn_length, not_lt]
+            exact n_bnd
+        rw [dif_pos]
+        swap
+        · apply difp_1
+        · rw [dif_neg]
+          swap
+          · apply difp_2
+          · apply fStrat_eq_of_strat_hist_eq
+            · let h := (g.hist_on_turn (fStrat_winner g hg hist leg T main).val f_strat.val n)
+              let f_act := h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩
+              have f_act_leg : g.snd_legal hist f_act := by
+                convert g.hist_legal_rtake_snd h hist.length T _ h.prop.1
+                · rw [not_lt] at difp_2
+                  apply List.rtake_suffix_comm difp_1 difp_2
+                · apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con] at T ; exact T (by rw [h.prop.2] ; exact tu)
+              apply @Classical.choose_congr_surgery _ _ _
+                  (fun ws : g.fStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact f_act_leg) leg)  =>
+                      ∀ fst_s : g.sStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact f_act_leg) leg),
+                      ({g with fst_strat := ws.val, snd_strat := fst_s.val} : Game α β).fst_win)
+                  (fun ws : g.fStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_neg T] ; exact (f_strat.val hist T leg).prop) leg)  =>
+                      ∀ fst_s : g.sStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_neg T] ; exact (f_strat.val hist T leg).prop) leg),
+                      ({g with fst_strat := ws.val, snd_strat := fst_s.val} : Game α β).fst_win)
+                  (main f_act f_act_leg)
+                  (main (f_strat.val hist T leg).val (f_strat.val hist T leg).prop)
+                  (fun ws : g.fStrategy  =>
+                      ∀ fst_s : g.sStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact f_act_leg) leg),
+                      ({g with fst_strat := ws, snd_strat := fst_s.val} : Game α β).fst_win)
+                  (fun ws : g.fStrategy =>
+                      ∀ fst_s : g.sStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_neg T] ; exact (f_strat.val hist T leg).prop) leg),
+                      ({g with fst_strat := ws, snd_strat := fst_s.val} : Game α β).fst_win)
+              -- survived dtt hell
+              · intro ws ; rfl
+              · intro ws ; rfl
+              · intro ws
+                have := fStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2
+                simp_rw [this]
+              · intro ws
+                constructor
+                · intro W fs
+                  convert W ⟨fs.val, (by simp_rw [fStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+                · intro W fs
+                  convert W ⟨fs.val, (by simp_rw [← fStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+            · replace ih := congr_arg Subtype.val ih
+              convert ih
+      · replace ih := congr_arg Subtype.val ih
+        exact ih
+    · apply Subtype.eq
+      dsimp!
+      congr 1
+      · apply sStrat_eq_of_hist_eq
+        rw [ih]
+      · rw [ih]
+
+
+lemma Game_World.sStrat_winner_help_history [DecidableEq β] (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hist : List β) (leg : g.hist_legal hist) (T : Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.fst_legal  hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
+  (f_strat : g.fStrat_wHist hist leg) :
+  let f_act := f_strat.val hist T leg
+  let ws := Classical.choose (main f_act.val f_act.prop)
+  g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val = g.hist_on_turn f_strat.val ws.val :=
+  by
+  intro f_act _
+  apply g.sStrat_winner_help_History
+
+lemma fStrat_winner_help_history [DecidableEq β] (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.snd_legal  hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
+  (f_strat : g.sStrat_wHist hist leg) :
+  let f_act := f_strat.val hist T leg
+  let ws := Classical.choose (main f_act.val f_act.prop)
+  g.hist_on_turn (g.fStrat_winner hg hist leg T main).val f_strat.val = g.hist_on_turn ws.val f_strat.val :=
+  by
+  intro f_act _
+  apply g.fStrat_winner_help_History
+
+
+
+lemma Game_World.fStrat_winner_help_state [DecidableEq β] (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.snd_legal  hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
+  (f_strat : g.sStrat_wHist hist leg) :
+  let f_act := f_strat.val hist T leg
+  let ws := Classical.choose (main f_act.val f_act.prop)
+  g.state_on_turn (g.fStrat_winner hg hist leg T main).val f_strat.val = g.state_on_turn ws.val f_strat.val :=
+  by
+  intro f_act ws
+  funext n
+  cases' n with n
+  · rfl
+  · dsimp [Game_World.state_on_turn]
+    split_ifs with tu
+    · simp_rw [fStrat_winner_help_history]
+      congr
+      · funext _ ; simp_rw [fStrat_winner_help_history]
+      · rw [Subtype.heq_iff_coe_eq]
+        · -- refactor wrt ↑ from here
+          apply fStrat_wHist_eq_of_eq_after g f_act.val hist leg f_act.prop T _ _ _ n tu
+          intro h H n_bnd
+          dsimp [fStrat_winner]
+          have difp_1 : hist.rtake (g.hist_on_turn (fStrat_winner g hg hist leg T main).val f_strat.val  n).val.length <:+ (g.hist_on_turn (fStrat_winner g hg hist leg T main).val f_strat.val  n).val :=
+            by
+            simp_rw [g.hist_on_turn_length]
+            apply List.IsSuffix.trans _ (Strat_wHist_s_act_cons_suffix_Hist g hist leg T f_strat (fStrat_winner g hg hist leg T main) n tu n_bnd)
+            rw [List.rtake_all_of_le n_bnd]
+            apply List.suffix_cons
+          rw [dif_pos]
+          swap
+          · apply difp_1
+          · have difp_2 : ¬ (g.hist_on_turn (fStrat_winner g hg hist leg T main).val f_strat.val n).val.length < hist.length :=
+              by
+              simp_rw [g.hist_on_turn_length, not_lt]
+              exact n_bnd
+            rw [dif_neg]
+            swap
+            · apply difp_2
+            · apply fStrat_eq_of_strat_hist_eq
+              · let h := (g.hist_on_turn (fStrat_winner g hg hist leg T main).val f_strat.val n)
+                let f_act := h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩
+                have f_act_leg : g.snd_legal hist f_act := by
+                  convert g.hist_legal_rtake_snd  h hist.length T _ h.prop.1
+                  · rw [not_lt] at difp_2
+                    apply List.rtake_suffix_comm difp_1 difp_2
+                  · apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con] at T ; exact T (by rw [h.prop.2] ; exact tu)
+                apply @Classical.choose_congr_surgery _ _ _
+                    (fun ws : g.fStrat_wHist  (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact f_act_leg) leg)  =>
+                        ∀ fst_s : g.sStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact f_act_leg) leg),
+                        ({g with fst_strat := ws.val, snd_strat := fst_s.val} : Game α β).fst_win)
+                    (fun ws : g.fStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_neg T] ; exact (f_strat.val hist T leg).prop) leg)  =>
+                        ∀ fst_s : g.sStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_neg T] ; exact (f_strat.val hist T leg).prop) leg),
+                        ({g with fst_strat := ws.val, snd_strat := fst_s.val} : Game α β).fst_win)
+                    (main f_act f_act_leg)
+                    (main (f_strat.val hist T leg).val (f_strat.val hist T leg).prop)
+                    (fun ws : g.fStrategy  =>
+                        ∀ fst_s : g.sStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact f_act_leg) leg),
+                        ({g with fst_strat := ws, snd_strat := fst_s.val} : Game α β).fst_win)
+                    (fun ws : g.fStrategy =>
+                        ∀ fst_s : g.sStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_neg T] ; exact (f_strat.val hist T leg).prop) leg),
+                        ({g with fst_strat := ws, snd_strat := fst_s.val} : Game α β).fst_win)
+                -- survived dtt hell
+                · intro ws ; rfl
+                · intro ws ; rfl
+                · intro ws
+                  have := fStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2
+                  simp_rw [this]
+                · intro ws
+                  constructor
+                  · intro W fs
+                    convert W ⟨fs.val, (by simp_rw [fStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+                  · intro W fs
+                    convert W ⟨fs.val, (by simp_rw [← fStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+              · have := fStrat_winner_help_history g hg hist leg T main f_strat
+                dsimp [Game_World.hist_on_turn] at this
+                rw [Function.funext_iff] at this
+                replace this := congr_arg Subtype.val (this n)
+                convert this
+        · intro _ ; simp_rw [fStrat_winner_help_history]
+    · simp_rw [fStrat_winner_help_history]
+      congr
+      · funext _ ; simp_rw [fStrat_winner_help_history]
+      · rw [Subtype.heq_iff_coe_eq]
+        · apply sStrat_eq_of_hist_eq
+          simp_rw [fStrat_winner_help_history]
+        · intro _ ; simp_rw [fStrat_winner_help_history]
+
+
+
+
+-- private lemma refactor_4 [DecidableEq β] (g : Game_World α β)
+--     [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+--     (hg : g.playable) (hist : List β) (leg : g.hist_legal hist) (T : Turn_fst (List.length hist + 1))
+--     (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
+--     (f_strat : g.fStrat_wHist hist leg) {n : ℕ}
+--     (tu : Turn_snd (n + 1)) :
+--     let f_act := f_strat.val hist T leg
+--     let ws := Classical.choose (main f_act.val f_act.prop)
+--     let h := g.hist_on_turn (f_strat.val) ((g.sStrat_winner hg hist leg T main).val) n
+--     (ih : h = g.hist_on_turn (f_strat.val) (ws.val) n) →
+--     ((g.sStrat_winner hg hist leg T main).val (g.hist_on_turn (f_strat.val) ((g.sStrat_winner hg hist leg T main).val) n).val
+--         (by rw [h.prop.2] ; exact tu)
+--         (h.prop.1)).val :: h.val =
+--     let H := g.hist_on_turn f_strat.val (Classical.choose (main f_act.val f_act.prop)).val n
+--     ((Classical.choose (main f_act.val f_act.prop)).val H.val (by rw [H.prop.2] ; exact tu) H.prop.1).val :: H.val :=
+--     by
+--     intro f_act ws h ih
+--     congr 1
+--     · apply g.sStrat_wHist_eq_of_eq_after f_act.val hist leg f_act.prop T _ _ _ n tu
+--       intro h H n_bnd
+--       dsimp [Game_World.sStrat_winner]
+--       have difp_1 : hist.rtake (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n).val.length <:+ (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n).val :=
+--         by
+--         simp_rw [g.hist_on_turn_length]
+--         apply List.IsSuffix.trans _ (g.Strat_wHist_f_act_cons_suffix_Hist hist leg T f_strat (g.sStrat_winner hg hist leg T main) n tu n_bnd)
+--         rw [List.rtake_all_of_le n_bnd]
+--         apply List.suffix_cons
+--       rw [dif_pos]
+--       swap
+--       · apply difp_1
+--       · have difp_2 : ¬ (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n).val.length < hist.length :=
+--           by
+--           simp_rw [g.hist_on_turn_length, not_lt]
+--           exact n_bnd
+--         rw [dif_neg]
+--         swap
+--         · apply difp_2
+--         · apply g.sStrat_eq_of_strat_hist_eq
+--           · let h := (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n)
+--             let f_act := h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩
+--             have f_act_leg : g.fst_legal hist f_act := by
+--               convert g.hist_legal_rtake_fst h hist.length T _ h.prop.1
+--               · rw [not_lt] at difp_2
+--                 apply List.rtake_suffix_comm difp_1 difp_2
+--               · apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu)
+--             apply @Classical.choose_congr_surgery _ _ _
+--                 (fun ws :
+--                   g.sStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact f_act_leg) leg)  =>
+--                     ∀ fst_s : g.fStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact f_act_leg) leg),
+--                     ({g with fst_strat := fst_s.val, snd_strat := ws.val} : Game α β).snd_win)
+--                 (fun ws :
+--                   g.sStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_pos T] ; exact (f_strat.val hist T leg).prop) leg)  =>
+--                     ∀ fst_s : g.fStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_pos T] ; exact (f_strat.val hist T leg).prop) leg),
+--                     ({g with fst_strat := fst_s.val, snd_strat := ws.val} : Game α β).snd_win)
+--                 (main f_act f_act_leg)
+--                 (main (f_strat.val hist T leg).val (f_strat.val hist T leg).prop)
+--                 (fun ws : g.sStrategy  =>
+--                     ∀ fst_s : g.fStrat_wHist  (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact f_act_leg) leg),
+--                     ({g with fst_strat := fst_s.val, snd_strat := ws} : Game α β).snd_win)
+--                 (fun ws : g.sStrategy =>
+--                     ∀ fst_s : g.fStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_pos T] ; exact (f_strat.val hist T leg).prop) leg),
+--                     ({g with fst_strat := fst_s.val, snd_strat := ws} : Game α β).snd_win)
+--             -- survived dtt hell
+--             · intro ws ; rfl
+--             · intro ws ; rfl
+--             · intro ws
+--               have := g.sStrat_winner_help_rget hg hist leg T main f_strat n_bnd tu difp_2
+--               simp_rw [this]
+--             · intro ws
+--               constructor
+--               · intro W fs
+--                 convert W ⟨fs.val, (by simp_rw [g.sStrat_winner_help_rget hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+--               · intro W fs
+--                 convert W ⟨fs.val, (by simp_rw [← g.sStrat_winner_help_rget hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+--           · replace ih := congr_arg Subtype.val ih
+--             convert ih
+--     · replace ih := congr_arg Subtype.val ih
+--       exact ih
+
+
+
+private lemma Game_World.sStrat_winner_help_state [DecidableEq β] (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hist : List β) (leg : g.hist_legal (hist)) (T : Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
+  (f_strat : g.fStrat_wHist hist leg) :
+  let f_act := f_strat.val hist T leg
+  let ws := Classical.choose (main f_act.val f_act.prop)
+  g.state_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val = g.state_on_turn f_strat.val ws.val :=
+  by
+  intro f_act ws
+  funext n
+  cases' n with n
+  · rfl
+  · dsimp [Game_World.state_on_turn]
+    split_ifs with tu
+    · simp_rw [g.sStrat_winner_help_history]
+      congr
+      · funext _ ; simp_rw [g.sStrat_winner_help_history]
+      · rw [Subtype.heq_iff_coe_eq]
+        · apply g.fStrat_eq_of_hist_eq
+          simp_rw [g.sStrat_winner_help_history]
+        · intro _ ; simp_rw [g.sStrat_winner_help_history]
+    · simp_rw [g.sStrat_winner_help_history]
+      congr
+      · funext _ ; simp_rw [g.sStrat_winner_help_history]
+      · rw [Subtype.heq_iff_coe_eq]
+        · -- refactor wrt ↑ from here
+          apply g.sStrat_wHist_eq_of_eq_after f_act.val hist leg f_act.prop T _ _ _ n tu
+          intro h H n_bnd
+          dsimp [sStrat_winner]
+          have difp_1 : hist.rtake (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n).val.length <:+ (g.hist_on_turn f_strat.val (sStrat_winner g hg hist leg T main).val n).val :=
+            by
+            simp_rw [g.hist_on_turn_length]
+            apply List.IsSuffix.trans _ (g.Strat_wHist_f_act_cons_suffix_Hist hist leg T f_strat (g.sStrat_winner hg hist leg T main) n tu n_bnd)
+            rw [List.rtake_all_of_le n_bnd]
+            apply List.suffix_cons
+          rw [dif_pos]
+          swap
+          · apply difp_1
+          · have difp_2 : ¬ (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n).val.length < hist.length :=
+              by
+              simp_rw [g.hist_on_turn_length, not_lt]
+              exact n_bnd
+            rw [dif_neg]
+            swap
+            · apply difp_2
+            · apply sStrat_eq_of_strat_hist_eq
+              · let h := (g.hist_on_turn f_strat.val (g.sStrat_winner hg hist leg T main).val n)
+                let f_act := h.val.rget ⟨hist.length, (by apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu))⟩
+                have f_act_leg : g.fst_legal hist f_act := by
+                  convert g.hist_legal_rtake_fst h hist.length T _ h.prop.1
+                  · rw [not_lt] at difp_2
+                    apply List.rtake_suffix_comm difp_1 difp_2
+                  · apply lt_of_le_of_ne (not_lt.mp difp_2) ; intro con ; rw [con , Turn_fst_iff_not_snd] at T ; exact T (by rw [h.prop.2] ; exact tu)
+                apply @Classical.choose_congr_surgery _ _ _
+                    (fun ws : g.sStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact f_act_leg) leg)  =>
+                        ∀ fst_s : g.fStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact f_act_leg) leg),
+                        ({g with fst_strat := fst_s.val, snd_strat := ws.val} : Game α β).snd_win)
+                    (fun ws : g.sStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_pos T] ; exact (f_strat.val hist T leg).prop) leg)  =>
+                        ∀ fst_s : g.fStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_pos T] ; exact (f_strat.val hist T leg).prop) leg),
+                        ({g with fst_strat := fst_s.val, snd_strat := ws.val} : Game α β).snd_win)
+                    (main f_act f_act_leg)
+                    (main (f_strat.val hist T leg).val (f_strat.val hist T leg).prop)
+                    (fun ws : g.sStrategy  =>
+                        ∀ fst_s : g.fStrat_wHist (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact f_act_leg) leg),
+                        ({g with fst_strat := fst_s.val, snd_strat := ws} : Game α β).snd_win)
+                    (fun ws : g.sStrategy =>
+                        ∀ fst_s : g.fStrat_wHist ((f_strat.val hist T leg).val :: hist) (Game_World.hist_legal.cons hist (f_strat.val hist T leg).val (by rw [if_pos T] ; exact (f_strat.val hist T leg).prop) leg),
+                        ({g with fst_strat := fst_s.val, snd_strat := ws} : Game α β).snd_win)
+                -- survived dtt hell
+                · intro ws ; rfl
+                · intro ws ; rfl
+                · intro ws
+                  have := sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2
+                  simp_rw [this]
+                · intro ws
+                  constructor
+                  · intro W fs
+                    convert W ⟨fs.val, (by simp_rw [sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+                  · intro W fs
+                    convert W ⟨fs.val, (by simp_rw [← sStrat_winner_help_rget g hg hist leg T main f_strat n_bnd tu difp_2] ; exact fs.prop)⟩
+              · have := sStrat_winner_help_history g hg hist leg T main f_strat
+                dsimp [Game_World.hist_on_turn] at this
+                rw [Function.funext_iff] at this
+                replace this := congr_arg Subtype.val (this n)
+                convert this
+        · intro _ ; simp_rw [sStrat_winner_help_history]
+
+
+lemma Game_World.sStrat_winner_wins [DecidableEq β] (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hist : List β) (leg : g.hist_legal hist) (T : Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
+  (f_strat : g.fStrat_wHist hist leg) :
+  ({g with fst_strat := f_strat.val, snd_strat := (g.sStrat_winner hg hist leg T main).val} : Game α β).snd_win :=
+  by
+  let f_act := f_strat.val hist T leg
+  let ws_prop := Classical.choose_spec (main f_act.val f_act.prop)
+  specialize ws_prop ⟨f_strat.val, (g.fStrat_staged_cons_f_act _ _ leg T f_strat.prop)⟩
+  obtain ⟨τ, τw, τn⟩ := ws_prop
+  dsimp at τw τn
+  rw [Game.hist_on_turn, ← g.sStrat_winner_help_History hg hist leg T main f_strat] at τw
+  use τ
+  constructor
+  · apply τw
+  · intro t tl
+    specialize τn t tl
+    unfold Game.state_on_turn_neutral Game_World.state_on_turn_neutral
+    unfold Game.state_on_turn_neutral Game_World.state_on_turn_neutral at τn
+    intro twl
+    cases' twl with wf ws
+    · apply τn
+      apply Game_World.Turn_isWL.wf
+      rw [ ← g.sStrat_winner_help_History hg hist leg T main f_strat]
+      apply wf
+    · apply τn
+      apply Game_World.Turn_isWL.ws
+      rw [ ← g.sStrat_winner_help_History hg hist leg T main f_strat]
+      apply ws
+
+
+
+lemma fStrat_winner_wins [DecidableEq β] (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist + 1))
+  (main : ∀ (f_act : β) (al : g.snd_legal hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
+  (f_strat : g.sStrat_wHist hist leg) :
+  ({g with fst_strat := (g.fStrat_winner hg hist leg T main).val, snd_strat := f_strat.val} : Game α β).fst_win :=
+  by
+  let f_act := f_strat.val hist T leg
+  let ws_prop := Classical.choose_spec (main f_act.val f_act.prop)
+  specialize ws_prop ⟨f_strat.val, (g.sStrat_staged_cons_f_act _ _ leg T f_strat.prop)⟩
+  obtain ⟨τ, τw, τn⟩ := ws_prop
+  dsimp at τw τn
+  rw [Game.hist_on_turn, ← g.fStrat_winner_help_History hg hist leg T main f_strat] at τw
+  use τ
+  constructor
+  · apply τw
+  · intro t tl
+    specialize τn t tl
+    unfold Game.state_on_turn_neutral Game_World.state_on_turn_neutral
+    unfold Game.state_on_turn_neutral Game_World.state_on_turn_neutral at τn
+    intro twl
+    cases' twl with wf ws
+    · apply τn
+      apply Game_World.Turn_isWL.wf
+      rw [ ← g.fStrat_winner_help_History hg hist leg T main f_strat]
+      apply wf
+    · apply τn
+      apply Game_World.Turn_isWL.ws
+      rw [ ← g.fStrat_winner_help_History hg hist leg T main f_strat]
+      apply ws
