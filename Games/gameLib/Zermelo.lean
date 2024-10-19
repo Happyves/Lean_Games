@@ -7,7 +7,7 @@ Author: Yves Jäckle.
 
 
 import Games.gameLib.StrategyAPI
-
+import Games.gameLib.HistoryMoves
 
 private lemma Game_World.has_WL_helper (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]

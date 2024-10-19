@@ -182,3 +182,25 @@ lemma Game_World.hist_on_turn_suffix
         apply List.suffix_cons
     · rw [hmn]
       apply List.suffix_rfl
+
+
+lemma Game_World.hist_on_turn_fst_to_snd (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (f_strat : g.fStrategy )  (s_strat : g.sStrategy) (turn : ℕ):
+  let H := g.hist_on_turn f_strat s_strat ;
+  (T : Turn_fst turn) → (H (turn + 1)).val = (s_strat (H turn).val (by rw [(H turn).property.2, ← Turn_fst_snd_step] ; exact T)  (H turn).property.1).val :: (H turn).val :=
+  by
+  intro H tf
+  dsimp [H, hist_on_turn]
+  rw [dif_neg ((Turn_fst_not_step turn).mp tf)]
+
+
+lemma Game_World.hist_on_turn_snd_to_fst (g : Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (f_strat : g.fStrategy )  (s_strat : g.sStrategy) (turn : ℕ):
+  let H := g.hist_on_turn f_strat s_strat ;
+  (T : Turn_snd turn) → (H (turn + 1)).val = (f_strat (H turn).val (by rw [(H turn).property.2, ← Turn_snd_fst_step] ; exact T)  (H turn).property.1).val :: (H turn).val :=
+  by
+  intro H tf
+  dsimp [H, hist_on_turn]
+  rw [dif_pos ((Turn_snd_fst_step turn).mp tf)]
