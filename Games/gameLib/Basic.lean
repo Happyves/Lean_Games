@@ -158,6 +158,14 @@ instance (g : Game_World α β)
   | _ , .isTrue t => apply isFalse ; intro con ; exact con.not_snd t
 
 
+lemma Game_World.hist_neutral_and (g : Game_World α β) (hist : List β) :
+  g.hist_neutral hist ↔ (¬ g.fst_win_states hist ∧ ¬ g.snd_win_states hist) := by
+  constructor
+  · intro h
+    exact ⟨h.not_fst, h.not_snd⟩
+  · intro h
+    exact ⟨h.1, h.2⟩
+
 
 
 

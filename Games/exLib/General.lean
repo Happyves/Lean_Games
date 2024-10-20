@@ -22,3 +22,28 @@ lemma Classical.choose_congr_surgery {S1 S2 : α → Prop} {P : {x : α // S1 x}
   · rename_i x y heq
     rw [Subtype.heq_iff_coe_eq (by intro _ ; rw [hs])] at heq
     rw [hp,hq, heq, h]
+
+
+noncomputable
+def Y (r : α → α → Prop) (x : α) (h : ¬ Acc r x) : Nat → {y : α // ¬ Acc r y}
+| 0 => ⟨x,h⟩
+| n+1 =>
+    let yn := (Y r x h n).val
+    have N : ∃ next, r next yn ∧ (¬ Acc r next) := by
+      have ynp := (Y r x h n).prop
+      contrapose! ynp
+      exact Acc.intro yn ynp
+    ⟨Classical.choose N, (Classical.choose_spec N).2⟩
+
+
+
+lemma not_Acc (r : α → α → Prop) (x : α) (h : ¬ Acc r x) :
+  ∃ Y : Nat → α, (Y 0 = x) ∧ (∀ n : Nat, r (Y (n+1)) (Y n)) :=
+  by
+  use (fun n => (Y r x h n).val)
+  constructor
+  · unfold Y
+    rfl
+  · intro n
+    dsimp only [Y]
+    apply (Classical.choose_spec (@Y.proof_3 α r x h (Nat.add n 0))).1
