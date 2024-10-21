@@ -11,6 +11,9 @@ def Game_World.playable (g : Game_World α β) : Prop :=
   ∀ hist : List β, g.hist_legal hist →
     ((Turn_fst (List.length hist + 1) → ∃ act : β, g.fst_legal hist act) ∧ (Turn_snd (List.length hist + 1) → ∃ act : β, g.snd_legal hist act))
 
+def Symm_Game_World.playable (g : Symm_Game_World α β) : Prop := g.toGame_World.playable
+
+
 noncomputable
 def Game_World.exStrat_fst (g : Game_World α β) (hg : g.playable) : g.fStrategy :=
   fun hist T leg  => Classical.choice <| let ⟨x, xp⟩ := ((hg hist leg).1 T); ⟨(⟨x, xp⟩ : { act // g.fst_legal hist act })⟩

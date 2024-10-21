@@ -6,9 +6,40 @@ Author: Yves Jäckle.
 
 import Games.gameLib.TurnAPI
 
+#check 1
+
+/-
+This file defines the basic notions of games & stategies.
+It can be read top down.
+
+Important notions:
+- `Game_World`, `Symm_Game_World` and `Game_World_wDraw`
+- `Game`, `Symm_Game` and `Game_World`
+- `hist_neutral`, `hist_legal`, `hist_on_turn`
+- `fStrategy` and `sStrategy`
+
+-/
+
+
 
 -- # Game worlds
 
+/--
+A `Game_World` requires two types: one for the state of the game,
+one for the type of moves.
+
+It is given by the following data:
+- an initial state of the game
+- two predicates to tell, given a list of the moves played so far
+  (and implicitly the initial state), whether the game is a victory
+  for the corresponding player.
+- two predicates to tell, given a list of the moves played so far
+  (and implicitly the initial state), whether an action is considered
+  legal, and may be play at that stage in the game.
+- two transition function that, given a list of the moves played so far
+  and the latest move (and implicitly the initial state), return the
+  state after this move.
+-/
 structure Game_World (α β : Type _) where
   init_game_state : α
   fst_win_states : List β →  Prop
@@ -18,7 +49,10 @@ structure Game_World (α β : Type _) where
   fst_transition : List β → β → α
   snd_transition : List β → β → α
 
-
+/--
+A `Game_World_wDraw` extends a `Game_World` with the possibility of a draw,
+which is determined by a predicate on the history so far.
+-/
 structure Game_World_wDraw (α β : Type _) extends Game_World α β where
   draw_states : List β → Prop
 
@@ -67,6 +101,14 @@ lemma Game_World_wDraw.toGame_World_snd_legal {α β : Type _} (g : Game_World_w
   rfl
 
 
+/--
+A `Symm_Game_World` is simlar to a `Game_World`, with the distinction
+that the transition functions and the predicates to tell legality of
+moves are the same for both players.
+
+The win-predicates are distinct, as they should take into account wether
+the current turn is the first or the second player's.
+-/
 structure Symm_Game_World (α β : Type _) where
   init_game_state : α
   fst_win_states : List β →  Prop
@@ -172,6 +214,16 @@ lemma Game_World.hist_neutral_and (g : Game_World α β) (hist : List β) :
 
 -- # Legality
 
+
+/--
+A history of moves is considered legal, if it is either empty,
+or the history up to the latest move was legal, and the latest move
+is legal wrt. the predicate of the player who's turn it was.
+
+Note that turn 0 is considered no ones turn, and for turns ≥ 1,
+odd turns are the first players turns, and even ones the second
+players turns.
+-/
 inductive Game_World.hist_legal (g : Game_World α β)  : List β → Prop
 | nil : g.hist_legal []
 | cons (l : List β) (act : β) : (if Turn_fst (l.length + 1)
@@ -235,11 +287,33 @@ instance (g : Game_World α β)
 
 -- # Strategies
 
+
+/--
+A strategy is a function that given
+- the game world (hence also the initial state),
+- the history of moves of both players so far, in the form of a list of moves
+- a certificate that it is the players turn
+- a certificate that the history is made of legal moves
+
+returns an action to be played and a certificate that this action
+is legal at this stage.
+-/
 def Game_World.fStrategy (g : Game_World α β) :=
   (hist : List β) → (Turn_fst (hist.length+1)) →
   (g.hist_legal hist) →
   { act : β // g.fst_legal hist act}
 
+
+/--
+A strategy is a function that given
+- the game world (hence also the initial state),
+- the history of moves of both players so far, in the form of a list of moves
+- a certificate that it is the players turn
+- a certificate that the history is made of legal moves
+
+returns an action to be played and a certificate that this action
+is legal at this stage.
+-/
 def Game_World.sStrategy (g : Game_World α β) :=
   (hist : List β) → (Turn_snd (hist.length+1)) →
   (g.hist_legal hist) →
@@ -262,6 +336,11 @@ def Symm_Game_World.sStrategy (g : Symm_Game_World α β) :=
 -- # Histories
 
 
+/--
+Given a game world and two strategies for players to play in it,
+`hist_on_turn` is a function that returns the list of moves played
+by the players, according to their strategies, given a turn.
+-/
 def Game_World.hist_on_turn (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
