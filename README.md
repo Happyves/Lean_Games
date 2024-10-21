@@ -20,6 +20,7 @@ Once finished, I will bring the project to the latest version of mathlib, and at
 Known related work:
 - https://leanprover-community.github.io/mathlib4_docs/Mathlib/SetTheory/Game/Basic.html
 - https://www.isa-afp.org/entries/GaleStewart_Games.html
+
 Please let me know if you're aware of more related work
 
 
