@@ -8,7 +8,10 @@ import Games.gameLib.Basic
 
 
 
-
+/--
+A turn is win or lose (WL) if the `hist_on_turn` at that turn satisfies
+one of the predicates that decide if a player wins at that stage in the game.
+-/
 inductive Game_World.Turn_isWL (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy) (s_strat : g.sStrategy) (turn : ℕ) : Prop where
@@ -20,7 +23,13 @@ def Symm_Game_World.Turn_isWL (g : Symm_Game_World α β)
   (f_strat : g.fStrategy) (s_strat : g.sStrategy) (turn : ℕ) : Prop :=
   @Game_World.Turn_isWL _ _ (g.toGame_World) (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) f_strat s_strat turn
 
+/--
+A `Game_World` is win or lose (WL) if for any pair of strategies the players
+can play it with, there will come a turn that is win or lose when playing by
+these strategies.
 
+In particular, all games terminate.
+-/
 def Game_World.isWL (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]: Prop :=
   ∀ (f_strat : g.fStrategy), ∀ (s_strat : g.sStrategy),
@@ -52,11 +61,22 @@ def Symm_Game.state_on_turn_neutral (g : Symm_Game α β)
   (turn : ℕ) : Prop :=
   @Game.state_on_turn_neutral _ _ g.toGame (by rwa [g.toGame_fst_win]) (by rwa [g.toGame_snd_win]) turn
 
+/-- The game is won by the first player if there is a turn such that
+all prior turns were neutral, and the first winning predicate is satisfied
+at that turn
 
+In particular, the game terminates.
+-/
 def Game.fst_win (g : Game α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] : Prop :=
   ∃ turn : ℕ, g.fst_win_states (g.hist_on_turn turn) ∧ (∀ t < turn, g.state_on_turn_neutral t)
 
+/-- The game is won by the second player if there is a turn such that
+all prior turns were neutral, and the second winning predicate is satisfied
+at that turn
+
+In particular, the game terminates.
+-/
 def Game.snd_win (g : Game α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] : Prop :=
   ∃ turn : ℕ, g.snd_win_states (g.hist_on_turn turn) ∧ (∀ t < turn, g.state_on_turn_neutral t)
@@ -70,11 +90,26 @@ def Symm_Game.snd_win (g : Symm_Game α β)
   @Game.snd_win _ _ g.toGame (by rwa [g.toGame_fst_win]) (by rwa [g.toGame_snd_win])
 
 
+/--
+A `Game_World` has a winning strategy for the frist player, if for all strategies
+available to the second player, the games played with these strategies are always
+won by the first player.
+
+In particular, all games terminate.
+-/
 def Game_World.is_fst_win (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] : Prop :=
   ∃ ws : g.fStrategy, ∀ snd_s : g.sStrategy,
   ({g with fst_strat := ws, snd_strat := snd_s} : Game α β).fst_win
 
+
+/--
+A `Game_World` has a winning strategy for the second player, if for all strategies
+available to the first player, the games played with these strategies are always
+won by the second player.
+
+In particular, all games terminate.
+-/
 def Game_World.is_snd_win (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] : Prop :=
   ∃ ws : g.sStrategy, ∀ snd_s : g.fStrategy,
@@ -88,6 +123,9 @@ def Symm_Game_World.is_snd_win (g : Symm_Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]: Prop :=
   @Game_World.is_snd_win _ _ g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win])
 
+/--
+The `Game_World` has a winning strategy if it has one for one of the players.
+-/
 inductive Game_World.has_WL (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] : Prop where
   | wf (h : g.is_fst_win)

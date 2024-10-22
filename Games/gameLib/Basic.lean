@@ -378,6 +378,7 @@ def Game_World_wDraw.hist_on_turn (g : Game_World_wDraw α β)
 
 -- # Games
 
+/-- A `Game` is a `Game_World` with the two strategies will play with-/
 structure Game (α β : Type _) extends Game_World α β where
   fst_strat : toGame_World.fStrategy
   snd_strat : toGame_World.sStrategy
@@ -403,6 +404,12 @@ def Game.hist_on_turn (g : Game α β)
   g.toGame_World.hist_on_turn g.fst_strat g.snd_strat t
 
 
+
+def Symm_Game.hist_on_turn (g : Symm_Game α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
+  g.toSymm_Game_World.hist_on_turn g.fst_strat g.snd_strat t
+
 lemma Symm_Game.toGame_fst_win (g : Symm_Game α β) :
   g.toGame.fst_win_states = g.fst_win_states := rfl
 
@@ -414,7 +421,9 @@ lemma Symm_Game.toGame_snd_win (g : Symm_Game α β) :
 
 -- # State
 
-
+/-- The state of the game, given a history of moves, starts at the
+initial state and changes state according to the tranisiton functions,
+at each new move -/
 def Game_World.state_from_hist (g : Game_World α β) : List β → α
 | [] => g.init_game_state
 | a :: h => if Turn_fst (h.length +1)
@@ -431,3 +440,19 @@ def Game_World.state_on_turn (g : Game_World α β)
                 g.fst_transition h (fst_strat h.val T' h.property.1)
           else let T' : Turn_snd (List.length h.val + 1) := by rw [Turn_snd_iff_not_fst , h.property.2] ; exact T ;
                 g.snd_transition h (snd_strat h.val T' h.property.1)
+
+def Symm_Game_World.state_on_turn (g : Symm_Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
+  (t : ℕ) : α :=
+  @Game_World.state_on_turn _ _  g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) fst_strat snd_strat t
+
+def Game.state_on_turn (g : Game α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (t : ℕ) : α :=
+  g.toGame_World.state_on_turn g.fst_strat g.snd_strat t
+
+def Symm_Game.state_on_turn (g : Symm_Game α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (t : ℕ) : α :=
+  g.toSymm_Game_World.state_on_turn g.fst_strat g.snd_strat t
