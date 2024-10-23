@@ -212,6 +212,17 @@ lemma Game_World.hist_on_turn_snd_to_fst (g : Game_World α β)
   rw [dif_pos ((Turn_snd_fst_step turn).mp tf)]
 
 
+lemma Symm_Game_World.hist_on_turn_snd_to_fst (g : Symm_Game_World α β)
+  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (f_strat : g.fStrategy )  (s_strat : g.sStrategy) (turn : ℕ) :
+  let H := g.hist_on_turn f_strat s_strat ;
+  (T : Turn_snd turn) → (H (turn + 1)).val = (f_strat (H turn).val (by rw [(H turn).property.2, ← Turn_snd_fst_step] ; exact T)  (H turn).property.1).val :: (H turn).val :=
+  by
+  intro H tf
+  dsimp [H, hist_on_turn, Game_World.hist_on_turn]
+  rw [dif_pos ((Turn_snd_fst_step turn).mp tf)]
+
+
 lemma Game_World.hist_on_turn_2step_snd (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy )  (s_strat : g.sStrategy)

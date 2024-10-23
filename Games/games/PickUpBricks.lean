@@ -8,6 +8,7 @@ import Games.gameLib.Termination
 import Games.gameLib.HistoryAPI
 
 
+
 variable (init_bricks : ℕ) -- the initial number of bricks as a variable
 
 /--
@@ -29,18 +30,17 @@ lemma bricks_cons (ini : ℕ) (hist : List ℕ) (x : ℕ) :
   rw [List.sum_cons]
   rw [add_comm, Nat.sub_add_eq]
 
-
+/--
+The game of "pick-up-bricks" is played by either player pick 1 or 2 bricks
+from a stack of bricks. The player that picks the last brick wins.
+-/
 def PickUpBricks : Symm_Game_World ℕ ℕ where
   init_game_state := init_bricks
   fst_win_states := (fun hist => bricks_from_ini_hist init_bricks hist = 0) -- won once no bricks left
   snd_win_states := (fun hist => bricks_from_ini_hist init_bricks hist = 0)
   transition :=  bricks_from_ini_hist_act init_bricks
-  law := fun hist act =>  let B := (bricks_from_ini_hist init_bricks hist)
-                              if B = 0
-                              then act = 0
-                              else  if B = 1
-                                    then act = 1
-                                    else act = 1 ∨ act = 2
+  law := fun _ act =>  act = 1 ∨ act = 2
+
 
 instance : DecidablePred (PickUpBricks init_bricks).fst_win_states := by
   intro hist
@@ -53,28 +53,25 @@ instance : DecidablePred (PickUpBricks init_bricks).snd_win_states := by
   exact Nat.decEq (init_bricks - List.sum hist) 0
 
 
-
+/-- The (to be proven) winning strategy for the second player -/
 def pub_win_strat : (PickUpBricks init_bricks).sStrategy :=
   fun hist _ _ =>
-    let B := bricks_from_ini_hist init_bricks hist
-    if Z : B = 0
-    then ⟨0, (by dsimp [PickUpBricks] ; dsimp [B] at Z ; rw [Z, if_pos rfl])⟩
-    else  if M : B % 3 = 1
-          then ⟨1, (by dsimp [PickUpBricks] ; dsimp [B] at Z M ; rw [if_neg Z] ; split_ifs ; rfl ; left ; rfl)⟩
-          else ⟨2, (by dsimp [PickUpBricks] ; dsimp [B] at Z M ; rw [if_neg Z] ; rw [if_neg (by contrapose! M ; rw [M] ; decide)] ; right ; rfl )⟩
+    match con : hist with
+    | [] => False.elim (by contradiction)
+    | last :: _ =>
+        if last = 2
+        then ⟨1, (by dsimp [PickUpBricks] ; left ; rfl)⟩
+        else ⟨2, (by dsimp [PickUpBricks] ; right ; rfl)⟩
 
-
+/-- Some toy strategy for ilustrative purposes -/
 def toy_strat : (PickUpBricks init_bricks).fStrategy :=
-  fun hist _ _ =>
-    let B := bricks_from_ini_hist init_bricks hist
-    if Z : B = 0
-    then ⟨0, (by dsimp [PickUpBricks] ; dsimp [B] at Z ; rw [Z, if_pos rfl])⟩
-    else ⟨1, (by dsimp [PickUpBricks] ; dsimp [B] at Z ; rw [if_neg Z] ; split_ifs ; rfl ; left ; rfl)⟩
+  fun hist _ _ => ⟨1, (by dsimp [PickUpBricks] ; left ; rfl)⟩
+
 
 
 /--
-Pick up bricks played with 32 initial bricks, with the winning strat as
-first strat and the toy strat as second strat
+Pick up bricks played with 37 initial bricks, with the winning strat as
+first strat and the toy strat as second strat.
 -/
 def PickUpBricks_pubWin_vs_toy : Symm_Game ℕ ℕ :=
   {(PickUpBricks 37) with
@@ -93,9 +90,59 @@ instance : DecidablePred (PickUpBricks_pubWin_vs_toy).snd_win_states := by
   dsimp [PickUpBricks_pubWin_vs_toy]
   apply instDecidablePredListNatFst_win_statesPickUpBricks
 
-
+-- The moves of the players, turn by turn, up to turn 30
 #eval (PickUpBricks_pubWin_vs_toy.hist_on_turn 30).val.reverse
+
+--The state of the game, turn by turn, up to turn 30
 #eval (List.range 30).map (PickUpBricks_pubWin_vs_toy.state_on_turn)
+
+
+lemma trick
+  (f_strat : (PickUpBricks init_bricks).fStrategy)
+  (t : Nat) (T : Turn_snd t) :
+  let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
+                             fst_strat := f_strat
+                             snd_strat := pub_win_strat init_bricks
+                            } ;
+  let f := g.fst_strat (g.hist_on_turn t).val (by rw [Symm_Game.hist_on_turn, Symm_Game_World.hist_on_turn_length, ← Turn_snd_fst_step] ; exact T) (g.hist_on_turn t).prop.1
+  let s := g.snd_strat (g.hist_on_turn (t+1)).val (by rw [Symm_Game.hist_on_turn, Symm_Game_World.hist_on_turn_length, ← Turn_snd_step] ; exact T) (g.hist_on_turn (t+1)).prop.1
+  s.val + f.val = 3 :=
+  by
+  intro g f s
+  cases' f.prop with one two
+  · have : s.val = 2 :=
+      by
+      dsimp [s, pub_win_strat]
+      split
+      · contradiction
+      · rename_i last tail _ _ _ _ main _ _
+        have := Symm_Game_World.hist_on_turn_snd_to_fst g.toSymm_Game_World g.fst_strat g.snd_strat t T
+        simp_rw [Symm_Game.hist_on_turn] at main
+        dsimp [g] at this
+        rw [main] at this -- most painful rewrite ever
+        replace this := List.head_eq_of_cons_eq this
+        dsimp [f] at one
+        simp_rw [Symm_Game.hist_on_turn] at one
+        simp_rw [one] at this
+        rw [if_neg (by rw [this] ; decide)]
+    rw [one, this]
+  · have : s.val = 1 :=
+      by
+      dsimp [s, pub_win_strat]
+      split
+      · contradiction
+      · rename_i last tail _ _ _ _ main _ _
+        have := Symm_Game_World.hist_on_turn_snd_to_fst g.toSymm_Game_World g.fst_strat g.snd_strat t T
+        simp_rw [Symm_Game.hist_on_turn] at main
+        dsimp [g] at this
+        rw [main] at this
+        replace this := List.head_eq_of_cons_eq this
+        dsimp [f] at two
+        simp_rw [Symm_Game.hist_on_turn] at two
+        simp_rw [two] at this
+        rw [if_pos (by rw [this])]
+    rw [two, this]
+
 
 
 lemma loop_invariant
@@ -113,4 +160,11 @@ lemma loop_invariant
     exact win_hyp
   · intro t T ih
     rw [Symm_Game.hist_on_turn, Symm_Game_World.hist_on_turn_2step_snd _ _ _ T, bricks_from_ini_hist]
-    rw [List.sum_cons, List.sum_cons]
+    rw [List.sum_cons, List.sum_cons, ← Nat.add_assoc]
+    have := trick init_bricks f_strat t T
+    simp_rw [Symm_Game.hist_on_turn] at this
+    rw [this]
+    clear this
+    rw [Nat.add_comm, ← tsub_tsub]
+    apply Nat.dvd_sub
+    -- cases on whether bricks are 0 already
