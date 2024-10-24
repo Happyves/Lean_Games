@@ -31,7 +31,7 @@ lemma Symm_Game_World.hist_on_turn_legal (g : Symm_Game_World α β)
 lemma Game_World.hist_on_turn_of_irrelevant_step (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
-  (t : ℕ) (motive : List β → Type _) (ind : motive (g.hist_on_turn fst_strat snd_strat t).val)
+  (t : ℕ) (motive : List β → Sort _) (ind : motive (g.hist_on_turn fst_strat snd_strat t).val)
   (irrel : ∀ act, g.hist_legal (act :: (g.hist_on_turn fst_strat snd_strat t).val) →
       motive (g.hist_on_turn fst_strat snd_strat t).val → motive (act :: (g.hist_on_turn fst_strat snd_strat t).val)) :
   motive (g.hist_on_turn fst_strat snd_strat (t+1)).val :=
@@ -51,7 +51,7 @@ lemma Game_World.hist_on_turn_of_irrelevant_step (g : Game_World α β)
 lemma Game_World.hist_on_turn_induction (g : Game_World α β)
   [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
-  (motive : (t : ℕ) → {hist : List β // g.hist_legal hist ∧ hist.length = t} → Type _)
+  (motive : (t : ℕ) → {hist : List β // g.hist_legal hist ∧ hist.length = t} → Sort _)
   (base : motive 0 (g.hist_on_turn fst_strat snd_strat 0))
   (step_fst : (t : ℕ) → (T : Turn_fst (t+1)) →
       let h := g.hist_on_turn fst_strat snd_strat t
@@ -185,6 +185,30 @@ lemma Game_World.hist_on_turn_suffix
       · simp_rw [dif_pos T]
         apply List.suffix_cons
       · simp_rw [dif_neg T]
+        apply List.suffix_cons
+    · rw [hmn]
+      apply List.suffix_rfl
+
+lemma Symm_Game_World.hist_on_turn_suffix
+  (g : Symm_Game_World α β) [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (f_strat : g.fStrategy )  (s_strat : g.sStrategy)
+  (n m : ℕ) (hmn : m ≤ n) :
+  (g.hist_on_turn f_strat s_strat m).val <:+ (g.hist_on_turn f_strat s_strat n).val :=
+  by
+  induction' n with n ih
+  · rw [Nat.le_zero] at hmn
+    rw [hmn]
+    dsimp!
+    exact List.nil_suffix []
+  · rw [Nat.le_iff_lt_or_eq] at hmn
+    cases' hmn with hmn hmn
+    · rw [Nat.lt_succ] at hmn
+      apply List.IsSuffix.trans (ih hmn)
+      dsimp [hist_on_turn, Game_World.hist_on_turn]
+      split_ifs with T
+      · --simp_rw [dif_pos T]
+        apply List.suffix_cons
+      · --simp_rw [dif_neg T]
         apply List.suffix_cons
     · rw [hmn]
       apply List.suffix_rfl

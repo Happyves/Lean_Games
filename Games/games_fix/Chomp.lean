@@ -350,7 +350,7 @@ lemma preChomp_reaches_empty {height length : ℕ}
     rw [not_not] at ne
     rw [← ne]
     apply Chomp_state_sub_of_hist_suffix
-    apply History_on_turn_suffix (preChomp height length).toGame_World
+    apply History_on_turn_suffix --(preChomp height length).toGame_World (preChomp height length).init_game_state (preChomp height length).law (preChomp height length).law f_strat s_strat m
     exact mln
 
 
