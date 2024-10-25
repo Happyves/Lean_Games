@@ -10,26 +10,22 @@ import Games.exLib.List
 
 
 lemma Game_World.hist_on_turn_length (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   {fst_strat : g.fStrategy} {snd_strat : g.sStrategy}
   {t : ℕ} : (g.hist_on_turn fst_strat snd_strat t).val.length = t :=
   (g.hist_on_turn fst_strat snd_strat t).prop.2
 
 lemma Symm_Game_World.hist_on_turn_length (g : Symm_Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   {fst_strat : g.fStrategy} {snd_strat : g.sStrategy}
   {t : ℕ} : (g.hist_on_turn fst_strat snd_strat t).val.length = t :=
   (g.hist_on_turn fst_strat snd_strat t).prop.2
 
 lemma Symm_Game_World.hist_on_turn_legal (g : Symm_Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   {fst_strat : g.fStrategy} {snd_strat : g.sStrategy}
   {t : ℕ} : g.hist_legal (g.hist_on_turn fst_strat snd_strat t).val :=
   (g.hist_on_turn fst_strat snd_strat t).prop.1
 
 
 lemma Game_World.hist_on_turn_of_irrelevant_step (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
   (t : ℕ) (motive : List β → Sort _) (ind : motive (g.hist_on_turn fst_strat snd_strat t).val)
   (irrel : ∀ act, g.hist_legal (act :: (g.hist_on_turn fst_strat snd_strat t).val) →
@@ -49,7 +45,6 @@ lemma Game_World.hist_on_turn_of_irrelevant_step (g : Game_World α β)
 
 
 lemma Game_World.hist_on_turn_induction (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
   (motive : (t : ℕ) → {hist : List β // g.hist_legal hist ∧ hist.length = t} → Sort _)
   (base : motive 0 (g.hist_on_turn fst_strat snd_strat 0))
@@ -166,7 +161,7 @@ lemma Game_World.sStrat_eq_of_strat_hist_eq (g : Game_World α β) (fs fs' : g.s
   · exact main.symm
 
 lemma Game_World.hist_on_turn_suffix
-  (g : Game_World α β) [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (g : Game_World α β)
   (f_strat : g.fStrategy )  (s_strat : g.sStrategy)
   (n m : ℕ) (hmn : m ≤ n) :
   (g.hist_on_turn f_strat s_strat m).val <:+ (g.hist_on_turn f_strat s_strat n).val :=
@@ -190,7 +185,7 @@ lemma Game_World.hist_on_turn_suffix
       apply List.suffix_rfl
 
 lemma Symm_Game_World.hist_on_turn_suffix
-  (g : Symm_Game_World α β) [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+  (g : Symm_Game_World α β)
   (f_strat : g.fStrategy )  (s_strat : g.sStrategy)
   (n m : ℕ) (hmn : m ≤ n) :
   (g.hist_on_turn f_strat s_strat m).val <:+ (g.hist_on_turn f_strat s_strat n).val :=
@@ -215,7 +210,6 @@ lemma Symm_Game_World.hist_on_turn_suffix
 
 
 lemma Game_World.hist_on_turn_fst_to_snd (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy )  (s_strat : g.sStrategy) (turn : ℕ):
   let H := g.hist_on_turn f_strat s_strat ;
   (T : Turn_fst turn) → (H (turn + 1)).val = (s_strat (H turn).val (by rw [(H turn).property.2, ← Turn_fst_snd_step] ; exact T)  (H turn).property.1).val :: (H turn).val :=
@@ -226,7 +220,6 @@ lemma Game_World.hist_on_turn_fst_to_snd (g : Game_World α β)
 
 
 lemma Game_World.hist_on_turn_snd_to_fst (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy )  (s_strat : g.sStrategy) (turn : ℕ) :
   let H := g.hist_on_turn f_strat s_strat ;
   (T : Turn_snd turn) → (H (turn + 1)).val = (f_strat (H turn).val (by rw [(H turn).property.2, ← Turn_snd_fst_step] ; exact T)  (H turn).property.1).val :: (H turn).val :=
@@ -237,7 +230,6 @@ lemma Game_World.hist_on_turn_snd_to_fst (g : Game_World α β)
 
 
 lemma Symm_Game_World.hist_on_turn_snd_to_fst (g : Symm_Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy )  (s_strat : g.sStrategy) (turn : ℕ) :
   let H := g.hist_on_turn f_strat s_strat ;
   (T : Turn_snd turn) → (H (turn + 1)).val = (f_strat (H turn).val (by rw [(H turn).property.2, ← Turn_snd_fst_step] ; exact T)  (H turn).property.1).val :: (H turn).val :=
@@ -248,7 +240,6 @@ lemma Symm_Game_World.hist_on_turn_snd_to_fst (g : Symm_Game_World α β)
 
 
 lemma Game_World.hist_on_turn_2step_snd (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy )  (s_strat : g.sStrategy)
   {t : ℕ} (T : Turn_snd t) :
   g.hist_on_turn f_strat s_strat (t+2) =
@@ -263,7 +254,6 @@ lemma Game_World.hist_on_turn_2step_snd (g : Game_World α β)
   rw [dif_pos (by rw [← Turn_snd_fst_step] ; exact T)]
 
 lemma Symm_Game_World.hist_on_turn_2step_snd (g : Symm_Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy )  (s_strat : g.sStrategy)
   {t : ℕ} (T : Turn_snd t) :
   g.hist_on_turn f_strat s_strat (t+2) =

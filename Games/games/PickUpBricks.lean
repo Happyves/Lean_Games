@@ -8,6 +8,34 @@ import Games.gameLib.Termination
 import Games.gameLib.HistoryAPI
 
 
+/-
+The game of Pick-Up-Bricks is played by two players with a stack of bricks.
+At each round, a player may pick one or two bricks from the stack.
+The last player to pick a brick wins the game.
+
+One can show that this game has a wining strategy for the secodn player if
+the stack of bricks is divisible by 3. Indeed, if the first players bicks
+1 brick, the second may pick 2, and if the first player picks 2 bricks,
+then the second player may pick 1. Thus, after each player took their turn,
+the stack of bricks will remain divisible by 3, after the second players turn.
+This must be the case for the last turn, as `3 ∣ 0`, so that the last turn must
+be the second player's, who therefore wins the game.
+
+The key parts of the file are:
+- `PickUpBricks` the definition of the game
+- `pub_win_strat` defines a startegy that is a winning strategy
+  for the second player if the stack of bricks is divisible by 3.
+- `trick` and `loop_invariant` which are used to prove that
+  Pick-Up-Bricks has a winning strategy for the second player
+  if the stack of bricks is divisible by 3.
+- `PUB_terminates` is a lemma used to justify that `PickUpBricks` terminates.
+- `PUB_snd_win` shows that the game has a winning strategy.
+
+
+Note that the proofs still need major cleaning.
+-/
+
+
 
 variable (init_bricks : ℕ) -- the initial number of bricks as a variable
 
@@ -43,16 +71,6 @@ def PickUpBricks : Symm_Game_World ℕ ℕ where
 
 
 
-instance : DecidablePred (PickUpBricks init_bricks).fst_win_states := by
-  intro hist
-  dsimp [PickUpBricks, bricks_from_ini_hist]
-  exact And.decidable
-
-instance : DecidablePred (PickUpBricks init_bricks).snd_win_states := by
-  intro hist
-  dsimp [PickUpBricks, bricks_from_ini_hist]
-  exact And.decidable
-
 
 /-- The (to be proven) winning strategy for the second player -/
 def pub_win_strat : (PickUpBricks init_bricks).sStrategy :=
@@ -80,16 +98,6 @@ def PickUpBricks_pubWin_vs_toy : Symm_Game ℕ ℕ :=
    snd_strat := pub_win_strat 37
   }
 
-
-instance : DecidablePred (PickUpBricks_pubWin_vs_toy).fst_win_states := by
-  intro hist
-  dsimp [PickUpBricks_pubWin_vs_toy]
-  apply instDecidablePredListNatFst_win_statesPickUpBricks
-
-instance : DecidablePred (PickUpBricks_pubWin_vs_toy).snd_win_states := by
-  intro hist
-  dsimp [PickUpBricks_pubWin_vs_toy]
-  apply instDecidablePredListNatSnd_win_statesPickUpBricks
 
 -- The moves of the players, turn by turn, up to turn 30
 #eval (PickUpBricks_pubWin_vs_toy.hist_on_turn 30).val.reverse
@@ -284,7 +292,7 @@ lemma bricks_head_val_of_zero_cons {h : List Nat} {x : Nat}
 #check Nat.sub_eq_zero_iff_le
 
 lemma PUB_terminates
-    (f_strat : (PickUpBricks init_bricks).fStrategy) :
+  (f_strat : (PickUpBricks init_bricks).fStrategy) :
   let g : Symm_Game ℕ ℕ := { (PickUpBricks init_bricks) with
                              fst_strat := f_strat
                              snd_strat := pub_win_strat init_bricks
@@ -299,17 +307,77 @@ lemma PUB_terminates
     · exact Z
     · intro _ _
       contradiction
-  · let nz := {m | bricks_from_ini_hist init_bricks (g.hist_on_turn m) ≠ 0}
-    have nz_ne : Set.Nonempty nz := by use 0 ; apply Z
-    let N := WellFounded.min (@wellFounded_lt Nat _ _) nz nz_ne
-    have := WellFounded.min_mem (@wellFounded_lt Nat _ _) nz nz_ne
+  · let nz := {b | ∃ m, (b = bricks_from_ini_hist init_bricks (g.hist_on_turn m)) ∧ b ≠ 0}
+    have nz_ne : Set.Nonempty nz := by use bricks_from_ini_hist init_bricks (g.hist_on_turn 0) ; use 0
+    obtain ⟨M,Md,Mz⟩ := WellFounded.min_mem (@wellFounded_lt Nat _ _) nz nz_ne
+    use (M+1)
+    constructor
+    · by_contra con
+      apply @WellFounded.not_lt_min _ _ (@wellFounded_lt Nat _ _) nz nz_ne  (bricks_from_ini_hist init_bricks (g.hist_on_turn (M+1))) (by use M+1)
+      rw [Md]
+      rw [Md] at Mz
+      apply bricks_decrease _ _ _ Mz
+    · intro n nM
+      rw [Nat.lt_succ] at nM
+      intro con
+      apply Mz
+      rw [Md]
+      apply bricks_zero_stay_zero_suf _ _ _ _ con
+      rw [Symm_Game.hist_on_turn]
+      apply Symm_Game_World.hist_on_turn_suffix
+      exact nM
 
 
 
-#exit
+lemma help_1 : ¬ 3 ∣ 1 := by decide
+lemma help_2 : ¬ 3 ∣ 2 := by decide
+
+
+
 
 theorem PUB_snd_win (win_hyp : 3 ∣ init_bricks) :
   (PickUpBricks init_bricks).is_snd_win :=
   by
   use pub_win_strat init_bricks
   intro f_strat
+  obtain ⟨t, bz, bnz⟩ := PUB_terminates init_bricks f_strat
+  simp_rw [Symm_Game.hist_on_turn, Symm_Game_World.hist_on_turn] at bz bnz
+  use t
+  constructor
+  · dsimp [PickUpBricks]
+    constructor
+    · cases' t with t
+      · dsimp [Game.hist_on_turn, Game_World.hist_on_turn]
+        decide
+      · by_contra con
+        simp_rw [Game.hist_on_turn, Game_World.hist_on_turn_length] at con
+        simp_rw [Turn_not_snd_iff_fst, ← Turn_snd_fst_step] at con
+        have := Game_World.hist_on_turn_snd_to_fst (PickUpBricks init_bricks).toGame_World f_strat (pub_win_strat init_bricks) t con
+        dsimp [PickUpBricks] at this
+        simp_rw [← Nat.succ_eq_add_one] at this
+        simp_rw [Symm_Game_World.hist_legal] at bnz
+        let H := (Game_World.hist_on_turn (PickUpBricks init_bricks).toGame_World f_strat (pub_win_strat init_bricks) t)
+        have pain : bricks_from_ini_hist init_bricks ((f_strat H.val (by rw [Game_World.hist_on_turn_length, ← Turn_snd_fst_step] ; exact con) H.prop.1) :: H) = 0 :=
+          by
+          convert bz
+          convert this.symm
+        have pain2 : (f_strat H.val (by rw [Game_World.hist_on_turn_length, ← Turn_snd_fst_step] ; exact con) H.prop.1).val :: H = (Game_World.hist_on_turn (PickUpBricks init_bricks).toGame_World f_strat (pub_win_strat init_bricks) (t+1)) :=
+          by
+          dsimp [Game_World.hist_on_turn]
+          rw [dif_pos (by rw [← Turn_snd_fst_step] ; exact con) ]
+        replace con := loop_invariant init_bricks win_hyp f_strat _ con
+        have that := bricks_head_val_of_zero_cons _ pain (bnz t (Nat.lt_succ_self t)) (by rw [pain2] ; apply Symm_Game_World.hist_on_turn_legal)
+        simp_rw [Symm_Game.hist_on_turn, Symm_Game_World.hist_on_turn] at con
+        cases' that with oh no
+        · rw [oh] at con
+          exact help_1 con
+        · rw [no] at con
+          exact help_2 con
+    · exact bz
+  · dsimp [Game.state_on_turn_neutral, Game_World.state_on_turn_neutral]
+    intro n nt con
+    cases' con with oh no
+    · dsimp [PickUpBricks] at oh
+      exact bnz n nt oh.2
+    · dsimp [PickUpBricks] at no
+      exact bnz n nt no.2

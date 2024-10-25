@@ -342,7 +342,6 @@ Given a game world and two strategies for players to play in it,
 by the players, according to their strategies, given a turn.
 -/
 def Game_World.hist_on_turn (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
   (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
   match t with
@@ -361,14 +360,12 @@ def Game_World.hist_on_turn (g : Game_World α β)
               ⟨ act :: h.val , ⟨Game_World.hist_legal.cons h.val act (by rw [if_neg ] ; exact leg ; rw [Turn_not_fst_iff_snd] ; exact T') h.property.1, (by dsimp ; rw [h.property.2])⟩⟩
 
 def Symm_Game_World.hist_on_turn (g : Symm_Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
   (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
-  @Game_World.hist_on_turn _ _  g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) fst_strat snd_strat t
+  Game_World.hist_on_turn g.toGame_World fst_strat snd_strat t
 
 
 def Game_World_wDraw.hist_on_turn (g : Game_World_wDraw α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
   (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
   g.toGame_World.hist_on_turn fst_strat snd_strat t
@@ -399,14 +396,12 @@ structure Game_wDraw (α β : Type _) extends Game_World_wDraw α β where
 
 
 def Game.hist_on_turn (g : Game α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
   g.toGame_World.hist_on_turn g.fst_strat g.snd_strat t
 
 
 
 def Symm_Game.hist_on_turn (g : Symm_Game α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (t : ℕ) : {hist : List β // g.hist_legal hist ∧ hist.length = t} :=
   g.toSymm_Game_World.hist_on_turn g.fst_strat g.snd_strat t
 
@@ -431,7 +426,6 @@ def Game_World.state_from_hist (g : Game_World α β) : List β → α
             else g.snd_transition h a
 
 def Game_World.state_on_turn (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy) (snd_strat : g.sStrategy) : ℕ → α
   | 0 => g.init_game_state
   | n+1 => let h := g.hist_on_turn fst_strat snd_strat n
@@ -442,17 +436,14 @@ def Game_World.state_on_turn (g : Game_World α β)
                 g.snd_transition h (snd_strat h.val T' h.property.1)
 
 def Symm_Game_World.state_on_turn (g : Symm_Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (fst_strat : g.fStrategy ) (snd_strat : g.sStrategy)
   (t : ℕ) : α :=
-  @Game_World.state_on_turn _ _  g.toGame_World (by rwa [g.toGame_World_fst_win]) (by rwa [g.toGame_World_snd_win]) fst_strat snd_strat t
+  Game_World.state_on_turn  g.toGame_World fst_strat snd_strat t
 
 def Game.state_on_turn (g : Game α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (t : ℕ) : α :=
   g.toGame_World.state_on_turn g.fst_strat g.snd_strat t
 
 def Symm_Game.state_on_turn (g : Symm_Game α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (t : ℕ) : α :=
   g.toSymm_Game_World.state_on_turn g.fst_strat g.snd_strat t
