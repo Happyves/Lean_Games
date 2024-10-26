@@ -18,6 +18,7 @@ I'm currently:
 Once finished, I will bring the project to the latest version of mathlib, and attempt to publish this work :)
 
 Known related work:
+- https://github.com/sven-manthe/A-formalization-of-Borel-determinacy-in-Lean
 - https://leanprover-community.github.io/mathlib4_docs/Mathlib/SetTheory/Game/Basic.html
 - https://www.isa-afp.org/entries/GaleStewart_Games.html
 
