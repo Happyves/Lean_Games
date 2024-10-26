@@ -27,7 +27,7 @@ The main concepts of the file are:
 
 -/
 
-
+#exit
 
 structure pairProp {win_sets : Finset (Finset α)} (win_set : win_sets) (p : α × α) : Prop where
   dif : p.1 ≠ p.2
@@ -41,6 +41,11 @@ structure pairDif (a b : α × α) : Prop where
   cross_fst : a.1 ≠ b.2
   cross_snd : a.2 ≠ b.1
 
+/--
+The pairing conditin is satisfied if for each winning set, we have a pair
+of tiles that are distinct, that are contained in the winning set, and such that
+the different pairs all have distinct tiles.
+-/
 structure Pairing_condition [DecidableEq α] [Fintype α] (win_sets : Finset (Finset α)) (pairing : win_sets → (α × α)) where
   has_pairing : ∀ w : win_sets, pairProp w (pairing w)
   pairing_dif : ∀ w v : win_sets, w ≠ v → pairDif (pairing w) (pairing v)
@@ -59,14 +64,14 @@ def Pairing_StratCore [Inhabited α] [DecidableEq α] [Fintype α] (win_sets : F
               Classical.choose (((Positional_Game_World_playable win_sets) hist (leg)).2 (by rw [Turn_snd_iff_not_fst] ; exact T))
     match hist with
     | last :: _ =>
-        if hxf : ∃ w : win_sets, last = (pairing w).1
+        if hxf : ∃ w : win_sets, last = (pairing w).1 -- if the last move colored the first tile of the pair of a winning sets ...
         then
           let other := (pairing (Classical.choose hxf)).2
           if other ∈ hist
           then spam
-          else other
+          else other -- play the other tile, or spam if it's already colored
         else
-          if hxs : ∃ w : win_sets, last = (pairing w).2
+          if hxs : ∃ w : win_sets, last = (pairing w).2 -- symmetric case of ↑
           then
             let other := (pairing (Classical.choose hxs)).1
             if other ∈ hist
@@ -74,7 +79,7 @@ def Pairing_StratCore [Inhabited α] [DecidableEq α] [Fintype α] (win_sets : F
             else other
           else
             spam
-    | [] => spam
+    | [] => spam -- if we're first to move, spam
 
 
 
