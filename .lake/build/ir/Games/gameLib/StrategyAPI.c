@@ -14,14 +14,12 @@
 extern "C" {
 #endif
 LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__fst___elambda__1(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__snd___rarg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 uint8_t l_List_hasDecEq___rarg(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__fst___rarg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__fst(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___elambda__1___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 uint8_t l_List_decidableSuffix___rarg(lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___elambda__1___rarg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27___elambda__1(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__snd___elambda__1___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
@@ -29,7 +27,7 @@ LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__snd___elambda__1___rarg
 LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__snd(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27___elambda__1___rarg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 lean_object* l_List_lengthTRAux___rarg(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___rarg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___rarg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 uint8_t lean_nat_dec_lt(lean_object*, lean_object*);
 lean_object* l_List_rget___rarg(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__fst___elambda__1___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
@@ -38,7 +36,7 @@ LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__fst___elambda__1___rarg
 lean_object* l_List_rtake___rarg(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__snd___elambda__1(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27___elambda__1___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27___rarg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27___rarg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___elambda__1(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_cExStrat__staged__fst___elambda__1___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7) {
@@ -252,26 +250,26 @@ x_3 = lean_alloc_closure((void*)(l_Game__World_fStrat__winner_x27___elambda__1__
 return x_3;
 }
 }
-LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7, lean_object* x_8, lean_object* x_9) {
+LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7) {
 _start:
 {
-lean_object* x_10; 
-x_10 = lean_alloc_closure((void*)(l_Game__World_fStrat__winner_x27___elambda__1___rarg___boxed), 10, 7);
-lean_closure_set(x_10, 0, x_1);
-lean_closure_set(x_10, 1, x_2);
-lean_closure_set(x_10, 2, x_5);
-lean_closure_set(x_10, 3, x_6);
-lean_closure_set(x_10, 4, lean_box(0));
-lean_closure_set(x_10, 5, lean_box(0));
-lean_closure_set(x_10, 6, x_9);
-return x_10;
+lean_object* x_8; 
+x_8 = lean_alloc_closure((void*)(l_Game__World_fStrat__winner_x27___elambda__1___rarg___boxed), 10, 7);
+lean_closure_set(x_8, 0, x_1);
+lean_closure_set(x_8, 1, x_2);
+lean_closure_set(x_8, 2, x_3);
+lean_closure_set(x_8, 3, x_4);
+lean_closure_set(x_8, 4, lean_box(0));
+lean_closure_set(x_8, 5, lean_box(0));
+lean_closure_set(x_8, 6, x_7);
+return x_8;
 }
 }
 LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27(lean_object* x_1, lean_object* x_2) {
 _start:
 {
 lean_object* x_3; 
-x_3 = lean_alloc_closure((void*)(l_Game__World_fStrat__winner_x27___rarg___boxed), 9, 0);
+x_3 = lean_alloc_closure((void*)(l_Game__World_fStrat__winner_x27___rarg), 7, 0);
 return x_3;
 }
 }
@@ -283,16 +281,6 @@ x_11 = l_Game__World_fStrat__winner_x27___elambda__1___rarg(x_1, x_2, x_3, x_4, 
 lean_dec(x_4);
 lean_dec(x_2);
 return x_11;
-}
-}
-LEAN_EXPORT lean_object* l_Game__World_fStrat__winner_x27___rarg___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7, lean_object* x_8, lean_object* x_9) {
-_start:
-{
-lean_object* x_10; 
-x_10 = l_Game__World_fStrat__winner_x27___rarg(x_1, x_2, x_3, x_4, x_5, x_6, x_7, x_8, x_9);
-lean_dec(x_4);
-lean_dec(x_3);
-return x_10;
 }
 }
 LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___elambda__1___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7, lean_object* x_8, lean_object* x_9, lean_object* x_10) {
@@ -348,26 +336,26 @@ x_3 = lean_alloc_closure((void*)(l_Game__World_sStrat__winner_x27___elambda__1__
 return x_3;
 }
 }
-LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7, lean_object* x_8, lean_object* x_9) {
+LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7) {
 _start:
 {
-lean_object* x_10; 
-x_10 = lean_alloc_closure((void*)(l_Game__World_sStrat__winner_x27___elambda__1___rarg___boxed), 10, 7);
-lean_closure_set(x_10, 0, x_1);
-lean_closure_set(x_10, 1, x_2);
-lean_closure_set(x_10, 2, x_5);
-lean_closure_set(x_10, 3, x_6);
-lean_closure_set(x_10, 4, lean_box(0));
-lean_closure_set(x_10, 5, lean_box(0));
-lean_closure_set(x_10, 6, x_9);
-return x_10;
+lean_object* x_8; 
+x_8 = lean_alloc_closure((void*)(l_Game__World_sStrat__winner_x27___elambda__1___rarg___boxed), 10, 7);
+lean_closure_set(x_8, 0, x_1);
+lean_closure_set(x_8, 1, x_2);
+lean_closure_set(x_8, 2, x_3);
+lean_closure_set(x_8, 3, x_4);
+lean_closure_set(x_8, 4, lean_box(0));
+lean_closure_set(x_8, 5, lean_box(0));
+lean_closure_set(x_8, 6, x_7);
+return x_8;
 }
 }
 LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27(lean_object* x_1, lean_object* x_2) {
 _start:
 {
 lean_object* x_3; 
-x_3 = lean_alloc_closure((void*)(l_Game__World_sStrat__winner_x27___rarg___boxed), 9, 0);
+x_3 = lean_alloc_closure((void*)(l_Game__World_sStrat__winner_x27___rarg), 7, 0);
 return x_3;
 }
 }
@@ -379,16 +367,6 @@ x_11 = l_Game__World_sStrat__winner_x27___elambda__1___rarg(x_1, x_2, x_3, x_4, 
 lean_dec(x_4);
 lean_dec(x_2);
 return x_11;
-}
-}
-LEAN_EXPORT lean_object* l_Game__World_sStrat__winner_x27___rarg___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7, lean_object* x_8, lean_object* x_9) {
-_start:
-{
-lean_object* x_10; 
-x_10 = l_Game__World_sStrat__winner_x27___rarg(x_1, x_2, x_3, x_4, x_5, x_6, x_7, x_8, x_9);
-lean_dec(x_4);
-lean_dec(x_3);
-return x_10;
 }
 }
 lean_object* initialize_Init(uint8_t builtin, lean_object*);

@@ -12,6 +12,15 @@ import Games.gameLib.CoherentEnd
 import Games.exLib.General
 
 
+/-
+This file proves "Conway induction": if a property true for a given
+history of moves is also true for all histories extending it by a move
+such that the extention is legal and the state of the game is neutral,
+then it is true for any history of moves.
+The main theorem is `ConwayInduction`
+
+-/
+
 
 structure Rdef (g : Game_World α β) (h H : List β) : Prop where
   extend : ∃ a, H = a :: h
@@ -148,7 +157,6 @@ lemma wfR_hist_extend [DecidableEq β] (h : List β)
 
 
 lemma wfR [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hgw : g.isWL) (hgp : g.playable) (hgn : Game_World.coherent_end g) : WellFounded (R g) := by
   apply WellFounded.intro
   intro h
@@ -184,7 +192,6 @@ lemma wfR [DecidableEq β] (g : Game_World α β)
 
 
 lemma Game_World.staged_WL_of_win_state_fst [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hgp : g.playable) (hgn : Game_World.coherent_end g)
   (h : List β) (leg : g.hist_legal h)
   (N : g.fst_win_states h) :
@@ -200,7 +207,6 @@ lemma Game_World.staged_WL_of_win_state_fst [DecidableEq β] (g : Game_World α 
 
 
 lemma Game_World.staged_WL_of_win_state_snd [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hgp : g.playable) (hgn : Game_World.coherent_end g)
   (h : List β) (leg : g.hist_legal h)
   (N : g.snd_win_states h) :
@@ -216,7 +222,6 @@ lemma Game_World.staged_WL_of_win_state_snd [DecidableEq β] (g : Game_World α 
 
 
 lemma Game_World.staged_WL_of_win_state [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hgp : g.playable) (hgn : Game_World.coherent_end g)
   (h : List β) (leg : g.hist_legal h)
   (N : g.fst_win_states h ∨ g.snd_win_states h) :
@@ -234,7 +239,6 @@ lemma Game_World.staged_WL_of_win_state [DecidableEq β] (g : Game_World α β)
 
 
 lemma Game_World.ConwayInduction [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hgw : g.isWL) (hgp : g.playable) (hgn : g.coherent_end)
   (motive : (h : List β) → (g.hist_legal h) → Sort _)
   (hist : List β) (leg : g.hist_legal hist)

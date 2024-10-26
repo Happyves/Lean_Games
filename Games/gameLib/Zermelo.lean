@@ -9,8 +9,19 @@ Author: Yves Jäckle.
 import Games.gameLib.ConwayInduction
 
 
+/-
+This file contains the proof of a version of Zermelo's theorem:
+if a game always terminates, and does so with either a win for the first
+or for the second player, then one of the players has a winnign strategy.
+
+The main elements of the file are:
+- `Game_World.Zermelo`, Zermleo's theorem
+- `zGame_World` an extention of `Game_World` withe assumptions that
+  realise Zermelo's theorem.
+
+-/
+
 private lemma Game_World.has_WL_helper (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal hist) :
   g.has_staged_WL hist leg → (¬ g.is_fst_staged_win hist leg) → g.is_snd_staged_win hist leg := by
   intro m c
@@ -19,7 +30,6 @@ private lemma Game_World.has_WL_helper (g : Game_World α β)
   · exact m
 
 private lemma Game_World.has_WL_helper' (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal hist) :
   g.has_staged_WL hist leg → (¬ g.is_snd_staged_win hist leg) → g.is_fst_staged_win hist leg := by
   intro m c
@@ -30,7 +40,6 @@ private lemma Game_World.has_WL_helper' (g : Game_World α β)
 
 
 lemma Game_World.conditioning_step [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hgw : g.isWL) (hgp : g.playable) (hgn : g.coherent_end)
   (hist : List β) (Leg : g.hist_legal hist) :
   g.has_staged_WL hist Leg :=
@@ -116,7 +125,6 @@ lemma Game_World.conditioning_step [DecidableEq β] (g : Game_World α β)
 
 
 lemma Game_World.Zermelo [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hgw : g.isWL) (hgp : g.playable) (hgn : g.coherent_end) :
   g.has_WL :=
   by
@@ -125,11 +133,8 @@ lemma Game_World.Zermelo [DecidableEq β] (g : Game_World α β)
   exact this
 
 lemma Symm_Game_World.Zermelo [DecidableEq β] (g : Symm_Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hgw : g.isWL) (hgp : g.playable) (hgn : g.coherent_end ) :
-  g.has_WL := by dsimp [Symm_Game_World.has_WL] ; convert @Game_World.Zermelo _ _ _ g.toGame_World (by rwa [Symm_Game_World.toGame_World_fst_win]) (by rwa [Symm_Game_World.toGame_World_snd_win]) (by convert hgw) hgp hgn
-
-open Classical
+  g.has_WL := by dsimp [Symm_Game_World.has_WL] ; convert @Game_World.Zermelo _ _ _ g.toGame_World (by convert hgw) hgp hgn
 
 
 structure zGame_World (α β : Type _) [DecidableEq β] extends Game_World α β where
@@ -138,6 +143,6 @@ structure zGame_World (α β : Type _) [DecidableEq β] extends Game_World α β
 structure zSymm_Game_World (α β : Type _) extends Symm_Game_World α β where
   (hgw : toSymm_Game_World.isWL) (hgp : toSymm_Game_World.playable) (hgn : toSymm_Game_World.coherent_end)
 
-lemma zGame_World.Zermelo (g : zGame_World α β) : g.has_WL := g.toGame_World.Zermelo g.hgw g.hgp g.hgn
+lemma zGame_World.Zermelo [DecidableEq β] (g : zGame_World α β) : g.has_WL := g.toGame_World.Zermelo g.hgw g.hgp g.hgn
 
-lemma zSymm_Game_World.Zermelo (g : zSymm_Game_World α β) : g.has_WL := g.toSymm_Game_World.Zermelo g.hgw g.hgp g.hgn
+lemma zSymm_Game_World.Zermelo [DecidableEq β] (g : zSymm_Game_World α β) : g.has_WL := g.toSymm_Game_World.Zermelo g.hgw g.hgp g.hgn

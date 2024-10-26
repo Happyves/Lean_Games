@@ -19,6 +19,13 @@ lemma Symm_Game_World.hist_on_turn_length (g : Symm_Game_World α β)
   {t : ℕ} : (g.hist_on_turn fst_strat snd_strat t).val.length = t :=
   (g.hist_on_turn fst_strat snd_strat t).prop.2
 
+
+lemma Game_World.hist_on_turn_legal (g : Game_World α β)
+  {fst_strat : g.fStrategy} {snd_strat : g.sStrategy}
+  {t : ℕ} : g.hist_legal (g.hist_on_turn fst_strat snd_strat t).val :=
+  (g.hist_on_turn fst_strat snd_strat t).prop.1
+
+
 lemma Symm_Game_World.hist_on_turn_legal (g : Symm_Game_World α β)
   {fst_strat : g.fStrategy} {snd_strat : g.sStrategy}
   {t : ℕ} : g.hist_legal (g.hist_on_turn fst_strat snd_strat t).val :=

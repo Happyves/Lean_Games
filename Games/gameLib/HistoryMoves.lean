@@ -21,7 +21,6 @@ lemma Hist_from_moves_succ (moves : ℕ → β) : ∀ t, (Hist_from_moves moves 
   intro t ; dsimp [Hist_from_moves] ; rw [List.range_succ, List.reverse_append, List.map_append, List.reverse_singleton, List.map_singleton, List.singleton_append]
 
 def Game_World.moves_from_strats (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy) (s_strat : g.sStrategy) :
   ℕ → β :=
   fun t =>
@@ -30,7 +29,6 @@ def Game_World.moves_from_strats (g : Game_World α β)
 
 
 lemma Game_World.moves_from_strats_history (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy) (s_strat : g.sStrategy) :
   ∀ t, (g.hist_on_turn f_strat s_strat t).val = Hist_from_moves (moves_from_strats g f_strat s_strat) t :=
   by
@@ -51,7 +49,6 @@ lemma Game_World.moves_from_strats_history (g : Game_World α β)
 
 
 lemma Game_World.moves_from_strats_legal (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy) (s_strat : g.sStrategy) :
   ∀ t, (Turn_fst (t+1) → g.fst_legal (Hist_from_moves (moves_from_strats g f_strat s_strat) t) ((moves_from_strats g f_strat s_strat) t))
     ∧ ( Turn_snd (t+1) → g.snd_legal (Hist_from_moves (moves_from_strats g f_strat s_strat) t) ((moves_from_strats g f_strat s_strat) t)) :=
@@ -70,7 +67,6 @@ lemma Game_World.moves_from_strats_legal (g : Game_World α β)
       apply (s_strat ↑(g.hist_on_turn f_strat s_strat t) _ _).property
 
 lemma Game_World.moves_from_strats_Hist_legal (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy) (s_strat : g.sStrategy) :
   ∀ t, g.hist_legal (Hist_from_moves (moves_from_strats g f_strat s_strat) t) :=
   by
@@ -87,7 +83,6 @@ lemma Game_World.moves_from_strats_Hist_legal (g : Game_World α β)
 
 noncomputable
 def Game_World.fStrategy_from_moves [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, g.hist_legal (Hist_from_moves moves t)) :
   g.fStrategy :=
   fun hist T leg => if M : hist = (Hist_from_moves moves (hist.length))
@@ -104,7 +99,6 @@ def Game_World.fStrategy_from_moves [DecidableEq β] (g : Game_World α β)
 
 
 def Game_World.cfStrategy_from_moves [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.cPlayable_fst) (moves : ℕ → β) (hm : ∀ t, g.hist_legal (Hist_from_moves moves t)) :
   g.fStrategy :=
   fun hist T leg => if M : hist = (Hist_from_moves moves (hist.length))
@@ -122,7 +116,6 @@ def Game_World.cfStrategy_from_moves [DecidableEq β] (g : Game_World α β)
 
 noncomputable
 def Game_World.sStrategy_from_moves [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, g.hist_legal (Hist_from_moves moves t)) :
   g.sStrategy :=
   fun hist T leg => if M : hist = (Hist_from_moves moves (hist.length))
@@ -140,7 +133,6 @@ def Game_World.sStrategy_from_moves [DecidableEq β] (g : Game_World α β)
 
 
 def Game_World.csStrategy_from_moves [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.cPlayable_snd) (moves : ℕ → β) (hm : ∀ t, g.hist_legal (Hist_from_moves moves t)) :
   g.sStrategy :=
   fun hist T leg => if M : hist = (Hist_from_moves moves (hist.length))
@@ -158,7 +150,6 @@ def Game_World.csStrategy_from_moves [DecidableEq β] (g : Game_World α β)
 
 
 lemma Game_World.sStrategy_from_moves_eq  [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, g.hist_legal (Hist_from_moves moves t))
   (hist : List β) (T : Turn_snd (List.length hist + 1)) (leg : g.hist_legal hist) (M : hist = (Hist_from_moves moves (hist.length))) :
   g.sStrategy_from_moves hg moves hm hist T leg = ⟨moves (hist.length),
@@ -177,7 +168,6 @@ lemma Game_World.sStrategy_from_moves_eq  [DecidableEq β] (g : Game_World α β
 
 
 lemma Game_World.fStrategy_from_moves_eq  [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.playable) (moves : ℕ → β) (hm : ∀ t, g.hist_legal (Hist_from_moves moves t))
   (hist : List β) (T : Turn_fst (List.length hist + 1)) (leg : g.hist_legal hist) (M : hist = (Hist_from_moves moves (hist.length))) :
   g.fStrategy_from_moves hg moves hm hist T leg = ⟨moves (hist.length),
@@ -194,7 +184,6 @@ lemma Game_World.fStrategy_from_moves_eq  [DecidableEq β] (g : Game_World α β
   rw [dif_pos M]
 
 lemma Hist_moves_strats [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.playable) (moves : ℕ → β) (leg : ∀ t, g.hist_legal (Hist_from_moves moves t)) (t : Nat) :
   Hist_from_moves moves t = (g.hist_on_turn (g.fStrategy_from_moves hg moves leg) (g.sStrategy_from_moves hg moves leg) t).val :=
   by
@@ -228,7 +217,7 @@ def Game_World.isWL_alt (g : Game_World α β) : Prop :=
 
 
 lemma Game_World.isWL_iff_isWL_alt [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable) :
+  (hg : g.playable) :
   g.isWL ↔ g.isWL_alt :=
   by
   constructor

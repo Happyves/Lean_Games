@@ -8,7 +8,6 @@ import Games.gameLib.HistoryAPI
 
 
 lemma Game_World.state_on_turn_eq_state_from_hist (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   {fst_strat : g.fStrategy} {snd_strat : g.sStrategy}
   {t : ℕ} :
   g.state_on_turn fst_strat snd_strat t = g.state_from_hist (g.hist_on_turn fst_strat snd_strat t) :=

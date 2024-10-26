@@ -9,9 +9,32 @@ import Games.gameLib.HistoryAPI
 import Games.gameLib.Playability
 import Games.exLib.General
 
+
+
+
+/-
+This file collects API about strategies.
+Currently, it mostly contains API about staging, which is required for
+applying Conway induction in Zermelo.
+
+The main concepts are:
+- `fStrat_staged` and `sStrat_staged`, which define staging
+- `has_WL_iff_has_staged_WL_empty` is used to link staged winning and actual winning
+- `fStrat_winner` and `sStrat_winner` : in game worlds where, given a certain history,
+  one player has a staged winning strategy (it wins agains all staged strategies),
+  for all possible moves of the other player, `fStrat_winner` and `sStrat_winner` define
+  stratgies that will be a staged winning strategy for the initial history, as is shown
+  in `fStrat_winner_wins` and `sStrat_winner_wins`.
+-/
+
 -- # Staging
 
 
+/--
+In the context of a `Game_World`, we call a strategy "staged" wrt. a legal
+history of moves, if the moves played by the strategy on that history are
+precisely the moves from the history.
+-/
 def Game_World.fStrat_staged (g : Game_World α β)
   (f_strat : g.fStrategy) (hist : List β) (leg : g.hist_legal hist) : Prop :=
   ∀ t, (ht : t < hist.length) → (T : Turn_fst (t+1)) →
@@ -23,6 +46,11 @@ def Game_World.fStrat_wHist (g : Game_World α β) (hist : List β) (leg : g.his
   { f_strat : g.fStrategy // g.fStrat_staged f_strat hist leg}
 
 
+/--
+In the context of a `Game_World`, we call a strategy "staged" wrt. a legal
+history of moves, if the moves played by the strategy on that history are
+precisely the moves from the history.
+-/
 def Game_World.sStrat_staged (g : Game_World α β)
   (s_strat : g.sStrategy) (hist : List β) (leg : g.hist_legal hist) : Prop :=
   ∀ t, (ht : t < hist.length) → (T : Turn_snd (t+1)) →
@@ -35,20 +63,17 @@ def Game_World.sStrat_wHist (g : Game_World α β) (hist : List β) (leg : g.his
 
 
 def Game_World.is_fst_staged_win  (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal hist) : Prop :=
   ∃ ws : g.fStrat_wHist hist leg, ∀ snd_s : g.sStrat_wHist hist leg,
   ({g with fst_strat := ws.val, snd_strat := snd_s.val} : Game α β).fst_win
 
 
 def Game_World.is_snd_staged_win  (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal hist) : Prop :=
   ∃ ws : g.sStrat_wHist hist leg, ∀ fst_s : g.fStrat_wHist hist leg,
   ({g with fst_strat := fst_s.val, snd_strat := ws.val} : Game α β).snd_win
 
 inductive Game_World.has_staged_WL (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal hist) : Prop where
   | wf (h : g.is_fst_staged_win hist leg)
   | ws (h : g.is_snd_staged_win hist leg)
@@ -63,8 +88,7 @@ lemma Game_World.sStrat_staged_empty (g : Game_World α β) (s_strat : g.sStrate
   intro _ no
   contradiction
 
-lemma Game_World.has_WL_iff_has_staged_WL_empty (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] :
+lemma Game_World.has_WL_iff_has_staged_WL_empty (g : Game_World α β) :
   g.has_WL ↔ g.has_staged_WL [] Game_World.hist_legal.nil :=
   by
   constructor
@@ -324,7 +348,7 @@ lemma Game_World.sStrat_staged_cons_3 (g : Game_World α β) (s_strat : g.sStrat
 
 
 lemma Game_World.History_of_staged_length (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+
   (hist : List β) (leg : g.hist_legal hist)
   (f_strat : g.fStrat_wHist hist leg) (s_strat : g.sStrat_wHist hist leg) :
   (g.hist_on_turn f_strat.val s_strat.val hist.length).val = hist := by
@@ -373,7 +397,6 @@ lemma Game_World.History_of_staged_length (g : Game_World α β)
 
 
 lemma Game_World.History_of_staged_rtake (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal hist)
   (f_strat : g.fStrat_wHist hist leg) (s_strat : g.sStrat_wHist hist leg)
   (n : Nat) (nbnd : n < hist.length) :
@@ -404,7 +427,6 @@ lemma Game_World.History_of_staged_rtake (g : Game_World α β)
 
 noncomputable
 def Game_World.fStrat_winner [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.playable)
   (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist +1))
   (main : ∀ (f_act : β) (al : g.snd_legal hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg)) :
@@ -439,7 +461,6 @@ def Game_World.fStrat_winner [DecidableEq β] (g : Game_World α β)
 
 noncomputable
 def Game_World.sStrat_winner [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.playable)
   (hist : List β) (leg : g.hist_legal hist) (T : Turn_fst (List.length hist +1))
   (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg)) :
@@ -474,7 +495,6 @@ def Game_World.sStrat_winner [DecidableEq β] (g : Game_World α β)
 
 
 def Game_World.fStrat_winner' [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.cPlayable_fst)
   (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist +1))
   (select : (f_act : β) → (al : g.snd_legal hist f_act) →
@@ -514,7 +534,6 @@ def Game_World.fStrat_winner' [DecidableEq β] (g : Game_World α β)
 
 
 def Game_World.sStrat_winner' [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.cPlayable_snd)
   (hist : List β) (leg : g.hist_legal hist) (T : Turn_fst (List.length hist +1))
   (select : (f_act : β) → (al : g.fst_legal hist f_act) →
@@ -606,7 +625,6 @@ lemma Game_World.sStrat_staged_cons_f_act (g : Game_World α β) (s_strat : g.sS
     · apply heq_prop
 
 lemma Game_World.sStrat_wHist_eq_of_eq_after (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (act : β) (hist : List β)
   (leg : g.hist_legal (hist)) (al : g.fst_legal hist act) (T : Turn_fst (List.length hist + 1))
   (s_strat : g.sStrat_wHist hist leg) (snd_s : g.sStrat_wHist (act :: hist) (Game_World.hist_legal.cons hist act (by rw [if_pos T] ; exact al) leg))
@@ -636,7 +654,6 @@ lemma Game_World.sStrat_wHist_eq_of_eq_after (g : Game_World α β)
     · rw [List.rtake_cons_eq_self (le_of_lt q), g.History_of_staged_rtake hist leg _ ⟨snd_s.val, g.sStrat_staged_cons_3 _ act hist leg al rfl T snd_s.prop⟩ _ q]
 
 lemma Game_World.fStrat_wHist_eq_of_eq_after (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (act : β) (hist : List β)
   (leg : g.hist_legal (hist)) (al : g.snd_legal hist act) (T : ¬ Turn_fst (List.length hist + 1))
   (s_strat : g.fStrat_wHist hist leg) (snd_s : g.fStrat_wHist (act :: hist) (Game_World.hist_legal.cons hist act (by rw [if_neg T] ; exact al) leg))
@@ -667,7 +684,6 @@ lemma Game_World.fStrat_wHist_eq_of_eq_after (g : Game_World α β)
 
 
 lemma Game_World.Strat_wHist_f_act_cons_eq_History_on_turn_length (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal (hist)) (T : Turn_fst (List.length hist + 1))
   (f_strat : g.fStrat_wHist hist leg) (s_strat : g.sStrat_wHist hist leg) :
   let f_act := f_strat.val hist T leg
@@ -687,7 +703,6 @@ lemma Game_World.Strat_wHist_f_act_cons_eq_History_on_turn_length (g : Game_Worl
 
 
 private lemma Game_World.Strat_wHist_f_act_cons_suffix_Hist_helper  (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal (hist)) (T : Turn_fst (List.length hist + 1))
   (f_strat : g.fStrat_wHist hist leg) (s_strat : g.sStrat_wHist hist leg)
   (n : Nat) (n_bnd : n ≥ hist.length + 1):
@@ -701,7 +716,6 @@ private lemma Game_World.Strat_wHist_f_act_cons_suffix_Hist_helper  (g : Game_Wo
 
 
 lemma Game_World.Strat_wHist_f_act_cons_suffix_Hist (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal (hist)) (T : Turn_fst (List.length hist + 1))
   (f_strat : g.fStrat_wHist hist leg) (s_strat : g.sStrat_wHist hist leg)
   (n : Nat) (tu : Turn_snd (n+1)) (n_bnd : n ≥ hist.length):
@@ -720,7 +734,6 @@ lemma Game_World.Strat_wHist_f_act_cons_suffix_Hist (g : Game_World α β)
 
 
 lemma Game_World.Strat_wHist_s_act_cons_eq_History_on_turn_length (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal (hist)) (T : ¬ Turn_fst (List.length hist + 1))
   (f_strat : g.sStrat_wHist hist leg) (s_strat : g.fStrat_wHist hist leg) :
   let f_act := f_strat.val hist T leg
@@ -740,7 +753,6 @@ lemma Game_World.Strat_wHist_s_act_cons_eq_History_on_turn_length (g : Game_Worl
 
 
 private lemma Game_World.Strat_wHist_s_act_cons_suffix_Hist_helper  (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal (hist)) (T : ¬ Turn_fst (List.length hist + 1))
   (f_strat : g.sStrat_wHist hist leg) (s_strat : g.fStrat_wHist hist leg)
   (n : Nat) (n_bnd : n ≥ hist.length + 1):
@@ -754,7 +766,6 @@ private lemma Game_World.Strat_wHist_s_act_cons_suffix_Hist_helper  (g : Game_Wo
 
 
 lemma Game_World.Strat_wHist_s_act_cons_suffix_Hist (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal (hist)) (T : ¬ Turn_fst (List.length hist + 1))
   (f_strat : g.sStrat_wHist hist leg) (s_strat : g.fStrat_wHist hist leg)
   (n : Nat) (tu : Turn_fst (n+1)) (n_bnd : n ≥ hist.length):
@@ -772,7 +783,6 @@ lemma Game_World.Strat_wHist_s_act_cons_suffix_Hist (g : Game_World α β)
     exact nb
 
 private lemma Game_World.sStrat_winner_help_rget [DecidableEq β] (g : Game_World α β) (hg : g.playable)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hist : List β) (leg : g.hist_legal (hist)) (T : Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
   (f_strat : g.fStrat_wHist hist leg) {n : Nat} (n_bnd : n ≥ List.length hist) (tu : Turn_snd (n+1))
@@ -785,7 +795,7 @@ private lemma Game_World.sStrat_winner_help_rget [DecidableEq β] (g : Game_Worl
   rw [List.rget_cons_length]
 
 private lemma Game_World.fStrat_winner_help_rget [DecidableEq β] (g : Game_World α β) (hg : g.playable)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+
   (hist : List β) (leg : g.hist_legal (hist)) (T : ¬ Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.snd_legal hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
   (f_strat : g.sStrat_wHist hist leg) {n : Nat} (n_bnd : n ≥ List.length hist) (tu : Turn_fst (n+1))
@@ -799,7 +809,7 @@ private lemma Game_World.fStrat_winner_help_rget [DecidableEq β] (g : Game_Worl
 
 
 private lemma Game_World.sStrat_winner_help_History [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hg : g.playable)
   (hist : List β) (leg : g.hist_legal (hist)) (T : Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
   (f_strat : g.fStrat_wHist hist leg) :
@@ -887,7 +897,7 @@ private lemma Game_World.sStrat_winner_help_History [DecidableEq β] (g : Game_W
 
 
 lemma Game_World.fStrat_winner_help_History [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hg : g.playable)
   (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.snd_legal hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
   (f_strat : g.sStrat_wHist hist leg) :
@@ -972,7 +982,7 @@ lemma Game_World.fStrat_winner_help_History [DecidableEq β] (g : Game_World α 
 
 
 lemma Game_World.sStrat_winner_help_history [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hg : g.playable)
   (hist : List β) (leg : g.hist_legal hist) (T : Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.fst_legal  hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
   (f_strat : g.fStrat_wHist hist leg) :
@@ -984,7 +994,7 @@ lemma Game_World.sStrat_winner_help_history [DecidableEq β] (g : Game_World α 
   apply g.sStrat_winner_help_History
 
 lemma fStrat_winner_help_history [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hg : g.playable)
   (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.snd_legal  hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
   (f_strat : g.sStrat_wHist hist leg) :
@@ -998,7 +1008,7 @@ lemma fStrat_winner_help_history [DecidableEq β] (g : Game_World α β)
 
 
 lemma Game_World.fStrat_winner_help_state [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hg : g.playable)
   (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.snd_legal  hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
   (f_strat : g.sStrat_wHist hist leg) :
@@ -1089,7 +1099,7 @@ lemma Game_World.fStrat_winner_help_state [DecidableEq β] (g : Game_World α β
 
 
 -- private lemma refactor_4 [DecidableEq β] (g : Game_World α β)
---     [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
+--
 --     (hg : g.playable) (hist : List β) (leg : g.hist_legal hist) (T : Turn_fst (List.length hist + 1))
 --     (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
 --     (f_strat : g.fStrat_wHist hist leg) {n : ℕ}
@@ -1170,7 +1180,7 @@ lemma Game_World.fStrat_winner_help_state [DecidableEq β] (g : Game_World α β
 
 
 private lemma Game_World.sStrat_winner_help_state [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hg : g.playable)
   (hist : List β) (leg : g.hist_legal (hist)) (T : Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
   (f_strat : g.fStrat_wHist hist leg) :
@@ -1259,7 +1269,7 @@ private lemma Game_World.sStrat_winner_help_state [DecidableEq β] (g : Game_Wor
 
 
 lemma Game_World.sStrat_winner_wins [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hg : g.playable)
   (hist : List β) (leg : g.hist_legal hist) (T : Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.fst_legal hist f_act), g.is_snd_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_pos T] ; exact al) leg))
   (f_strat : g.fStrat_wHist hist leg) :
@@ -1292,7 +1302,7 @@ lemma Game_World.sStrat_winner_wins [DecidableEq β] (g : Game_World α β)
 
 
 lemma fStrat_winner_wins [DecidableEq β] (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )] (hg : g.playable)
+  (hg : g.playable)
   (hist : List β) (leg : g.hist_legal hist) (T : ¬ Turn_fst (List.length hist + 1))
   (main : ∀ (f_act : β) (al : g.snd_legal hist f_act), g.is_fst_staged_win (f_act :: hist) (Game_World.hist_legal.cons hist f_act (by rw [if_neg T] ; exact al) leg))
   (f_strat : g.sStrat_wHist hist leg) :

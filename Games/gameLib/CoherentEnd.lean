@@ -6,7 +6,23 @@ Author: Yves Jäckle.
 
 import Games.gameLib.Termination
 
+/-
+This file defines a property of game worlds we call "coherent end".
+It is required by Zermelo's theorem, for example.
 
+It's definition is `Game_World.coherent_end`, and the rest of the file
+contains API surrounding this notion.
+-/
+
+
+/--
+A `Game_World` has a coherent end if:
+- `em` : the predicates deciding the winning condition for each player
+  can't both be satisfied at the same time.
+- `fst` and `snd` : if the game has reached a winning state, then no matter
+  the moves played after, the game will stay in that winnning state for the
+  respective player.
+-/
 structure Game_World.coherent_end (g : Game_World α β) : Prop where
   em : ∀ hist, g.hist_legal hist → ¬ (g.fst_win_states hist ∧ g.snd_win_states hist)
   fst : ∀ hist, g.hist_legal hist → (g.fst_win_states hist →
@@ -45,7 +61,6 @@ lemma Game_World.coherent_end_all_snd (g : Game_World α β)  (h : g.coherent_en
     · intro T ; rw [Turn_snd_iff_not_fst] at T ; rw [if_neg T] at now ; exact now
 
 lemma Game_World.coherent_end_for_starts (g : Game_World α β)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (hg : g.coherent_end) (f_strat : g.fStrategy) (s_strat : g.sStrategy) (t : ℕ) :
     (g.fst_win_states (g.hist_on_turn f_strat s_strat t) → g.fst_win_states (g.hist_on_turn f_strat s_strat (t+1))) ∧
       (g.snd_win_states (g.hist_on_turn f_strat s_strat t) → g.snd_win_states (g.hist_on_turn f_strat s_strat (t+1))) :=
@@ -76,7 +91,6 @@ lemma Game_World.coherent_end_for_starts (g : Game_World α β)
 
 
 lemma Game_World.coherent_end_all_for_strats (g : Game_World α β)  (h : g.coherent_end)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (f_strat : g.fStrategy) (s_strat : g.sStrategy) (t n : ℕ) :
   (g.fst_win_states (g.hist_on_turn f_strat s_strat t) → g.fst_win_states (g.hist_on_turn f_strat s_strat (t+n))) ∧
       (g.snd_win_states (g.hist_on_turn f_strat s_strat t) → g.snd_win_states (g.hist_on_turn f_strat s_strat (t+n))) :=
@@ -94,7 +108,6 @@ lemma Game_World.coherent_end_all_for_strats (g : Game_World α β)  (h : g.cohe
 
 
 lemma Game.coherent_end_fst_win (g : Game α β) (hg : g.coherent_end)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (main : ∃ turn : ℕ, g.fst_win_states (g.hist_on_turn turn)) :
   g.fst_win :=
   by
@@ -114,7 +127,6 @@ lemma Game.coherent_end_fst_win (g : Game α β) (hg : g.coherent_end)
       apply hg.em _ (g.hist_on_turn m).prop.1 ⟨(mdef),con⟩
 
 lemma Game.coherent_end_snd_win (g : Game α β) (hg : g.coherent_end)
-  [DecidablePred (g.fst_win_states)] [DecidablePred (g.snd_win_states )]
   (main : ∃ turn : ℕ, g.snd_win_states (g.hist_on_turn turn)) :
   g.snd_win :=
   by
