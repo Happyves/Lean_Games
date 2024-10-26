@@ -273,3 +273,12 @@ lemma Symm_Game_World.hist_on_turn_2step_snd (g : Symm_Game_World α β)
   dsimp
   simp only [List.cons.injEq, true_and]
   rw [dif_pos (by rw [← Turn_snd_fst_step] ; exact T)]
+
+
+
+lemma Game_World.hist_on_turn_nonempty_of_succ (g : Game_World α β)
+  (f_strat : g.fStrategy )  (s_strat : g.sStrategy) {t : ℕ} :
+  (g.hist_on_turn f_strat s_strat  (t+1)).val ≠ [] :=
+  by
+  dsimp [hist_on_turn]
+  split_ifs <;> decide

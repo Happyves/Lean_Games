@@ -129,6 +129,10 @@ theorem List.rdrop_append_rtake : ∀ (n : Nat) (l : List α), List.rdrop l n ++
   apply List.take_append_drop
 
 
+
+lemma List.cons_eq_singleton_append (l : List α) (x : α) : x :: l = [x] ++ l := by exact rfl
+
+
 #exit
 
 
@@ -186,8 +190,6 @@ lemma List.cons_head_tail (l : List α) (hl : l ≠ []) : (l.head hl) :: l.tail 
   | [] => (by contradiction)
   | x :: l => (by dsimp)
 
-
-lemma List.cons_eq_singleton_append (l : List α) (x : α) : x :: l = [x] ++ l := by exact rfl
 
 
 lemma List.exists_min_length_list_of_exists_list {P : List α → Prop} (h : ∃ l : List α, P l) :
