@@ -178,7 +178,6 @@ def Game_World_wDraw.isWLD (g : Game_World_wDraw α β)
 
 
 def Game_World_wDraw.state_on_turn_neutral (g : Game_World_wDraw α β)
-
   (f_strat : g.fStrategy) (s_strat : g.sStrategy) (turn : ℕ) : Prop :=
   ¬ g.Turn_isWLD f_strat s_strat turn
 
@@ -235,7 +234,7 @@ inductive Game_World_wDraw.has_WLD (g : Game_World_wDraw α β)
   | draw (h : g.is_draw)
 
 
-lemma Game_World_wDraw.state_on_turn_neutral_State_from_history_neutral (g : Game_World_wDraw α β)
+lemma Game_World_wDraw.state_on_turn_neutral_hist_neutral (g : Game_World_wDraw α β)
 
   (f_strat : g.fStrategy) (s_strat : g.sStrategy) (turn : ℕ) :
   g.state_on_turn_neutral f_strat s_strat turn ↔

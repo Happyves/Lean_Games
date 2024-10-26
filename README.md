@@ -11,7 +11,7 @@ We formalize content from:
 
 Still a work in progress, though in its final phase.
 I'm currently:
-- Cleaning the content from `gameLib_fixfix` and `game_fix`
+- Cleaning the content.
 - Experimenting with strategies that condition on histories being neutral, in `gameLibExp` and `gameLibExpExp`
 - Documenting the code
 
@@ -30,4 +30,6 @@ Please let me know if you're aware of more related work
 
 - To understand `gameLib > Zermelo`, you should check out `gameLib > StrategyAPI`, `gameLib > HistoryMoves` and `exLib > General`.
 
-- Strategy stealing and pairing strategies are in the process of being cleaned and documented.
+- Strategy stealing is defined in `gameLib > Stealing`, and it is based on `gameLib > Zermelo`. We apply it on the game of Chomp, in `games > Chomp`. 
+
+- Positional games are defined in `gameLib > Positional`. They allow for a special type of strategies, described in `gameLib > Pairing`. We apply them on the game of high dimensional Tic-tac-toe, in `games > TicTacToe`, which is based on the notion of a combinatorial line, described in `games > TTT_CombinatorialLines`.
