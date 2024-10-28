@@ -24,7 +24,7 @@ lemma List.rget_cons_rtake {l : List α} {t : Fin l.length} : l.rtake (t+1) = (l
     contradiction
   · simp_rw [List.length_cons, Nat.succ_sub_one]
     rw [show Nat.succ (length l) - ↑t = Nat.succ (length l - ↑t) from (by apply Nat.succ_sub ; have := t.prop ; simp_rw [List.length_cons] at this ; rw [Nat.lt_succ] at this ; exact this)]
-    apply List.drop_eq_get_cons
+    apply List.drop_eq_getElem_cons
 
 lemma List.rtake_cons_eq_self {l : List α} {x : α} {t : Nat} (ht : t ≤ l.length) : ((x :: l).rtake t) = (l.rtake t) := by
   unfold List.rtake
@@ -43,7 +43,7 @@ lemma List.rget_cons_eq_self {l : List α} {x : α} {t : Fin l.length} : (x :: l
 lemma List.rget_cons_length {l : List α} {x : α} : (x :: l).rget ⟨l.length, (by rw [List.length_cons] ; exact Nat.le.refl)⟩ = x := by
   unfold List.rget
   dsimp
-  simp_rw [Nat.succ_sub_one, Nat.sub_self]
+  simp_rw [Nat.sub_self]
   apply List.get_cons_zero
 
 lemma List.rtake_length {l : List α}  : l.rtake l.length = l := by
@@ -101,7 +101,7 @@ lemma List.rget_suffix {α : Type _} {l L : List α} (m : l <:+ L) (n : Fin l.le
   convert this
   rw [m]
 
-
+#check List.getElem_append_right
 
 lemma List.rtake_suffix_comm (M : List.rtake hist (List.length h) <:+ h) (L : List.length hist ≤ List.length h) : hist = List.rtake h (List.length hist) := by
   rw [List.rtake_all_of_le L] at M
@@ -119,7 +119,7 @@ lemma List.rtake_suffix_comm (M : List.rtake hist (List.length h) <:+ h) (L : Li
       exact suffix_cons x l
 
 lemma List.rget_singleton {x : α} {n : Fin 1} : [x].rget n = x := by
-  unfold List.rget ; apply List.get_singleton
+  unfold List.rget ; apply List.getElem_singleton
 
 
 theorem List.rdrop_append_rtake : ∀ (n : Nat) (l : List α), List.rdrop l n ++ List.rtake l n = l :=

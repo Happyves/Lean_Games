@@ -27,7 +27,7 @@ instance : DecidablePred Turn_fst :=
   fun turn => by rw [Turn_fst] ; exact Nat.decEq (turn % 2) 1
 
 instance : DecidablePred Turn_snd :=
-  fun turn => by rw [Turn_snd] ; exact Not.decidable
+  fun turn => by rw [Turn_snd] ; exact instDecidableNot
 
 
 
@@ -152,5 +152,4 @@ lemma Invariant_snd' {p : ℕ → Prop}
       · apply ih
         · apply c
         · apply a _ c
-          rw [Nat.succ_eq_add_one]
           apply Nat.le_add_left

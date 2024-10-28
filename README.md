@@ -11,11 +11,10 @@ We formalize content from:
 
 Still a work in progress, though in its final phase.
 I'm currently:
-- Cleaning the content.
+- Updating lean and mathlib versions.
 - Experimenting with strategies that condition on histories being neutral, in `gameLibExp` and `gameLibExpExp`
-- Documenting the code
 
-Once finished, I will bring the project to the latest version of mathlib, and attempt to publish this work :)
+Once finished, I will attempt to publish this work :)
 
 Known related work:
 - https://github.com/sven-manthe/A-formalization-of-Borel-determinacy-in-Lean

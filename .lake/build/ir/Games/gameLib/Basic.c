@@ -13,60 +13,60 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutral(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_hist__on__turn___rarg(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_state__on__turn___rarg(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_hist__on__turn___rarg___boxed(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_state__on__turn___rarg___boxed(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal(lean_object*, lean_object*, lean_object*);
+lean_object* l_List_rec____x40_Mathlib_Util_CompileInductive___hyg_3257____rarg(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_hist__on__turn___rarg(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_state__on__turn(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal___rarg___lambda__1___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World__wDraw_hist__on__turn___rarg(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World__wDraw_hist__on__turn___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game_state__on__turn___rarg(lean_object*, lean_object*);
 static lean_object* l_instCoeSymm__Game__WorldGame__World___closed__1;
 LEAN_EXPORT lean_object* l_Game_hist__on__turn___rarg___boxed(lean_object*, lean_object*);
-lean_object* l_List_rec____x40_Mathlib_Util_CompileInductive___hyg_3246____rarg(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World___elambda__1(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_toGame___rarg(lean_object*);
 uint8_t l_instDecidablePredNatTurn__fst(lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_hist__on__turn___rarg(lean_object*, lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutral___boxed(lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___rarg___lambda__1___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game_state__on__turn___rarg___boxed(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_toGame___elambda__2(lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_state__on__turn___rarg(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World__wDraw_hist__on__turn(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World___elambda__1___rarg(lean_object*, lean_object*, lean_object*);
 lean_object* l_List_lengthTRAux___rarg(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World(lean_object*, lean_object*);
-LEAN_EXPORT uint8_t l_instDecidablePredListHist__neutral___rarg(lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___boxed(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World___rarg(lean_object*);
 LEAN_EXPORT lean_object* l_Game_hist__on__turn(lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___rarg(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_hist__on__turn(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_state__from__hist(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_toGame___elambda__1___rarg(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_toGame___elambda__1(lean_object*, lean_object*);
 uint8_t lean_nat_dec_eq(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal___boxed(lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___rarg___lambda__1(lean_object*, lean_object*, lean_object*, lean_object*, uint8_t);
 LEAN_EXPORT lean_object* l_Game_state__on__turn(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_state__on__turn(lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states___boxed(lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states___rarg___boxed(lean_object*, lean_object*, lean_object*);
 lean_object* lean_nat_sub(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_state__on__turn___rarg(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_state__on__turn___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_state__from__hist___rarg(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal___rarg___lambda__1(lean_object*, lean_object*, lean_object*, lean_object*, uint8_t);
 LEAN_EXPORT lean_object* l_Symm__Game_hist__on__turn(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_toGame___elambda__2___rarg(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_hist__on__turn___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_hist__on__turn___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_state__on__turn(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game_hist__on__turn___rarg(lean_object*, lean_object*);
+LEAN_EXPORT uint8_t l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states___rarg(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_instCoeSymm__Game__WorldGame__World(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game_toGame(lean_object*, lean_object*);
 lean_object* lean_nat_add(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutral___rarg___boxed(lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal___rarg(lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_state__on__turn___rarg___boxed(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Game__World_hist__on__turn(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l_Symm__Game__World_toGame__World___elambda__1___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
@@ -128,7 +128,7 @@ x_3 = l_instCoeSymm__Game__WorldGame__World___closed__1;
 return x_3;
 }
 }
-LEAN_EXPORT uint8_t l_instDecidablePredListHist__neutral___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
+LEAN_EXPORT uint8_t l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
 _start:
 {
 lean_object* x_4; uint8_t x_5; 
@@ -165,33 +165,33 @@ return x_10;
 }
 }
 }
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutral(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
 _start:
 {
 lean_object* x_4; 
-x_4 = lean_alloc_closure((void*)(l_instDecidablePredListHist__neutral___rarg___boxed), 3, 0);
+x_4 = lean_alloc_closure((void*)(l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states___rarg___boxed), 3, 0);
 return x_4;
 }
 }
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutral___rarg___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states___rarg___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
 _start:
 {
 uint8_t x_4; lean_object* x_5; 
-x_4 = l_instDecidablePredListHist__neutral___rarg(x_1, x_2, x_3);
+x_4 = l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states___rarg(x_1, x_2, x_3);
 x_5 = lean_box(x_4);
 return x_5;
 }
 }
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutral___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
 _start:
 {
 lean_object* x_4; 
-x_4 = l_instDecidablePredListHist__neutral(x_1, x_2, x_3);
+x_4 = l_instDecidablePredListHist__neutralOfFst__win__statesOfSnd__win__states(x_1, x_2, x_3);
 lean_dec(x_3);
 return x_4;
 }
 }
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal___rarg___lambda__1(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, uint8_t x_5) {
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___rarg___lambda__1(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, uint8_t x_5) {
 _start:
 {
 if (x_5 == 0)
@@ -232,43 +232,43 @@ return x_14;
 }
 }
 }
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___rarg(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
 _start:
 {
 lean_object* x_4; uint8_t x_5; lean_object* x_6; lean_object* x_7; 
-x_4 = lean_alloc_closure((void*)(l_instDecidablePredListHist__legal___rarg___lambda__1___boxed), 5, 2);
+x_4 = lean_alloc_closure((void*)(l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___rarg___lambda__1___boxed), 5, 2);
 lean_closure_set(x_4, 0, x_2);
 lean_closure_set(x_4, 1, x_1);
 x_5 = 1;
 x_6 = lean_box(x_5);
-x_7 = l_List_rec____x40_Mathlib_Util_CompileInductive___hyg_3246____rarg(x_6, x_4, x_3);
+x_7 = l_List_rec____x40_Mathlib_Util_CompileInductive___hyg_3257____rarg(x_6, x_4, x_3);
 lean_dec(x_6);
 return x_7;
 }
 }
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
 _start:
 {
 lean_object* x_4; 
-x_4 = lean_alloc_closure((void*)(l_instDecidablePredListHist__legal___rarg), 3, 0);
+x_4 = lean_alloc_closure((void*)(l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___rarg), 3, 0);
 return x_4;
 }
 }
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal___rarg___lambda__1___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5) {
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___rarg___lambda__1___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5) {
 _start:
 {
 uint8_t x_6; lean_object* x_7; 
 x_6 = lean_unbox(x_5);
 lean_dec(x_5);
-x_7 = l_instDecidablePredListHist__legal___rarg___lambda__1(x_1, x_2, x_3, x_4, x_6);
+x_7 = l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___rarg___lambda__1(x_1, x_2, x_3, x_4, x_6);
 return x_7;
 }
 }
-LEAN_EXPORT lean_object* l_instDecidablePredListHist__legal___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
+LEAN_EXPORT lean_object* l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
 _start:
 {
 lean_object* x_4; 
-x_4 = l_instDecidablePredListHist__legal(x_1, x_2, x_3);
+x_4 = l_instDecidablePredListHist__legalOfFst__legalOfSnd__legal(x_1, x_2, x_3);
 lean_dec(x_3);
 return x_4;
 }
